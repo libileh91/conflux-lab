@@ -13,6 +13,10 @@ Obtenir un build Java 21 reproductible et une seule application Spring Boot asse
 - [ ] **INT-03 — Assembler les modules.** Placer le démarrage Boot dans `application`. Exposer une interface publique minimale de Capability, appelée en Java depuis Experience. Remplacer le client HTTP interne et sa configuration après revue, sans perdre les éléments réutilisables.
 - [ ] **INT-04 — Vérifier les frontières.** Ajouter un test de contexte et un contrôle automatisé des dépendances : pas de cycle, pas d'import d'internals Capability depuis Experience. Choisir le mécanisme le plus simple adapté au découpage ; ne pas imposer Spring Modulith.
 
+## Tâche d'initialisation ajoutée sur demande explicite
+
+- [x] **INT-37 — Initialiser le dépôt Git.** Dépôt local sur `main`, `.gitignore`, maintien des dossiers vides, commit initial et push vers `https://github.com/libileh91/conflux-lab` réalisés. Voir la [note INT-37](../../notes/sprint-01/INT-37-initialiser-le-depot-git.md). Ce travail d'outillage n'ouvre ni ne valide les tâches de développement INT-01 à INT-04.
+
 ## Critères de fin et tests
 
 - [ ] `./mvnw -B -ntp verify` réussit depuis la racine avec Java 21.
@@ -32,6 +36,7 @@ Pourquoi plusieurs modules Maven ne signifient-ils pas plusieurs applications ? 
 ## Notes existantes
 
 - [INT-01 — Inspecter et fixer les frontières](../../notes/sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) : constat rétrospectif du socle amorcé ; incomplet, non validé. Cette note ne clôt ni la tâche ni le sprint et ne donne pas de feu vert pour continuer.
+- [INT-37 — Initialiser le dépôt Git](../../notes/sprint-01/INT-37-initialiser-le-depot-git.md) : initialisation et premier push HTTPS vérifiés ; aucun build applicatif exécuté.
 
 ## Preuves de clôture
 

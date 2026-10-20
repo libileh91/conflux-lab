@@ -15,7 +15,7 @@ Les fiches de sprint et les tâches à réaliser sont dans [docs/stages](../docs
 
 | Dossier | Tâches planifiées | Sujet |
 |---|---|---|
-| [sprint-01](sprint-01/) | INT-01 à INT-04 | Socle modulaire |
+| [sprint-01](sprint-01/) | INT-01 à INT-04 ; INT-37 ajoutée sur demande | Socle modulaire et initialisation Git |
 | [sprint-02](sprint-02/) | INT-05 à INT-08 | Contrat REST |
 | [sprint-03](sprint-03/) | INT-09 à INT-12 | MongoDB et statuts |
 | [sprint-04](sprint-04/) | INT-13 à INT-16 | Asynchronisme |
@@ -33,8 +33,9 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 |---|---|---|
 | INT-01 | [Inspecter et fixer les frontières](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) | Rétrospective du socle initial ; incomplet, build non exécuté |
 | INT-06 | [Accepter une demande](sprint-02/INT-06-accepter-une-demande.md) | Rétrospective de l'ébauche Experience ; partielle, non testée, HTTP interne à remplacer |
+| INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
 
-Ces deux notes documentent le travail amorcé **avant** l'organisation actuelle par sprints et le cadrage final du monolithe modulaire. Leur rattachement est rétrospectif : ni INT-01 ni INT-06 n'est déclarée terminée. Les autres dossiers sont préparés sans compte rendu anticipé.
+Les notes INT-01 et INT-06 documentent le travail amorcé **avant** l'organisation actuelle par sprints et le cadrage final du monolithe modulaire. Leur rattachement est rétrospectif : ni INT-01 ni INT-06 n'est déclarée terminée. Les autres dossiers sont préparés sans compte rendu anticipé.
 
 ## Documentation déjà produite
 

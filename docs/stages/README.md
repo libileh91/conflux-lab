@@ -32,7 +32,7 @@ Les comptes rendus vivent dans **`notes/` à la racine**, avec un sous-dossier p
 - **Chemin** : `notes/sprint-XX/INT-YY-<nom-de-la-tache-en-kebab-case>.md`.
 - **Titre** : `# INT-YY — <Nom de la tâche>`.
 - **Exemple** : `notes/sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md`, titre `# INT-01 — Inspecter et fixer les frontières`.
-- **Identifiants** : `INT-01` à `INT-36` remplacent les anciennes références `01.1` à `09.4`, dans l'ordre des fiches. Le numéro du sprint reste distinct. Les identifiants attribués ne changent pas ; attribuer un nouvel identifiant disponible pour une nouvelle tâche.
+- **Identifiants** : `INT-01` à `INT-36` remplacent les anciennes références `01.1` à `09.4`, dans l'ordre des fiches. Le numéro du sprint reste distinct. INT-37 a été ajoutée au sprint 01 pour l'initialisation Git demandée ensuite. Les identifiants attribués ne changent pas ; attribuer un nouvel identifiant disponible pour une nouvelle tâche.
 - **Contenu** : objectif, réalisation et explication technique, décisions motivées, fichiers concernés, vérifications avec commandes/résultats réellement observés, limites et points à retenir. Signaler les tests non exécutés et les blocages.
 - **Traçabilité** : ajouter un lien vers la note depuis la fiche du sprint et l'index des notes ; conserver l'identifiant exact de la tâche. Une note partielle ou rétrospective ne justifie pas de cocher une tâche non terminée et ne donne pas de feu vert pour poursuivre.
 
