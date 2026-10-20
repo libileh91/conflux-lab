@@ -1,0 +1,24 @@
+# Maven build outputs
+target/
+*.class
+
+# Local IDE metadata
+.idea/
+*.iml
+.vscode/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Logs and operating-system files
+*.log
+.DS_Store
+Thumbs.db
