@@ -26,6 +26,9 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | Terminée : insertion/relecture et unicité réelles, erreur sans faux reçu |
 | [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | Terminée : transitions atomiques, un seul gagnant et états finaux protégés |
 | [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | Terminée : JAR redémarré sur la même base, Failsafe exécuté dans `verify` |
+| [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | À autoriser ; INT-13 documentée, aucun listener livré |
+| [TD-B013](#td-b013) | Borner l'exécution et traiter ses erreurs | INT-15 | À autoriser après INT-14 ; aucun executor dédié livré |
+| [TD-B014](#td-b014) | Tester avec un traitement contrôlé | INT-16 | À autoriser après INT-14/15 ; pannes seulement analysées dans INT-13 |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
@@ -184,6 +187,48 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **Action** | Relancer l'application avec la même base conservée et vérifier la relecture ; raccorder explicitement les tests `*IT` au cycle Maven Failsafe |
 | **Validation** | Même demande consultable après redémarrage ; exécution des tests d'intégration réellement observée dans `verify` et rapports exploitables, sans accès d'Experience au stockage |
 | **Statut** | ✅ Terminée sur feu vert INT-12 ; [cours et preuves](sprint-03/INT-12-verifier-la-persistance.md), `clean verify` réussi avec 1 cas Surefire sélectionné et 5 cas Failsafe. Un seul test nouveau ; JAR relancé sur la même base, deux JVM arrêtées et conteneurs temporaires supprimés. Suite Surefire complète et CI non exécutées |
+
+## TD-B012
+
+**Publier et consommer après insertion confirmée**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
+| **Story liée** | [INT-14 — Publier et consommer](../docs/stages/sprint-04-async.md#int-14--publier-et-consommer) ; suivi de la story existante, pas une nouvelle tâche |
+| **Dépend de** | INT-13 documentée ; feu vert individuel INT-14 à recevoir |
+| **Fichiers** | `FamilyRequestService.java` et `MongoFamilyRequestStore.java` existants ; fichiers d'événement/listener à définir et créer dans Capability, tests concernés à adapter |
+| **Action** | Publier l'UUID uniquement après insertion confirmée, relire la demande et conditionner le travail à une prise en charge atomique gagnante, sans accès du BFF au stockage |
+| **Validation** | Échec d'écriture sans publication, double réception sans double prise en charge, réponse HTTP possible pendant un travail contrôlé, sans imposer le démarrage après le `202` |
+| **Statut** | ⏸ À autoriser — INT-14 non commencée ; les schémas cibles d'INT-13 ne constituent pas son implémentation |
+
+## TD-B013
+
+**Borner l'exécution et rendre ses échecs observables**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
+| **Story liée** | [INT-15 — Borner l'exécution](../docs/stages/sprint-04-async.md#int-15--borner-lexécution) ; suivi de la story existante |
+| **Dépend de** | Listener INT-14 disponible puis feu vert individuel INT-15 ; capacités et politique à définir lors de cet incrément |
+| **Fichiers** | Configuration d'executor et gestion des erreurs à définir/créer dans Capability ; modèle/store existants et tests à adapter sans inventer de champ métier |
+| **Action** | Borner threads et file, rendre le rejet observable, gérer l'arrêt et les exceptions du worker, y compris `@Async void`, en respectant les transitions autorisées |
+| **Validation** | Saturation contrôlée sans `202` masquant un rejet connu ; diagnostic et statut cohérent si l'écriture est possible, sans prétendre qu'une panne MongoDB permet toujours de persister `FAILED` |
+| **Statut** | ⏸ À autoriser — INT-15 non commencée ; aucun réglage chiffré, mapping `503` ou mécanisme de reprise livré dans INT-13 |
+
+## TD-B014
+
+**Tester le traitement contrôlé et l'abandon**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
+| **Story liée** | [INT-16 — Tester avec un traitement contrôlé](../docs/stages/sprint-04-async.md#int-16--tester-avec-un-traitement-contrôlé) ; suivi de la story existante |
+| **Dépend de** | INT-14/15 disponibles puis feu vert individuel INT-16 |
+| **Fichiers** | Tests et doublure de traitement à définir/créer ; aucune doublure à brancher comme faux métier de production |
+| **Action** | Contrôler avancement/échec et simuler l'abandon entre enregistrement et consommation, en réutilisant les vérifications suffisantes d'INT-14/15 |
+| **Validation** | Attentes bornées et signaux explicites pour acceptation indépendante, rejet, échec et abandon ; aucun `Thread.sleep` comme preuve ni reprise revendiquée |
+| **Statut** | ⏸ À autoriser — INT-16 non commencée ; la matrice documentaire d'INT-13 ne remplace pas ces tests |
 
 ## Repères de cours
 
@@ -452,3 +497,17 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **À retenir** | Surefire exécute les `*Test` à la phase `test` ; les trois classes `*IT` sont découvertes par Failsafe après le packaging et contrôlées à `verify`. `pluginManagement` fixe la version mais ne remplace pas l'activation du plugin. Le nouveau test lance le même JAR dans deux JVM successives et conserve MongoDB entre les deux : même UUID/statut/date retrouvés. Ce n'est ni un redémarrage de MongoDB ni une preuve de récupération après perte du disque. Les tests HTTP existants `*Test` restent parfois eux aussi intégrés ; le nom ne suffit pas à déterminer leur nature |
 | **Vérification pédagogique** | Expliquer pourquoi une nouvelle instance de repository ou deux contextes dans une seule JVM constituent une preuve différente, pourquoi `-Dtest` n'est pas `-Dit.test` et pourquoi un `verify` ciblé ne valide pas toutes les suites |
 | **Statut** | 📘 Référence fondée sur 1 cas Surefire et 5 cas Failsafe réussis ; 1 scénario ajouté, 4 scénarios MongoDB réutilisés, restitution orale non évaluée |
+
+## TD-R020
+
+**Séparer persistance, soumission volatile, prise en charge et réponse HTTP**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
+| **Story liée** | INT-13 — Dessiner les fenêtres de panne |
+| **Dépend de** | Persistance INT-10/12 et graphe/atomicité INT-09/11 ; Spring Event/`@Async` encore cibles non implémentées |
+| **Fichiers** | Service, modèle/store MongoDB et BFF existants relus ; [DAT §7.1](../docs/dat/ConfluxLab.md#71-fenêtres-de-panne-documentées--int-13) et cours INT-13, sans changement applicatif |
+| **À retenir** | Une insertion acquittée ne garantit pas une tâche soumise ; une soumission acceptée ne survit pas au crash de la JVM. Après soumission, worker et réponse HTTP peuvent se croiser. Un rejet propagé peut encore faire échouer le POST ; une exception du worker ne modifie pas un `202` reçu. `500`/timeout ne prouvent pas l'absence du document ou d'un effet. `PENDING` ne prouve pas la présence d'une tâche et `PROCESSING` ne prouve pas qu'un worker vit encore. Aucun `PENDING → FAILED`, rollback commun ou mécanisme de reprise n'est ajouté |
+| **Vérification pédagogique** | Expliquer un `PENDING` sans tâche après `500` ou crash, distinguer rejet/exception async, et montrer deux ordres valides entre prise en charge et `202` sans promettre de reprise |
+| **Statut** | 📘 Référence documentaire issue de la revue statique INT-13 ; schéma et matrice F1–F8, aucune panne exécutée ni connaissance de l'apprenant évaluée |

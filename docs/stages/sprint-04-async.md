@@ -1,6 +1,6 @@
 # Sprint 04 — Spring Events locaux et traitement asynchrone
 
-**Statut : planifié.** Prérequis : sprint 03 clos. Chaque story attend son feu vert individuel.
+**Statut : INT-13 terminée (analyse documentaire) ; INT-14 à INT-16 non commencées.** Passage demandé par « go 13 » après les stories techniques INT-09 à INT-12 et leur publication Git ; la clôture pédagogique du sprint 03 reste à confirmer. Chaque story conserve son feu vert individuel : cette demande n'autorise pas INT-14.
 
 ## Objectif
 
@@ -15,7 +15,7 @@ Répondre au client sans attendre la fin du travail, tout en comprenant les erre
 ## Stories — un feu vert par tâche
 
 ### INT-13 — Dessiner les fenêtres de panne
-**Statut : à faire — feu vert requis.**
+**Statut : terminée sur feu vert « go 13 » ; documentation uniquement.** Point de départ : INT-12 commitée et poussée (`470494b`). [Cours, schémas et limites INT-13](../../notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md).
 
 En tant que développeur débutant, je veux repérer où une demande peut rester bloquée, afin de comprendre ce que le client peut attendre après son acceptation.
 
@@ -24,8 +24,10 @@ En tant que développeur débutant, je veux repérer où une demande peut rester
 - Décrire les conséquences d'un arrêt ou du refus d'une tâche par l'executor.
 
 **Terminé quand :**
-- [ ] Le schéma montre qu'un traitement peut commencer avant le retour du `202`, sans l'imposer.
-- [ ] Pour chaque panne, la réponse possible et l'état du document sont expliqués, dont le cas où l'enregistrement existe mais la tâche n'est pas prise en charge.
+- [x] Le schéma cible sépare les branches HTTP et worker après soumission ; la prise en charge peut précéder ou suivre le `202`, sans ordre artificiel.
+- [x] La matrice F1–F8 explique écriture ambiguë, arrêt avant publication, rejet, perte en file, panne avant/après prise en charge et écriture finale incertaine, avec réponses HTTP possibles et états persistés. Elle inclut le document `PENDING` sans tâche et distingue rejet de soumission d'exception du worker.
+
+**Preuves :** inspection statique du service, du store/modèle MongoDB, de sa configuration et du BFF ; schémas et matrice relus. Le [DAT §7.1](../dat/ConfluxLab.md#71-fenêtres-de-panne-documentées--int-13) reprend les limites et hypothèses de lecture. Aucun Java/POM modifié, aucun build ou test de panne exécuté. Le distributeur synchrone avec un listener `@Async` et rejet propagé est une cible de raisonnement, pas un câblage livré. Aucun mapping de saturation `503`, `PENDING → FAILED` ou mécanisme de reprise ajouté.
 
 ### INT-14 — Publier et consommer
 **Statut : à faire — feu vert requis.** Prérequis : INT-13 terminée.

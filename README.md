@@ -15,6 +15,8 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 - **INT-11** ajoute une transition MongoDB conditionnelle et atomique, sans upsert : un seul appelant prend la demande en charge, les dates ne reculent pas et un état final ne peut être écrasé. **2 nouveaux tests + 2 tests du modèle passent** ; aucun appelant de production n'exécute encore ces transitions. Les POST restent normalement `PENDING` et le GET demeure en lecture seule.
 - **INT-12** branche trois classes `*IT` à Failsafe et ajoute **un seul scénario** : deux JVM successives exécutent le même JAR et retrouvent le même UUID, `PENDING` et `createdAt` sur le même MongoDB temporaire. Les quatre cas MongoDB préexistants sont réutilisés ; processus et conteneurs temporaires sont arrêtés à l'issue de la vérification.
 
+- **INT-13** documente les [fenêtres de panne](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) du futur flux Spring Event/`@Async` : document `PENDING` sans tâche, rejet de soumission, erreurs du worker et course avec la réponse `202`. Documentation uniquement ; aucun câblage asynchrone ni test de panne ajouté. INT-14 attend son feu vert.
+
 ## Prérequis
 
 - JDK **21**, avec `java` et `javac` accessibles ; `JAVA_HOME` peut désigner son installation.
@@ -121,6 +123,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-10 — MongoDB avant acceptation](notes/sprint-03/INT-10-persister-avant-d-accepter.md).
 - [INT-11 — Transitions conditionnelles atomiques](notes/sprint-03/INT-11-securiser-les-mises-a-jour.md).
 - [INT-12 — Failsafe et persistance entre deux JVM](notes/sprint-03/INT-12-verifier-la-persistance.md).
+- [INT-13 — Fenêtres de panne avant et après le `202`](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 

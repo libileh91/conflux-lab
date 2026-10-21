@@ -53,7 +53,7 @@ Les tests accompagnent chaque story : ils ne sont pas reportés au sprint 07. **
 | [01 — Socle modulaire](sprint-01-socle.md) | Construire et démarrer une application aux modules séparés | INT-01 à INT-04 ; INT-37 | Clôturé techniquement et documenté sur demande utilisateur (2026-10-21) ; restitution orale non évaluée |
 | [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05 à INT-08 terminées techniquement ; passage à INT-09 demandé, restitution orale non évaluée |
 | [03 — MongoDB](sprint-03-mongodb.md) | Conserver une demande après redémarrage | INT-09 à INT-12 | INT-09 à INT-12 terminées techniquement ; clôture et restitution pédagogique à confirmer |
-| [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | Planifié |
+| [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | INT-13 terminée : fenêtres de panne documentées ; INT-14 à INT-16 non commencées |
 | [05 — Orchestration](sprint-05-orchestration.md) | Faire avancer les six opérations selon leurs dépendances | INT-17 à INT-20 | Planifié |
 | [06 — Partenaire et résilience](sprint-06-partenaire.md) | Appeler un partenaire simulé et traiter ses pannes sans retry aveugle | INT-21 à INT-24 | Planifié |
 | [07 — Validation et mesures](sprint-07-validation.md) | Démontrer le parcours, expliquer un échec et mesurer le labo | INT-25 à INT-28 | Planifié |
@@ -75,7 +75,8 @@ Les identifiants ne changent pas ; ils ne sont pas un ordre de développement ob
 - **Réalisé ensuite sur feu vert INT-10 :** commit INT-09 `185bdd7`, remplacement de la mémoire de production par MongoDB, insertion acquittée avant `202`, UUID unique et refus sans faux reçu ; 2 nouveaux tests et 1 test POST/GET réutilisé réussis.
 - **Réalisé ensuite sur feu vert INT-11 :** complément théorique INT-10 commité et poussé (`66e0ade`), puis transitions MongoDB atomiques avec filtre de statut/date, protection des états finaux et suivi confidentiel ; 2 nouveaux tests et 2 tests du modèle réutilisés réussis.
 - **Réalisé ensuite sur feu vert INT-12 :** commit local INT-11 `af3f215`, raccordement Failsafe, réutilisation de 4 cas MongoDB et ajout d'un seul test redémarrant le JAR sur la même base ; 1 contrôle Surefire ciblé et 5 cas Failsafe réussis.
-- **Suite :** clôture pédagogique du sprint 03 à confirmer ; INT-13 nécessite un nouveau feu vert individuel. Aucun asynchronisme n'est lancé.
+- **Réalisé ensuite sur feu vert INT-13 « go 13 » :** INT-12 commitée et poussée (`470494b`), puis schémas et matrice des fenêtres de panne documentés ; distinction rejet/erreur worker et états MongoDB/HTTP. Aucun code applicatif ou test de panne ajouté.
+- **Suite :** clôture pédagogique du sprint 03 à confirmer ; INT-14 nécessite un nouveau feu vert individuel. Aucun asynchronisme n'est lancé.
 - La préparation avancée d'INT-05 ne lance ni l'assemblage ni les autres stories du sprint 02.
 
 ## Architecture à conserver

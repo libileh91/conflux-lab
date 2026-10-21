@@ -20,6 +20,8 @@
 
 Une requête HTTP demande la création d'une famille fictive de **trois personnes** : un assuré principal et deux ayants droit.
 
+**Lecture du flux :** la liste décrit le parcours cible. À l'issue d'INT-13, seuls l'acceptation persistée et le suivi sont implémentés ; publication, listener, orchestration et appels partenaires restent à développer sur leurs feux verts respectifs. INT-13 en documente les fenêtres de panne, sans ajouter de code applicatif.
+
 1. Le module Experience/BFF reçoit la demande HTTP, valide son format et appelle l'interface Java publique du module Capability, dans la même application Spring Boot.
 2. Depuis INT-10, Capability génère un UUID et insère la demande `PENDING` dans MongoDB avant l'acceptation. À l'étape historique INT-06, ce stockage était temporairement réalisé en mémoire.
 3. Capability publie un **événement Spring local** contenant l'UUID ; un listener `@Async` est planifié.
@@ -225,6 +227,27 @@ Ce passage **n'exécute pas la suite Surefire complète**. La commande non filtr
 - MongoDB/partenaire : états, opérations partielles, reprise, absence de transaction distribuée.
 - CI : comment un commit déclenche compilation/tests, avec MongoDB et WireMock **isolés et reproductibles**.
 - CD : expliquer séparément livraison, déploiement, approbations, rollback et stratégie de migration.
+
+### 7.1 Fenêtres de panne documentées — INT-13
+
+**[Simulation ConfluxLab — analyse documentaire autorisée par « go 13 »]** : les stories techniques du sprint 03 sont réalisées et INT-12 a été commitée/poussée (`470494b`) avant cette analyse. Le passage à INT-13 n'évalue ni ne clôt automatiquement la restitution pédagogique du sprint 03. Aucun événement, listener, executor ou traitement n'est implémenté par cet incrément.
+
+**[Proposition — hypothèse de lecture pour INT-14/15, non configuration livrée]** : après insertion acquittée, Capability publie l'UUID ; le distributeur d'événements synchrone appelle un unique listener métier via son proxy `@Async`, qui soumet la tâche à un executor borné. Un rejet de soumission non absorbé peut alors remonter avant le reçu HTTP. Le mapping générique actuel correspondrait à `500` ; aucun `503` de saturation n'est implémenté. Les capacités, la politique et les handlers devront être confirmés par le code et les tests des stories suivantes. Pas de suppression silencieuse des tâches ni de `CallerRunsPolicy` présentée comme un découplage garanti.
+
+Après soumission, **réponse HTTP et worker avancent indépendamment** : la prise en charge peut précéder ou suivre la réception du `202`. Le reçu `PENDING` décrit l'acceptation initiale, pas une obligation de maintenir le document dans cet état jusqu'à sa réception. Une exception du worker n'est pas automatiquement renvoyée au POST ; un `202` déjà reçu reste inchangé.
+
+| Fenêtre | Conséquence à conserver dans la conception cible |
+|---|---|
+| Écriture sans acquittement reçu | `500`/timeout ne prouvent pas l'absence du document ; MongoDB peut déjà contenir `PENDING` |
+| Insertion confirmée, avant soumission, ou soumission refusée | Document `PENDING` possible sans tâche prise en charge ; erreur HTTP si elle remonte avant réponse, ou coupure lors d'un arrêt brutal |
+| Tâche acceptée mais perdue à l'arrêt, avant prise en charge | `202` éventuellement déjà reçu, document `PENDING` abandonné ; la file de l'executor n'est pas durable |
+| Prise en charge envoyée sans réponse MongoDB | Issue inconnue : document encore `PENDING` ou déjà `PROCESSING`, pas un simple refus de filtre |
+| Prise en charge appliquée, puis arrêt/échec du worker | `PROCESSING` peut rester bloqué ; `FAILED` suppose une écriture terminale effectivement appliquée. Une perte d'acquittement peut masquer cette écriture et son `completedAt` |
+| État final ou réponse HTTP non confirmés | Le travail et/ou le statut peuvent avoir avancé malgré une erreur observée ; pas de retry aveugle du POST ou d'un effet partenaire |
+
+Le graphe reste `PENDING → PROCESSING → SUCCEEDED/FAILED` : un rejet avant prise en charge ne permet pas `PENDING → FAILED`. La transition atomique d'INT-11 ne garantit ni reprise ni exactly-once ; un candidat perdant ne doit pas exécuter le travail ou écraser l'état du gagnant. Le suivi public reste limité aux trois métadonnées existantes. Aucun rollback commun MongoDB/événement, balayage de reprise, outbox, broker ou transaction distribuée n'est ajouté.
+
+**Preuves et limites :** revue du service, de l'adaptateur MongoDB, du graphe et du mapping HTTP ; schémas et matrice des pannes dans le [cours INT-13](../../notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md). Analyse statique uniquement : aucune saturation, exception async ou panne de processus exécutée. Les 6 cas d'INT-12 restent une preuve historique distincte. INT-14 nécessite un nouveau feu vert.
 
 ## 8. Performance et observabilité
 

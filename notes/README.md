@@ -69,9 +69,12 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 | INT-10 | [Persister avant d'accepter](sprint-03/INT-10-persister-avant-d-accepter.md) | Terminée : insertion MongoDB acquittée avant `202`, UUID unique, relecture et erreur sans faux reçu ; 2 nouveaux tests + 1 test existant réussis |
 | INT-11 | [Sécuriser les mises à jour](sprint-03/INT-11-securiser-les-mises-a-jour.md) | Terminée : transitions conditionnelles atomiques, un seul gagnant, dates et états finaux protégés ; 2 nouveaux tests + 2 tests du modèle réussis |
 | INT-12 | [Vérifier la persistance](sprint-03/INT-12-verifier-la-persistance.md) | Terminée : Failsafe branché à `verify`, JAR redémarré sur la même base, métadonnées conservées ; 1 test ajouté, 6 cas sélectionnés réussis |
+| INT-13 | [Dessiner les fenêtres de panne](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) | Terminée : schéma cible et matrice F1–F8, réponses HTTP et états persistés, rejet distinct de l'erreur worker ; documentation uniquement, aucune panne exécutée |
 | INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
 
 Les preuves historiques restent datées : INT-01 conserve le cadrage initial ; le cours INT-06 explique désormais l'acceptation réalisée et renvoie à la version publiée de sa rétrospective pour l'ébauche antérieure. Les autres dossiers n'ont pas de compte rendu de réussite anticipé.
+
+**INT-13** ouvre ensuite le sprint 04 sur feu vert explicite, sans clôture pédagogique automatique du sprint 03 : le [cours](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) analyse les fenêtres de panne du futur flux Spring Event/`@Async`. Aucun listener ou executor n'est encore implémenté ; les hypothèses de câblage restent des propositions à vérifier dans INT-14/15. [Repère TD-R020](todos.md#td-r020).
 
 ## Compléments théoriques
 
