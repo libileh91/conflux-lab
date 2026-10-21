@@ -1,6 +1,6 @@
 # Sprint 04 — Spring Events locaux et traitement asynchrone
 
-**Statut : INT-13 terminée (analyse documentaire) ; INT-14 à INT-16 non commencées.** Passage demandé par « go 13 » après les stories techniques INT-09 à INT-12 et leur publication Git ; la clôture pédagogique du sprint 03 reste à confirmer. Chaque story conserve son feu vert individuel : cette demande n'autorise pas INT-14.
+**Statut : INT-13 terminée, note simplifiée ; INT-14 amorcée puis mise en pause ; INT-15/16 non commencées.** La révision actuelle porte seulement sur INT-13 ; les choix de code et de tests d'INT-14 restent à revoir séparément. La clôture pédagogique du sprint 03 reste à confirmer.
 
 ## Objectif
 
@@ -25,12 +25,12 @@ En tant que développeur débutant, je veux repérer où une demande peut rester
 
 **Terminé quand :**
 - [x] Le schéma cible sépare les branches HTTP et worker après soumission ; la prise en charge peut précéder ou suivre le `202`, sans ordre artificiel.
-- [x] La matrice F1–F8 explique écriture ambiguë, arrêt avant publication, rejet, perte en file, panne avant/après prise en charge et écriture finale incertaine, avec réponses HTTP possibles et états persistés. Elle inclut le document `PENDING` sans tâche et distingue rejet de soumission d'exception du worker.
+- [x] Trois situations expliquent les réponses HTTP et états possibles : insertion non confirmée ; demande enregistrée mais pas prise en charge (arrêt ou rejet inclus) ; traitement pris en charge puis interrompu.
 
-**Preuves :** inspection statique du service, du store/modèle MongoDB, de sa configuration et du BFF ; schémas et matrice relus. Le [DAT §7.1](../dat/ConfluxLab.md#71-fenêtres-de-panne-documentées--int-13) reprend les limites et hypothèses de lecture. Aucun Java/POM modifié, aucun build ou test de panne exécuté. Le distributeur synchrone avec un listener `@Async` et rejet propagé est une cible de raisonnement, pas un câblage livré. Aucun mapping de saturation `503`, `PENDING → FAILED` ou mécanisme de reprise ajouté.
+**Preuves :** analyse statique initiale du code à l'issue d'INT-12, puis réécriture documentaire simplifiée. Le [DAT §7.1](../dat/ConfluxLab.md#71-fenêtres-de-panne-documentées--int-13) en conserve la synthèse. Un schéma et trois cas suffisent ; aucune panne exécutée, aucune reprise automatique ajoutée. La révision ne touche pas à l'ébauche INT-14.
 
 ### INT-14 — Publier et consommer
-**Statut : à faire — feu vert requis.** Prérequis : INT-13 terminée.
+**Statut : ébauche en pause, non validée.** Feu vert initial « commit ça & go 14 », suivi d'une demande de simplifier INT-13 avant de revoir ce qui sera gardé ou supprimé pour INT-14. Les critères ci-dessous restent inchangés dans cette révision.
 
 En tant que client de l'API, je veux que le travail soit pris en charge séparément de ma requête HTTP, afin de ne pas attendre sa réalisation complète.
 

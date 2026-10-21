@@ -26,7 +26,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | Terminée : insertion/relecture et unicité réelles, erreur sans faux reçu |
 | [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | Terminée : transitions atomiques, un seul gagnant et états finaux protégés |
 | [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | Terminée : JAR redémarré sur la même base, Failsafe exécuté dans `verify` |
-| [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | À autoriser ; INT-13 documentée, aucun listener livré |
+| [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | Ébauche en pause, à revoir après la simplification d'INT-13 |
 | [TD-B013](#td-b013) | Borner l'exécution et traiter ses erreurs | INT-15 | À autoriser après INT-14 ; aucun executor dédié livré |
 | [TD-B014](#td-b014) | Tester avec un traitement contrôlé | INT-16 | À autoriser après INT-14/15 ; pannes seulement analysées dans INT-13 |
 
@@ -196,11 +196,11 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
 | **Story liée** | [INT-14 — Publier et consommer](../docs/stages/sprint-04-async.md#int-14--publier-et-consommer) ; suivi de la story existante, pas une nouvelle tâche |
-| **Dépend de** | INT-13 documentée ; feu vert individuel INT-14 à recevoir |
-| **Fichiers** | `FamilyRequestService.java` et `MongoFamilyRequestStore.java` existants ; fichiers d'événement/listener à définir et créer dans Capability, tests concernés à adapter |
+| **Dépend de** | INT-13 simplifiée ; feu vert INT-14 reçu puis travail mis en pause pour revoir séparément son périmètre |
+| **Fichiers** | Ébauche non validée : `FamilyRequestService.java`, `FamilyRequestConfiguration.java`, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java` et tests concernés ; store MongoDB existant |
 | **Action** | Publier l'UUID uniquement après insertion confirmée, relire la demande et conditionner le travail à une prise en charge atomique gagnante, sans accès du BFF au stockage |
 | **Validation** | Échec d'écriture sans publication, double réception sans double prise en charge, réponse HTTP possible pendant un travail contrôlé, sans imposer le démarrage après le `202` |
-| **Statut** | ⏸ À autoriser — INT-14 non commencée ; les schémas cibles d'INT-13 ne constituent pas son implémentation |
+| **Statut** | ⏸ En pause — changements INT-14 amorcés, non testés et non terminés ; la révision d'INT-13 ne décide pas lesquels garder ou supprimer |
 
 ## TD-B013
 
@@ -506,8 +506,8 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
 | **Story liée** | INT-13 — Dessiner les fenêtres de panne |
-| **Dépend de** | Persistance INT-10/12 et graphe/atomicité INT-09/11 ; Spring Event/`@Async` encore cibles non implémentées |
+| **Dépend de** | Persistance INT-10/12 et graphe/atomicité INT-09/11 ; analyse du flux cible, pas validation de l'ébauche INT-14 |
 | **Fichiers** | Service, modèle/store MongoDB et BFF existants relus ; [DAT §7.1](../docs/dat/ConfluxLab.md#71-fenêtres-de-panne-documentées--int-13) et cours INT-13, sans changement applicatif |
-| **À retenir** | Une insertion acquittée ne garantit pas une tâche soumise ; une soumission acceptée ne survit pas au crash de la JVM. Après soumission, worker et réponse HTTP peuvent se croiser. Un rejet propagé peut encore faire échouer le POST ; une exception du worker ne modifie pas un `202` reçu. `500`/timeout ne prouvent pas l'absence du document ou d'un effet. `PENDING` ne prouve pas la présence d'une tâche et `PROCESSING` ne prouve pas qu'un worker vit encore. Aucun `PENDING → FAILED`, rollback commun ou mécanisme de reprise n'est ajouté |
-| **Vérification pédagogique** | Expliquer un `PENDING` sans tâche après `500` ou crash, distinguer rejet/exception async, et montrer deux ordres valides entre prise en charge et `202` sans promettre de reprise |
-| **Statut** | 📘 Référence documentaire issue de la revue statique INT-13 ; schéma et matrice F1–F8, aucune panne exécutée ni connaissance de l'apprenant évaluée |
+| **À retenir** | Trois cas suffisent : insertion non confirmée ; document `PENDING` sans prise en charge ; traitement interrompu en `PROCESSING`. L'événement local n'est pas durable. Le listener peut commencer avant le `202`, qui ne garantit pas la réussite. Une erreur/timeout ne prouve pas l'absence d'écriture ; aucune reprise automatique n'est ajoutée |
+| **Vérification pédagogique** | Expliquer pourquoi un document peut survivre sans tâche et pourquoi le `202` ne fixe ni le début ni la réussite du traitement |
+| **Statut** | 📘 Référence INT-13 simplifiée : un schéma et trois situations, sans catalogue de pannes ou de politiques ; aucune panne exécutée ni connaissance évaluée |
