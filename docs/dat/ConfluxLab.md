@@ -64,7 +64,7 @@ B, C et D peuvent être lancées en parallèle ; E et F n'attendent que leurs pr
 | Framework | Spring Boot 3.x, Spring MVC, Bean Validation |
 | Structure | Monolithe modulaire : modules logiques Experience/BFF et Capability, une seule application Spring Boot et un seul artefact exécutable |
 | Communication interne | Appels Java via les interfaces publiques des modules ; pas de HTTP interne ni d'accès aux classes internes d'un autre module |
-| Build | Maven + Maven Wrapper ; découpage en modules Maven éventuel, sans multiplier les applications |
+| Build | Maven multi-modules + Maven Wrapper ; bibliothèques `contracts`, `capability-api`, `experience-api`, futur assemblage unique `application` dans INT-03 |
 | Persistance | MongoDB, Spring Data MongoDB |
 | Événements | Spring Events in-process, `@Async` |
 | Orchestration concurrente | `CompletableFuture`, executor borné |
@@ -82,7 +82,26 @@ Aucun frontend, Kafka, Kubernetes, authentification avancée ou plateforme cloud
 
 **[Simulation ConfluxLab — choix retenu dans le cadre de la délégation utilisateur pour le BFF]** : Experience est un BFF mince. Il expose le contrat REST, valide la forme des entrées et adapte les réponses/erreurs. Capability porte les règles métier, les invariants, les statuts, la persistance et l'orchestration. Elle ne se repose pas sur la seule validation du BFF pour protéger ses invariants. Les deux modules restent séparés dans la même application ; aucun appel HTTP interne n'est nécessaire.
 
+### 4.2 Frontières fixées dans INT-01
+
+**[Simulation ConfluxLab — cadrage réalisé sur feu vert pour INT-01]** : conserver les noms des modules existants. `capability-api` porte le métier complet, pas un second serveur HTTP ; son API publique Java sera distinguée de ses classes internes. Le module `contracts` est conservé comme bibliothèque de types Java d'échange, sans contrôleur, repository, document MongoDB ou dépendance vers Experience/Capability. Le schéma initial et ses contraintes sont définis et testés dans INT-05, sans service métier ajouté ; voir le [contrat HTTP initial](http-contracts.md).
+
+Graphe de dépendances **cible**, à assembler dans INT-03 et à contrôler dans INT-04 :
+
+```mermaid
+flowchart TD
+  App[application — seul démarrage Boot] --> Exp[experience-api — BFF mince]
+  App --> Cap[capability-api — métier]
+  Exp -->|API publique Java uniquement| Cap
+  Exp --> Contracts[contracts — types Java partagés]
+  Cap --> Contracts
+```
+
+Aucun cycle, aucune dépendance Capability → Experience, aucun HTTP interne ni accès du BFF aux repositories. Le graphe Maven actuel ne contient encore que la dépendance Experience → contracts ; cette documentation ne prétend pas que le graphe cible est déjà implémenté. Les modèles d'échange initiaux sont définis dans INT-05 ; l'acceptation et le suivi effectifs restent à implémenter et tester dans les autres tâches du sprint 02.
+
 ## 5. Contrats HTTP
+
+Le [contrat initial INT-05](http-contracts.md) précise les champs, contraintes, exemples JSON et refus. Les DTO et leurs tests de données sont réalisés ; les échanges HTTP restent des exemples contractuels, pas un parcours exécuté. `RequestView` est actuellement limité aux métadonnées ; résultat et erreur métier détaillés appartiennent à une évolution ultérieure du suivi.
 
 **POST `/api/v1/families`**
 
@@ -237,7 +256,7 @@ Sujets d'entretien à maîtriser :
 
 **[Simulation ConfluxLab — décision utilisateur] :** le monolithe modulaire est le modèle de déploiement du laboratoire, sans prétendre décrire le déploiement historique AXA. Experience ne doit pas accéder directement au stockage de Capability ; les dépendances entre modules restent unidirectionnelles et passent par leurs interfaces publiques. Feign/Resilience4j reste réservé au partenaire externe.
 
-**Questions ouvertes (non bloquantes) :** packages ou modules Maven pour matérialiser les frontières du monolithe ; définition historique précise des 2,5 s ; politiques exactes de pools/retries non confirmées. Ces inconnues ne doivent pas être comblées par une histoire inventée.
+**Questions ouvertes (non bloquantes pour le cadrage) :** évolution du suivi au-delà des métadonnées initiales ; détail des API publiques et assemblage dans INT-03 ; définition historique précise des 2,5 s ; politiques exactes de pools/retries non confirmées. Ces inconnues ne doivent pas être comblées par une histoire inventée.
 
 ---
 
