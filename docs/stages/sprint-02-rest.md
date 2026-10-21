@@ -1,6 +1,6 @@
 # Sprint 02 — Contrat REST et BFF mince
 
-**Statut : en cours — INT-05 et INT-06 terminées sur feu vert individuel.** INT-06 accepte et conserve les demandes en mémoire ; le GET reste `503`. INT-07 et INT-08 attendent leur autorisation, sans clôture anticipée du sprint.
+**Statut : en cours — INT-05, INT-06 et INT-07 terminées sur feu vert individuel.** Acceptation et suivi sont réalisés en mémoire ; INT-08 reste à autoriser. Le sprint n'est pas clôturé.
 
 ## Objectif
 
@@ -45,7 +45,7 @@ En tant que client de l'API, je veux recevoir un identifiant après l'acceptatio
 **Preuves :** `clean verify` global réussi (96 tests). Démarrage borné du JAR réel : deux POST valides `202` avec UUID distincts, GET de suivi encore `503` et corps invalide `400`, puis processus arrêté. Validation Java directe, copie immuable, collisions et erreurs d'enregistrement sont également testées, sans déclarer INT-08 complète.
 
 ### INT-07 — Consulter la demande
-**Statut : à faire — feu vert requis.** Prérequis : INT-06 terminée.
+**Statut : terminée sur demande explicite « commit & go 07 ».** Prérequis INT-06 rempli et commit local `6936408` créé avant le développement. [Cours et preuves INT-07](../../notes/sprint-02/INT-07-consulter-la-demande.md).
 
 En tant que client de l'API, je veux consulter l'état de ma demande avec son identifiant, afin de savoir où elle en est.
 
@@ -54,8 +54,10 @@ En tant que client de l'API, je veux consulter l'état de ma demande avec son id
 - Traiter les identifiants inconnus ou mal formés sans accès direct du BFF au stockage.
 
 **Terminé quand :**
-- [ ] Un test POST puis GET retrouve la même demande en `PENDING` avec une réponse `200`.
-- [ ] Les tests vérifient `404` pour un UUID inconnu et `400` pour un identifiant invalide.
+- [x] Un POST réel puis GET via `Location` retrouve le même UUID en `PENDING`, avec `200` et les seules métadonnées `requestId`, `status`, `createdAt`. Le GET répété conserve l'horodatage.
+- [x] Les tests vérifient `404` pour un UUID inconnu et `400` pour trois identifiants manifestement mal formés, avec erreurs génériques sans champs de succès.
+
+**Preuves :** `clean verify` global réussi (108 tests), dont tests de lecture sans écriture, date d'origine et projection du statut stocké. Le JAR réel vérifie deux POST/GET indépendants, `404`/`400`, puis `404` pour un UUID précédemment accepté après redémarrage ; les deux processus sont arrêtés. Les autres statuts n'apparaissent que dans des fixtures de projection, sans transition métier ajoutée.
 
 ### INT-08 — Tester les refus
 **Statut : à faire — feu vert requis.** Prérequis : contrats et routes INT-05/06/07 disponibles.
@@ -74,11 +76,11 @@ En tant que client de l'API, je veux comprendre pourquoi ma demande est refusée
 
 La mémoire est un stockage pédagogique **perdu au redémarrage**. Les demandes restent `PENDING` : pas encore d'événement, d'orchestration ou de partenaire. Le `202` ne prouve donc ni une conservation durable ni un traitement complet. Un UUID sert à retrouver la demande ; deux POST identiques peuvent encore créer deux demandes.
 
-INT-06 vérifie désormais une acceptation réelle en mémoire, sans HTTP interne. Le GET reste explicitement indisponible, même pour un UUID accepté ; son lien est préparé pour INT-07. Les refus testés protègent l'acceptation mais ne constituent pas toute la couverture INT-08. La map n'est ni bornée ni nettoyée à ce stade : usage de labo uniquement, aucune promesse de durabilité. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
+INT-06 vérifie l'acceptation réelle en mémoire et INT-07 sa consultation via l'API publique, sans HTTP interne. Le GET est une lecture seule, pas un déclencheur métier ; après redémarrage, la map vide ne retrouve pas les anciens UUID. Les refus déjà testés ne constituent pas toute la couverture INT-08. La map n'est ni bornée ni nettoyée à ce stade : usage de labo uniquement, aucune promesse de durabilité. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
 
 ## Démo et clôture
 
-- [ ] Montrer un POST valide, son GET de suivi et un refus de données invalides, avec leurs tests.
+- [x] Montrer un POST valide, son GET de suivi et un refus de données invalides : démonstrations INT-06/07 et tests associés ; cela ne clôt pas INT-08 ni le sprint.
 - [ ] Expliquer la différence entre « demande acceptée » et « famille créée » ainsi que le partage des validations BFF/Capability.
 
 Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les exemples fictifs et résultats réellement observés.

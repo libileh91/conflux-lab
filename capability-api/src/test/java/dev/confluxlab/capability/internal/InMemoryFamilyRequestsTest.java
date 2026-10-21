@@ -1,20 +1,24 @@
 package dev.confluxlab.capability.internal;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import dev.confluxlab.capability.api.CapabilityNotReadyException;
 import dev.confluxlab.capability.api.InvalidFamilyRequestException;
+import dev.confluxlab.capability.api.RequestNotFoundException;
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.PersonPayload;
 import dev.confluxlab.contracts.RequestAccepted;
 import dev.confluxlab.contracts.RequestStatus;
+import dev.confluxlab.contracts.RequestView;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
@@ -24,6 +28,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,7 +40,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class InMemoryFamilyRequestsTest {
 
@@ -132,13 +140,55 @@ class InMemoryFamilyRequestsTest {
     }
 
     @Test
-    void trackingRemainsUnavailableEvenForAnAcceptedRequest() {
+    void retrievesStoredMetadataWithoutUpdatingItsCreationTime() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
         InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
         RequestAccepted accepted = service.createFamily(new CreateFamilyRequest(PRINCIPAL, DEPENDENTS));
+        InMemoryFamilyRequests laterReader = new InMemoryFamilyRequests(
+                store, validator, Clock.offset(CLOCK, Duration.ofHours(1)));
+        RequestView expected = new RequestView(accepted.requestId(), RequestStatus.PENDING, CLOCK.instant());
 
-        assertThrows(CapabilityNotReadyException.class, () -> service.getRequest(accepted.requestId()));
+        assertEquals(expected, laterReader.getRequest(accepted.requestId()));
+        assertEquals(expected, laterReader.getRequest(accepted.requestId()));
         assertEquals(RequestStatus.PENDING, store.findById(accepted.requestId()).orElseThrow().status());
+    }
+
+    @Test
+    void rejectsAnUnknownIdWithoutInventingARequest() {
+        InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
+        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        UUID unknownId = UUID.randomUUID();
+
+        RequestNotFoundException exception = assertThrows(RequestNotFoundException.class,
+                () -> service.getRequest(unknownId));
+
+        assertEquals("Request not found.", exception.getMessage());
+        assertTrue(store.findById(unknownId).isEmpty());
+    }
+
+    @Test
+    void rejectsANullIdBeforeAccessingTheStore() {
+        InMemoryFamilyRequestStore store = mock(InMemoryFamilyRequestStore.class);
+        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+
+        assertThrows(IllegalArgumentException.class, () -> service.getRequest(null));
+        verifyNoInteractions(store);
+    }
+
+    @ParameterizedTest
+    @EnumSource(RequestStatus.class)
+    void readsTheStoredStatusWithoutWritingToTheStore(RequestStatus status) {
+        InMemoryFamilyRequestStore store = mock(InMemoryFamilyRequestStore.class);
+        UUID requestId = UUID.randomUUID();
+        StoredFamilyRequest stored = new StoredFamilyRequest(requestId, status,
+                new CreateFamilyRequest(PRINCIPAL, DEPENDENTS), CLOCK.instant());
+        when(store.findById(requestId)).thenReturn(Optional.of(stored));
+        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+
+        assertEquals(new RequestView(requestId, status, CLOCK.instant()),
+                service.getRequest(requestId));
+        verify(store).findById(requestId);
+        verifyNoMoreInteractions(store);
     }
 
     @ParameterizedTest

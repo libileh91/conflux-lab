@@ -1,5 +1,7 @@
 # INT-06 — Accepter une demande
 
+> **Repère temporel — depuis INT-07.** Le GET d'une demande conservée retourne `200` avec les seules métadonnées `requestId`, `status` et `createdAt` ; UUID inconnu : `404`, UUID malformé : `400`. Les constats, extraits et preuves chiffrées ci-dessous, notamment les anciens GET `503`, restent historiques et propres aux étapes décrites. Voir le [cours INT-07](INT-07-consulter-la-demande.md).
+
 | Contexte | Description |
 |---|---|
 | **Sprint** | [02 — Contrat REST et BFF mince](../../docs/stages/sprint-02-rest.md) |

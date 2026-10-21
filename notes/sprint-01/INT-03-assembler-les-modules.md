@@ -1,5 +1,7 @@
 # INT-03 — Assembler les modules
 
+> **Repère temporel — depuis INT-07.** Le GET d'une demande conservée retourne `200` avec les seules métadonnées `requestId`, `status` et `createdAt` ; UUID inconnu : `404`, UUID malformé : `400`. Les constats, extraits et preuves chiffrées ci-dessous, notamment les anciens GET `503`, restent historiques et propres aux étapes décrites. Voir le [cours INT-07](../sprint-02/INT-07-consulter-la-demande.md).
+
 > **Actualisation INT-06 — 2026-10-21, après la clôture du sprint 01.** L'[acceptation INT-06](../sprint-02/INT-06-accepter-une-demande.md) est désormais réalisée : enregistrement en mémoire avant retour du `202`, avec UUID et statut `PENDING`. Le GET reste en `503` jusqu'à INT-07 ; pas de MongoDB, d'événement Spring ni d'asynchronisme. Les vérifications historiques ci-dessous ont été exécutées par l'agent ; aucun build n'est relancé pour cette actualisation.
 
 | Contexte | Description |
@@ -194,7 +196,7 @@ class UnavailableFamilyRequests implements FamilyRequests {
 
 `@Service` permet à Spring de détecter et de créer ce bean. La classe est **package-private** : l'absence de `public` empêche le BFF de la référencer directement depuis son package. Spring peut toutefois la découvrir et la fournir via l'interface publique. Le package `internal` signale aussi l'intention ; les contrôles automatisés de frontières ont depuis été réalisés dans [INT-04](INT-04-verifier-les-frontieres.md).
 
-L'exception [`CapabilityNotReadyException`](../../capability-api/src/main/java/dev/confluxlab/capability/api/CapabilityNotReadyException.java) appartient à l'API publique, mais ne contient **aucun `HttpStatus`**. Capability signale son indisponibilité ; Experience décide de la représentation HTTP.
+À l'étape INT-03, l'exception `CapabilityNotReadyException` appartenait à l'API publique, sans **aucun `HttpStatus`** : Capability signalait son indisponibilité et Experience décidait de la représentation HTTP. La classe `CapabilityNotReadyException.java` et son mapping `503` ont été supprimés dans INT-07 ; les extraits de cette section sont conservés comme historiques.
 
 Extrait partiel de [`ApiExceptionHandler.java`](../../experience-api/src/main/java/dev/confluxlab/experience/ApiExceptionHandler.java) :
 

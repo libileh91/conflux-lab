@@ -100,9 +100,9 @@ flowchart TD
 
 Aucun cycle, aucune dépendance Capability → Experience, aucun HTTP interne ni accès du BFF aux repositories. Dans INT-03, les dépendances Maven suivent ce graphe ; seul `application` déclare le plugin Boot. Son démarrage `dev.confluxlab.ConfluxLabApplication` est à la racine des packages pour découvrir Experience et Capability dans le même contexte Spring.
 
-Le BFF injecte `dev.confluxlab.capability.api.FamilyRequests` ; son implémentation reste dans `capability.internal`, sans import de ce package par Experience. L'exception publique `CapabilityNotReadyException` ne porte aucun statut HTTP : l'adaptation en `503` appartient au BFF. Dans INT-03/04, l'implémentation provisoire levait cette exception pour les deux opérations, sans UUID ni conservation ; elle a depuis été remplacée par l'acceptation mémoire d'INT-06. Le GET seul reste indisponible, en attendant INT-07.
+Le BFF injecte `dev.confluxlab.capability.api.FamilyRequests` ; son implémentation reste dans `capability.internal`, sans import de ce package par Experience. Dans INT-03/04, l'exception publique provisoire `CapabilityNotReadyException`, sans statut HTTP, signalait l'indisponibilité des deux opérations, adaptée en `503` par le BFF. L'acceptation mémoire l'a remplacée pour le POST dans INT-06, puis la consultation réelle dans INT-07 a permis de supprimer cette exception et son mapping provisoire.
 
-Le `clean verify` global d'INT-03 réussit avec 64 tests et le JAR réel démarre sans base ni partenaire. Les deux routes valides répondent `503` ; les réponses de succès des tests de délégation proviennent uniquement d'un double. Voir les [preuves INT-03](../../notes/sprint-01/INT-03-assembler-les-modules.md). Les modèles d'échange sont définis dans INT-05 ; cette preuve historique ne réalisait pas encore l'acceptation, développée ensuite dans INT-06. Le suivi effectif reste à réaliser dans INT-07. Les contrôles automatiques de frontières ont ensuite été réalisés dans INT-04, sans modification du métier.
+Le `clean verify` global d'INT-03 réussit avec 64 tests et le JAR réel démarre sans base ni partenaire. Les deux routes valides répondent `503` ; les réponses de succès des tests de délégation proviennent uniquement d'un double. Voir les [preuves INT-03](../../notes/sprint-01/INT-03-assembler-les-modules.md). Les modèles d'échange sont définis dans INT-05 ; cette preuve historique ne réalisait pas encore l'acceptation, développée ensuite dans INT-06. Le suivi effectif a ensuite été réalisé dans INT-07, sans modifier ces preuves historiques. Les contrôles automatiques de frontières ont ensuite été réalisés dans INT-04, sans modification du métier.
 
 **INT-04 — garde-fous retenus :** ArchUnit 1.4.1, en dépendance `test` du module d'assemblage, analyse les classes de production sous `dev.confluxlab`, en excluant les sorties de test. Les règles interdisent les cycles entre sous-packages racine, Capability → Experience, Experience → Capability hors `capability.api..`, toute dépendance de `contracts` vers les autres modules, et le retour des bibliothèques vers l'assemblage. Le package racine `dev.confluxlab`, qui contient le démarrage Boot, est réservé à l'assemblage et protégé séparément, car il n'appartient pas aux slices des sous-packages. Les dépendances vers un éventuel `dev.confluxlab.application..` sont protégées de la même manière.
 
@@ -114,13 +114,21 @@ Les mêmes règles sont exercées avec des fixtures de test délibérément faut
 
 Le store utilise `ConcurrentHashMap` et `putIfAbsent` : une collision ne remplace pas une demande existante et échoue sans acquittement. La liste conservée est copiée et rendue non modifiable ; `PersonPayload` ne référence que des valeurs immuables. Un `Clock` UTC injectable fournit l'horodatage. Les contraintes sont vérifiées aussi sur les appels Java directs, sans inventer de règle d'identité ou de métier supplémentaire ; leur refus public est adapté en `400` générique, les erreurs inattendues en `500` générique.
 
-Cette mémoire est **volatile, non bornée et sans nettoyage** : le `202` ne garantit ni durabilité, ni idempotence, ni début de traitement. Deux POST identiques créent deux demandes indépendantes. Le GET reste `503`, même pour un UUID accepté ; son `Location` prépare INT-07 sans annoncer un suivi déjà fonctionnel. Aucun événement, `@Async`, MongoDB ou partenaire n'est ajouté. Un futur provider MongoDB devra remplacer ce stockage, pas le rendre artificiellement durable par documentation.
+Cette mémoire est **volatile, non bornée et sans nettoyage** : le `202` ne garantit ni durabilité, ni idempotence, ni début de traitement. Deux POST identiques créent deux demandes indépendantes. À l'étape INT-06, le GET restait `503`, même pour un UUID accepté ; son `Location` préparait INT-07, désormais réalisée. Aucun événement, `@Async`, MongoDB ou partenaire n'est ajouté. Un futur provider MongoDB devra remplacer ce stockage, pas le rendre artificiellement durable par documentation.
 
 Le `clean verify` global INT-06 passe avec **96 tests**. Le JAR réel a répondu `202` à deux POST avec UUID distincts, `503` au GET et `400` au corps invalide, puis a été arrêté ; les tests internes prouvent séparément la conservation du payload avant retour. Voir le [tutoriel INT-06](../../notes/sprint-02/INT-06-accepter-une-demande.md).
 
+### 4.4 Consultation réalisée dans INT-07
+
+**[Simulation ConfluxLab — incrément autorisé]** : `getRequest(UUID)` recherche la demande dans le store interne et projette uniquement `requestId`, `status` et le `createdAt` d'origine vers `RequestView`. Cette lecture ne crée aucune entrée, ne change aucun statut, n'actualise aucune date et ne déclenche aucun traitement. Le contrôleur continue d'appeler l'interface publique, sans accéder au stockage.
+
+L'absence est signalée par `RequestNotFoundException`, publique mais sans dépendance HTTP, puis adaptée en `404` générique dans Experience. Un identifiant HTTP manifestement mal formé est refusé en `400` par la conversion MVC, avant l'appel à Capability. Un argument Java `null` est rejeté explicitement comme erreur d'argument avant le store ; ce cas ne se confond pas avec une demande inconnue. Aucun durcissement supplémentaire de canonicalisation ou de version UUID n'est introduit.
+
+Le `clean verify` global INT-07 réussit avec **108 tests**, dont les tests de frontières toujours actifs. Le JAR réel démontre POST `202` puis GET `200 PENDING`, des métadonnées stables et limitées à trois champs, ainsi que `404`/`400`. Après un redémarrage local, l'UUID précédemment accepté répond `404`, confirmant la volatilité ; les deux processus sont arrêtés. Les fixtures de lecture couvrent les quatre valeurs de statut, mais l'application actuelle ne produit que `PENDING` : aucune transition métier n'est ajoutée. Voir le [tutoriel INT-07](../../notes/sprint-02/INT-07-consulter-la-demande.md).
+
 ## 5. Contrats HTTP
 
-Le [contrat initial INT-05](http-contracts.md) précise les champs, contraintes, exemples JSON et refus. INT-06 démontre maintenant le POST `202` après acceptation réelle en mémoire. Le GET et ses réponses `200`/`404` restent contractuels : l'implémentation actuelle retourne `503` en attendant INT-07, même pour une demande acceptée. Cette indisponibilité n'est pas une politique d'erreur MongoDB ou partenaire. `RequestView` est actuellement limité aux métadonnées ; résultat et erreur métier détaillés appartiennent à une évolution ultérieure du suivi.
+Le [contrat initial INT-05](http-contracts.md) précise les champs, contraintes, exemples JSON et refus. INT-06 démontre maintenant le POST `202` après acceptation réelle en mémoire. INT-07 démontre maintenant le GET `200` pour une demande présente en mémoire, `404` si elle est absente et `400` pour les formats d'identifiant invalides testés. L'ancien `503` du placeholder a été supprimé ; aucun comportement d'erreur MongoDB ou partenaire n'est déduit de cette évolution. `RequestView` est actuellement limité aux métadonnées ; résultat et erreur métier détaillés appartiennent à une évolution ultérieure du suivi.
 
 **POST `/api/v1/families`**
 
@@ -130,7 +138,7 @@ Le [contrat initial INT-05](http-contracts.md) précise les champs, contraintes,
 
 **GET `/api/v1/requests/{requestId}`**
 
-- Retourne l'état courant et, si disponible, le résultat ou le motif de l'échec.
+- Dans INT-07, retourne uniquement les métadonnées de `RequestView` ; le résultat ou motif d'échec métier appartient à une évolution ultérieure, non implémentée.
 - Statuts minimaux : `PENDING`, `PROCESSING`, `SUCCEEDED`, `FAILED`.
 - Une panne partenaire **après le `202`** modifie le statut consultable, pas la réponse HTTP déjà envoyée.
 

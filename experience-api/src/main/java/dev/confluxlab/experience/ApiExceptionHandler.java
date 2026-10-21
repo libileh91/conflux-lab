@@ -1,7 +1,7 @@
 package dev.confluxlab.experience;
 
-import dev.confluxlab.capability.api.CapabilityNotReadyException;
 import dev.confluxlab.capability.api.InvalidFamilyRequestException;
+import dev.confluxlab.capability.api.RequestNotFoundException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -15,10 +15,9 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler(CapabilityNotReadyException.class)
-    public ResponseEntity<ProblemDetail> handleCapabilityNotReady(CapabilityNotReadyException exception) {
-        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-                .body(problem(HttpStatus.SERVICE_UNAVAILABLE));
+    @ExceptionHandler(RequestNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleRequestNotFound(RequestNotFoundException exception) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem(HttpStatus.NOT_FOUND));
     }
 
     @ExceptionHandler(InvalidFamilyRequestException.class)
@@ -42,7 +41,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         String detail = switch (status.value()) {
             case 400 -> "Invalid request.";
             case 404 -> "Request not found.";
-            case 503 -> "Family request operations are not available yet.";
+
             default -> status.is5xxServerError() ? "An unexpected error occurred." : "Request rejected.";
         };
         return ProblemDetail.forStatusAndDetail(status, detail);

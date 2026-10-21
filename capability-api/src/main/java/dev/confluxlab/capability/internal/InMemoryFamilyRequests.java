@@ -5,9 +5,9 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.UUID;
 
-import dev.confluxlab.capability.api.CapabilityNotReadyException;
 import dev.confluxlab.capability.api.FamilyRequests;
 import dev.confluxlab.capability.api.InvalidFamilyRequestException;
+import dev.confluxlab.capability.api.RequestNotFoundException;
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.RequestAccepted;
 import dev.confluxlab.contracts.RequestStatus;
@@ -49,7 +49,11 @@ class InMemoryFamilyRequests implements FamilyRequests {
 
     @Override
     public RequestView getRequest(UUID requestId) {
-        // Tracking remains unavailable until INT-07; acceptance alone does not implement the GET.
-        throw new CapabilityNotReadyException();
+        if (requestId == null) {
+            throw new IllegalArgumentException("requestId must not be null.");
+        }
+        StoredFamilyRequest stored = store.findById(requestId)
+                .orElseThrow(RequestNotFoundException::new);
+        return new RequestView(stored.requestId(), stored.status(), stored.createdAt());
     }
 }
