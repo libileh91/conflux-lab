@@ -1,5 +1,6 @@
 package dev.confluxlab.experience;
 
+import dev.confluxlab.capability.api.CapabilityNotReadyException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -13,9 +14,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler(CapabilityException.class)
-    public ResponseEntity<ProblemDetail> handleCapability(CapabilityException exception) {
-        return ResponseEntity.status(exception.status()).body(problem(exception.status()));
+    @ExceptionHandler(CapabilityNotReadyException.class)
+    public ResponseEntity<ProblemDetail> handleCapabilityNotReady(CapabilityNotReadyException exception) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(problem(HttpStatus.SERVICE_UNAVAILABLE));
     }
 
     @ExceptionHandler(Exception.class)
@@ -34,9 +36,7 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         String detail = switch (status.value()) {
             case 400 -> "Invalid request.";
             case 404 -> "Request not found.";
-            case 502 -> "Invalid response from the upstream service.";
-            case 503 -> "Upstream service unavailable.";
-            case 504 -> "Upstream service timed out.";
+            case 503 -> "Family request operations are not available yet.";
             default -> status.is5xxServerError() ? "An unexpected error occurred." : "Request rejected.";
         };
         return ProblemDetail.forStatusAndDetail(status, detail);

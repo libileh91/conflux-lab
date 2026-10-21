@@ -1,6 +1,6 @@
 # Sprint 02 — Contrat REST et BFF mince
 
-**Statut : préparation INT-05 terminée sur feu vert, avant l'assemblage du sprint 01.** INT-06 reste une ébauche partielle, non validée. Les autres stories attendent leur feu vert individuel.
+**Statut : préparation INT-05 terminée sur feu vert, avant l'assemblage du sprint 01.** INT-03 a depuis branché le BFF sur l'API Java de Capability, avec indisponibilité `503` vérifiée ; l'acceptation INT-06 reste non réalisée. Les autres stories attendent leur feu vert individuel.
 
 ## Objectif
 
@@ -30,7 +30,7 @@ En tant que développeur, je veux connaître les données et les règles du cont
 - [x] Les cinq types correspondent aux exemples ; 59 cas de test passent et le `clean verify` global réussit, sans service métier ajouté.
 
 ### INT-06 — Accepter une demande
-**Statut : à faire — ébauche existante non validée, feu vert requis.** [Note rétrospective](../../notes/sprint-02/INT-06-accepter-une-demande.md).
+**Statut : à faire — BFF branché en Java dans INT-03, acceptation non réalisée, feu vert requis.** [Note rétrospective](../../notes/sprint-02/INT-06-accepter-une-demande.md).
 
 En tant que client de l'API, je veux recevoir un identifiant après l'acceptation de ma demande, afin de pouvoir la suivre sans attendre sa réalisation.
 
@@ -72,7 +72,7 @@ En tant que client de l'API, je veux comprendre pourquoi ma demande est refusée
 
 La mémoire est un stockage pédagogique **perdu au redémarrage**. Les demandes restent `PENDING` : pas encore d'événement, d'orchestration ou de partenaire. Le `202` ne prouve donc ni une conservation durable ni un traitement complet. Un UUID sert à retrouver la demande ; deux POST identiques peuvent encore créer deux demandes.
 
-Les annotations présentes dans l'ébauche REST ne prouvent pas qu'elle fonctionne. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
+Les annotations ne prouvent pas une acceptation. INT-03 vérifie seulement le branchement et le refus `503` tant que le métier est absent ; aucun critère de succès d'INT-06/07/08 n'en découle. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
 
 ## Démo et clôture
 

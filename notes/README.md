@@ -57,8 +57,9 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 |---|---|---|
 | INT-01 | [Inspecter et fixer les frontières](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) | Cadrage terminé : frontières, rôle de contracts, graphe cible et prérequis vérifiés ; historique initial conservé |
 | INT-02 | [Rendre le build reproductible](sprint-01/INT-02-rendre-le-build-reproductible.md) | Terminée pour le build : blocage levé dans INT-05, `clean verify` global réussi ; historique Maven/JDTLS conservé |
+| INT-03 | [Assembler les modules](sprint-01/INT-03-assembler-les-modules.md) | Terminée : seul JAR Boot démarré, appel Java et indisponibilité explicite ; 64 tests globaux, sans acceptation métier |
 | INT-05 | [Définir les contrats](sprint-02/INT-05-definir-les-contrats.md) | Terminée : cinq types, exemples JSON et 59 cas de test ; pas de service ni de test HTTP |
-| INT-06 | [Accepter une demande](sprint-02/INT-06-accepter-une-demande.md) | Rétrospective de l'ébauche Experience ; compilable après INT-05, mais routes non testées et HTTP interne à remplacer |
+| INT-06 | [Accepter une demande](sprint-02/INT-06-accepter-une-demande.md) | Historique de l'ébauche ; HTTP interne retiré dans INT-03, mais aucune acceptation réelle (routes valides provisoirement `503`) |
 | INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
 
 Les notes INT-01 et INT-06 conservent le constat du travail amorcé **avant** la planification finale. INT-01 a ensuite été complétée sur feu vert et son cadrage est terminé ; INT-06 reste une rétrospective partielle, non terminée. Les autres dossiers sont préparés sans compte rendu anticipé.
@@ -71,4 +72,4 @@ Les notes INT-01 et INT-06 conservent le constat du travail amorcé **avant** la
 - Le plan a été déplacé dans `docs/stages/` ; ses liens locaux ont été vérifiés lors du déplacement.
 - La demande initiale d'organisation des notes et des identifiants n'a modifié ni les sources Java, ni le POM existant, ni la configuration applicative. La réparation Maven autorisée ultérieurement est décrite dans la note INT-02.
 
-Après INT-05, le `clean verify` global réussit : 59 cas de test de validation/JSON et compilation d'Experience. La résolution des dépendances et la navigation Java/Spring côté JDTLS restent des preuves historiques d'INT-02, pas une nouvelle validation GUI. Aucun parcours HTTP/métier, test d'intégration, CI verte ou mesure de performance n'est revendiqué.
+Après INT-03, le `clean verify` global réussit : 64 tests (59 validation/JSON, 2 délégation Java, 3 assemblage/disponibilité). Le JAR réel a démarré sans base ni partenaire ; POST valide et GET avec UUID valide ont répondu `503`, sans acceptation ni suivi métier. Le contexte Spring est testé, mais les contrôles automatiques de frontières restent dans INT-04. La résolution des dépendances et la navigation Java/Spring côté JDTLS restent des preuves historiques d'INT-02, pas une nouvelle validation GUI. Aucun parcours métier, CI verte ou mesure de performance n'est revendiqué.

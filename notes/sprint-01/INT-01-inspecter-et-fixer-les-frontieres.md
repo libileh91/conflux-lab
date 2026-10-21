@@ -3,10 +3,12 @@
 | Repère | Valeur |
 |---|---|
 | **Sprint** | [01 — Socle du monolithe](../../docs/stages/sprint-01-socle.md) |
-| **Statut** | Cadrage terminé ; application non assemblée et frontières non testées |
+| **Statut** | Cadrage terminé ; état décrit avant INT-03. Assemblage validé depuis ; contrôles de frontières INT-04 non réalisés |
 | **Objectif du tutoriel** | Comprendre l'organisation du code avant de commencer le métier |
 | **Source des preuves** | Cadrage initial et reprise Maven conservés ; actualisation du statut de compilation après les tests d'INT-05 |
 | **Suivi** | [Actions et repères centralisés](../todos.md) |
+
+**Repère temporel — avant INT-03.** Ce cours conserve les constats, extraits et preuves antérieurs à l'assemblage. Depuis [INT-03 — Assembler les modules](INT-03-assembler-les-modules.md), `application` porte le seul démarrage Boot et le BFF appelle l'interface publique Java `FamilyRequests`. L'ancien client HTTP, sa configuration et ses propriétés, `CapabilityException`, `ExperienceApplication` et le YAML d'Experience ont été supprimés. La validation a été exécutée dans la session INT-03 et consignée dans sa note ; aucun build supplémentaire n'est relancé pour cette mise à jour documentaire. Elle ne réalise ni INT-04 ni l'acceptation/suivi INT-06/07 : les routes refusent explicitement par `503` tant que ces opérations ne sont pas implémentées.
 
 ## 1. Objectif et vocabulaire
 
@@ -31,7 +33,7 @@ L'utilisateur a ensuite précisé le choix d'un **monolithe modulaire**. On cons
 | **Experience / BFF** | « Comment recevoir la requête HTTP et présenter la réponse au client ? » | Porter les règles métier, accéder directement aux repositories, orchestrer les six appels |
 | **Capability** | « La demande est-elle acceptable et comment la traiter ? » | Dépendre du BFF ou supposer que sa validation suffit à protéger le métier |
 | **contracts** | « Quels types Java échange-t-on entre modules ? » | Contenir contrôleurs, règles métier, documents MongoDB ou clients HTTP |
-| **application**, futur assemblage | « Comment démarrer et relier ces modules ? » | Devenir un nouveau module métier |
+| **application**, assemblage prévu lors du cadrage, réalisé depuis dans INT-03 | « Comment démarrer et relier ces modules ? » | Devenir un nouveau module métier |
 
 Le nom `capability-api` est conservé pour éviter un renommage inutile. Dans ce projet, il désigne le module métier et son API Java, **pas un second serveur REST**.
 
@@ -45,7 +47,7 @@ Le BFF ne devrait pas aller lire une collection MongoDB pour prendre cette déci
 
 ### 3.1 Examiner les modules réellement présents
 
-Le [POM racine](../../pom.xml) contient cet extrait :
+Extrait historique du [POM racine](../../pom.xml), **avant l'ajout du module `application` dans INT-03** :
 
 ```xml
 <modules>
@@ -55,13 +57,13 @@ Le [POM racine](../../pom.xml) contient cet extrait :
 </modules>
 ```
 
-Cela demande à Maven de **prendre ces trois projets dans le même build**. C'est une liste de construction, pas une configuration des échanges métier et pas une liste de serveurs à démarrer.
+Cela demandait à Maven de **prendre ces trois projets dans le même build** ; INT-03 a depuis ajouté `application` à cette liste. C'est une liste de construction, pas une configuration des échanges métier et pas une liste de serveurs à démarrer.
 
 Le parent hérite également de Spring Boot 3.5.7 et configure Java 21. Le rôle du parent et les étapes du build sont expliqués dans le [tutoriel INT-02](INT-02-rendre-le-build-reproductible.md).
 
 ### 3.2 Distinguer regroupement et dépendance
 
-Dans [`experience-api/pom.xml`](../../experience-api/pom.xml), la dépendance suivante existe réellement :
+Dans [`experience-api/pom.xml`](../../experience-api/pom.xml), la dépendance suivante était déjà déclarée avant INT-03 et reste conservée :
 
 ```xml
 <dependency>
@@ -75,9 +77,9 @@ Dans [`experience-api/pom.xml`](../../experience-api/pom.xml), la dépendance su
 - `${project.version}` reprend ici la version du projet, `0.1.0-SNAPSHOT`.
 - La dépendance rend les classes de `contracts` disponibles pour compiler Experience, **si ces classes existent**.
 
-Lors du cadrage, `contracts` ne contenait aucun DTO : résoudre son artefact Maven ne créait pas les classes importées. C'était la cause du blocage d'INT-02. [INT-05](../sprint-02/INT-05-definir-les-contrats.md) définit désormais ces types et le build global a réussi, sans que les appels métier entre modules soient déjà implémentés.
+Lors du cadrage, `contracts` ne contenait aucun DTO : résoudre son artefact Maven ne créait pas les classes importées. C'était la cause du blocage d'INT-02. [INT-05](../sprint-02/INT-05-definir-les-contrats.md) a ensuite défini ces types et permis un premier build global réussi, avant l'assemblage et la délégation Java d'INT-03.
 
-À ce stade, `capability-api/pom.xml` ne déclare pas de dépendance vers les autres modules. Le seul lien Maven interne effectivement déclaré est donc :
+Avant INT-03, `capability-api/pom.xml` ne déclarait pas de dépendance vers les autres modules. Le seul lien Maven interne alors déclaré était donc :
 
 ```mermaid
 flowchart TD
@@ -98,15 +100,15 @@ flowchart TD
   Cap --> Contracts
 ```
 
-**Ce deuxième schéma est la cible, pas l'état actuel du code.** Le futur module `application` assemblera les modules et produira le seul JAR Boot exécutable. Une bibliothèque JAR ordinaire fournit du code ; elle n'a pas besoin d'être un serveur autonome.
+**Ce deuxième schéma était la cible du cadrage ; son assemblage a depuis été réalisé dans INT-03.** Le module `application` assemble désormais les bibliothèques et produit le seul JAR Boot exécutable. Une bibliothèque JAR ordinaire fournit du code ; elle n'a pas besoin d'être un serveur autonome.
 
-Le BFF appellera Capability en Java. Feign/Resilience4j servira aux partenaires externes fictifs, pas à créer un réseau artificiel à l'intérieur de la même application.
+L'appel Java BFF → Capability prévu ici est désormais câblé dans INT-03, sans réaliser encore l'acceptation ni le suivi métier. Feign/Resilience4j reste réservé aux futurs partenaires externes fictifs, pas à créer un réseau artificiel à l'intérieur de la même application.
 
 ### 3.4 Conserver ce qui a déjà été réparé
 
 Le dépannage Maven a ajouté le parent, les POM des bibliothèques et le Wrapper, et retiré le reconditionnement Boot d'Experience. La reprise INT-01/INT-02 n'a pas écrasé ces modifications.
 
-L'ancien `CapabilityClient` HTTP et `ExperienceApplication` sont encore dans l'ébauche. Leur présence ne prouve pas une conformité au schéma cible. Aucun service métier ni assemblage n'a été ajouté pendant le cadrage ou cette réécriture documentaire.
+L'ancien `CapabilityClient` HTTP et `ExperienceApplication` existaient encore dans l'ébauche au moment du cadrage ; ils ont été supprimés dans INT-03. Leur présence passée ne prouvait pas une conformité au schéma cible. Aucun service métier ni assemblage n'avait été ajouté pendant INT-01 ; cette mise à jour reste documentaire.
 
 ## 4. Commandes expliquées
 
@@ -139,15 +141,16 @@ docker version --format '{{.Client.Version}} / {{.Server.Version}}'
 | Avant l'initialisation et le dépannage | Pas de dépôt Git local, pas de POM parent/Wrapper ; exécutable Docker trouvé, daemon non encore vérifié |
 | Après l'initialisation Git et la reprise Maven | Git lié à GitHub, parent/POM/Wrapper présents ; Maven et daemon Docker répondent |
 | Pendant le cadrage INT-01 | Rôles et graphe cible documentés ; code de frontière non implémenté/testé |
-| Pendant cette réécriture | Réorganisation du cours et du suivi, sans nouvelle commande Maven, application ou conteneur |
+| Pendant la réécriture pédagogique antérieure | Réorganisation du cours et du suivi, sans nouvelle commande Maven, application ou conteneur |
+| Vérifications exécutées dans INT-03 | Assemblage unique, délégation Java et refus HTTP `503` vérifiés ; pas d'acceptation/suivi métier ni de contrôles de frontières INT-04 |
 
 L'ancienne erreur « not a git repository » appartient au premier diagnostic. Elle n'est pas l'état actuel du dépôt. De même, « pas de POM parent » décrit l'amorce, pas le socle Maven réparé.
 
 ### 5.2 Ce qui n'est pas prouvé
 
-Un schéma correct ne prouve pas que le code le respecte. Aucun test de frontières, aucun appel Java BFF → Capability et aucun démarrage du futur assemblage n'ont été démontrés dans INT-01.
+Un schéma correct ne prouve pas que le code le respecte. Aucun test de frontières, aucun appel Java BFF → Capability et aucun démarrage de l'assemblage n'avaient été démontrés dans INT-01. L'assemblage et la délégation ont été vérifiés ensuite dans [INT-03](INT-03-assembler-les-modules.md) ; les contrôles automatiques de frontières restent du périmètre distinct d'INT-04.
 
-La tâche est terminée **pour son périmètre de cadrage**, pas pour tout le sprint. Le blocage des trois DTO a été levé par INT-05 et le build global est vert avec 59 cas de test de contrats ; cela ne valide pas l'assemblage, les frontières ou un parcours HTTP. Les preuves historiques du dépannage JDTLS restent distinctes dans INT-02.
+La tâche est terminée **pour son périmètre de cadrage**, pas pour tout le sprint. Le blocage des trois DTO a été levé par INT-05 et son build global réussissait avec 59 cas de test de contrats ; ce résultat historique ne validait pas encore l'assemblage, les frontières ou un parcours HTTP. Les preuves historiques du dépannage JDTLS restent distinctes dans INT-02.
 
 ## 6. Suivi centralisé
 

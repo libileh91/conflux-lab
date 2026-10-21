@@ -12,4 +12,16 @@
     </parent>
 
     <artifactId>capability-api</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.confluxlab</groupId>
+            <artifactId>contracts</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+    </dependencies>
 </project>

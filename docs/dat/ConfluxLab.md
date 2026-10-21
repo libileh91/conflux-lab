@@ -64,7 +64,7 @@ B, C et D peuvent être lancées en parallèle ; E et F n'attendent que leurs pr
 | Framework | Spring Boot 3.x, Spring MVC, Bean Validation |
 | Structure | Monolithe modulaire : modules logiques Experience/BFF et Capability, une seule application Spring Boot et un seul artefact exécutable |
 | Communication interne | Appels Java via les interfaces publiques des modules ; pas de HTTP interne ni d'accès aux classes internes d'un autre module |
-| Build | Maven multi-modules + Maven Wrapper ; bibliothèques `contracts`, `capability-api`, `experience-api`, futur assemblage unique `application` dans INT-03 |
+| Build | Maven multi-modules + Maven Wrapper ; bibliothèques `contracts`, `capability-api`, `experience-api` et assemblage unique `application` réalisé dans INT-03 |
 | Persistance | MongoDB, Spring Data MongoDB |
 | Événements | Spring Events in-process, `@Async` |
 | Orchestration concurrente | `CompletableFuture`, executor borné |
@@ -86,7 +86,7 @@ Aucun frontend, Kafka, Kubernetes, authentification avancée ou plateforme cloud
 
 **[Simulation ConfluxLab — cadrage réalisé sur feu vert pour INT-01]** : conserver les noms des modules existants. `capability-api` porte le métier complet, pas un second serveur HTTP ; son API publique Java sera distinguée de ses classes internes. Le module `contracts` est conservé comme bibliothèque de types Java d'échange, sans contrôleur, repository, document MongoDB ou dépendance vers Experience/Capability. Le schéma initial et ses contraintes sont définis et testés dans INT-05, sans service métier ajouté ; voir le [contrat HTTP initial](http-contracts.md).
 
-Graphe de dépendances **cible**, à assembler dans INT-03 et à contrôler dans INT-04 :
+Graphe de dépendances **assemblé dans INT-03**, à protéger par les contrôles automatiques d'INT-04 :
 
 ```mermaid
 flowchart TD
@@ -97,11 +97,15 @@ flowchart TD
   Cap --> Contracts
 ```
 
-Aucun cycle, aucune dépendance Capability → Experience, aucun HTTP interne ni accès du BFF aux repositories. Le graphe Maven actuel ne contient encore que la dépendance Experience → contracts ; cette documentation ne prétend pas que le graphe cible est déjà implémenté. Les modèles d'échange initiaux sont définis dans INT-05 ; l'acceptation et le suivi effectifs restent à implémenter et tester dans les autres tâches du sprint 02.
+Aucun cycle, aucune dépendance Capability → Experience, aucun HTTP interne ni accès du BFF aux repositories. Dans INT-03, les dépendances Maven suivent ce graphe ; seul `application` déclare le plugin Boot. Son démarrage `dev.confluxlab.ConfluxLabApplication` est à la racine des packages pour découvrir Experience et Capability dans le même contexte Spring.
+
+Le BFF injecte `dev.confluxlab.capability.api.FamilyRequests` ; son implémentation reste dans `capability.internal`, sans import de ce package par Experience. L'exception publique `CapabilityNotReadyException` ne porte aucun statut HTTP : l'adaptation en `503` appartient au BFF. L'implémentation provisoire lève cette exception pour les deux opérations, **sans générer d'UUID ni conserver de demande**. Ce choix rend l'assemblage démarrable sans inventer une acceptation ; il sera remplacé par les réalisations INT-06/07, pas par un service réseau.
+
+Le `clean verify` global d'INT-03 réussit avec 64 tests et le JAR réel démarre sans base ni partenaire. Les deux routes valides répondent `503` ; les réponses de succès des tests de délégation proviennent uniquement d'un double. Voir les [preuves INT-03](../../notes/sprint-01/INT-03-assembler-les-modules.md). Les modèles d'échange sont définis dans INT-05 ; l'acceptation et le suivi effectifs restent à implémenter et tester dans les autres tâches du sprint 02. Les contrôles automatiques de frontières restent distincts dans INT-04.
 
 ## 5. Contrats HTTP
 
-Le [contrat initial INT-05](http-contracts.md) précise les champs, contraintes, exemples JSON et refus. Les DTO et leurs tests de données sont réalisés ; les échanges HTTP restent des exemples contractuels, pas un parcours exécuté. `RequestView` est actuellement limité aux métadonnées ; résultat et erreur métier détaillés appartiennent à une évolution ultérieure du suivi.
+Le [contrat initial INT-05](http-contracts.md) précise les champs, contraintes, exemples JSON et refus. Les DTO et leurs tests de données sont réalisés ; les échanges de succès ci-dessous restent contractuels, pas un parcours métier exécuté. L'assemblage provisoire INT-03 retourne `503 Service Unavailable` sur POST valide et GET avec UUID valide tant que les opérations ne sont pas implémentées, sans `Location` ni `requestId` inventé. Cette indisponibilité n'est pas une politique d'erreur MongoDB ou partenaire. `RequestView` est actuellement limité aux métadonnées ; résultat et erreur métier détaillés appartiennent à une évolution ultérieure du suivi.
 
 **POST `/api/v1/families`**
 
@@ -256,7 +260,7 @@ Sujets d'entretien à maîtriser :
 
 **[Simulation ConfluxLab — décision utilisateur] :** le monolithe modulaire est le modèle de déploiement du laboratoire, sans prétendre décrire le déploiement historique AXA. Experience ne doit pas accéder directement au stockage de Capability ; les dépendances entre modules restent unidirectionnelles et passent par leurs interfaces publiques. Feign/Resilience4j reste réservé au partenaire externe.
 
-**Questions ouvertes (non bloquantes pour le cadrage) :** évolution du suivi au-delà des métadonnées initiales ; détail des API publiques et assemblage dans INT-03 ; définition historique précise des 2,5 s ; politiques exactes de pools/retries non confirmées. Ces inconnues ne doivent pas être comblées par une histoire inventée.
+**Questions ouvertes (non bloquantes pour le cadrage) :** évolution du suivi au-delà des métadonnées initiales ; implémentation de l'acceptation et du suivi derrière l'interface assemblée dans INT-03 ; définition historique précise des 2,5 s ; politiques exactes de pools/retries non confirmées. Ces inconnues ne doivent pas être comblées par une histoire inventée.
 
 ---
 

@@ -1,6 +1,6 @@
 # Sprint 01 — Socle du monolithe modulaire
 
-**Statut : en cours.** INT-01, INT-02 et INT-37 sont terminées dans leur périmètre ; les contrats d'INT-05 ont levé le blocage du build. INT-03 et INT-04 attendent leur feu vert.
+**Statut : en cours.** INT-01, INT-02, INT-03 et INT-37 sont terminées dans leur périmètre ; les contrats d'INT-05 ont levé le blocage du build. INT-04 attend son feu vert. Le sprint n'est pas clôturé.
 
 ## Objectif
 
@@ -12,7 +12,7 @@ Pouvoir construire une seule application Java, avec deux parties bien séparées
 - Le **Maven Wrapper** (`mvnw`) utilise la version de Maven prévue par le projet, même sans Maven préinstallé.
 - Un **JAR** est une archive Java ; seul le futur module `application` produira le JAR Spring Boot exécutable.
 
-**Dépendance résolue :** INT-05 a défini les types Java manquants et le `clean verify` global réussit avec 59 cas de test. INT-02 est donc clôturée pour le build ; l'assemblage INT-03 et les tests de frontières INT-04 restent distincts et à autoriser.
+**Dépendance résolue :** INT-05 a défini les types Java manquants et le `clean verify` global réussit avec 59 cas de test. INT-02 est donc clôturée pour le build. INT-03 a ensuite réalisé l'assemblage sur feu vert distinct ; les tests de frontières INT-04 restent à autoriser.
 
 ## Stories — un feu vert par tâche
 
@@ -43,7 +43,7 @@ En tant que développeur, je veux construire le projet avec une commande documen
 - [x] `./mvnw -B -ntp clean verify` réussit pour tous les modules après INT-05 : 59 cas de test, aucun échec/erreur/ignoré.
 
 ### INT-03 — Assembler les modules
-**Statut : à faire — feu vert requis.** Prérequis : INT-02 et INT-05 terminées.
+**Statut : terminée sur feu vert explicite.** Prérequis INT-02 et INT-05 remplis. [Tutoriel et preuves INT-03](../../notes/sprint-01/INT-03-assembler-les-modules.md).
 
 En tant que développeur, je veux démarrer les modules ensemble, afin d'obtenir un monolithe plutôt que deux applications séparées.
 
@@ -52,8 +52,10 @@ En tant que développeur, je veux démarrer les modules ensemble, afin d'obtenir
 - Remplacer l'appel HTTP BFF → Capability par un appel à son interface publique Java.
 
 **Terminé quand :**
-- [ ] Un seul JAR Boot démarre, sans MongoDB ni partenaire requis à ce stade.
-- [ ] Un test vérifie l'appel Java entre modules ; aucun client HTTP interne ou second démarrage autonome n'est nécessaire.
+- [x] Un seul JAR Boot démarre, sans MongoDB ni partenaire requis à ce stade ; les trois autres JAR sont des bibliothèques ordinaires.
+- [x] Deux tests vérifient la délégation Java à l'interface publique ; trois tests d'assemblage/disponibilité passent, sans client HTTP interne ni second démarrage autonome.
+
+**Preuves :** `./mvnw -B -ntp clean verify` réussi (64 tests au total), inspection des archives et démarrage borné du JAR. Un POST valide et un GET avec UUID valide répondent réellement `503` sans `Location` ni `requestId` : aucune acceptation ou consultation métier n'est prétendue.
 
 ### INT-04 — Vérifier les frontières
 **Statut : à faire — feu vert requis.** Prérequis : INT-03 terminée.
@@ -83,13 +85,13 @@ En tant que développeur, je veux versionner le projet sur GitHub, afin de conse
 
 ## Limites et hors périmètre
 
-Le cadrage terminé d'INT-01 ne signifie pas que les frontières sont déjà implémentées. Les POM, le Wrapper et les contrats permettent désormais un build global réussi, sans prouver un démarrage ni un parcours métier. Les preuves JDTLS du dépannage précédent sont conservées dans la note INT-02.
+INT-03 a réalisé le graphe Maven et l'assemblage Spring ; le démarrage et l'indisponibilité explicite sont vérifiés, pas le parcours métier. Les contrôles automatiques des frontières restent dans INT-04. Les preuves JDTLS du dépannage précédent sont conservées dans la note INT-02.
 
 Pas de parcours métier complet, stockage, événement, appel partenaire, CI ou déploiement. Les types ajoutés dans INT-05 sont de vrais contrats testés, pas des classes vides de dépannage.
 
 ## Démo et clôture
 
-- [ ] Depuis la racine, montrer un build global réussi, puis le démarrage du seul JAR Boot et un appel Java entre modules.
+- [x] Depuis la racine, montrer un build global réussi, puis le démarrage du seul JAR Boot et un appel Java entre modules : preuves INT-03, avec double explicite pour le succès de délégation.
 - [ ] Expliquer pourquoi plusieurs modules ne signifient pas plusieurs applications ; le BFF ne porte ni métier ni persistance.
 
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les résultats réellement observés. Cette réécriture ne valide aucune nouvelle réalisation.
+Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) lors de la clôture avec les résultats réellement observés. La validation d'INT-03 ne clôt pas le sprint : INT-04 et l'explication par l'apprenant restent distinctes.

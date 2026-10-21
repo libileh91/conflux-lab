@@ -4,12 +4,14 @@
 |---|---|
 | Sprint | [01 — Socle](../../docs/stages/sprint-01-socle.md) |
 | Date des preuves conservées | 2026-10-21 |
-| Statut | **Terminée pour le build** : le blocage initial est levé dans INT-05 ; `clean verify` global réussi, 59 cas de test de contrats |
-| Portée | Parent Maven, trois bibliothèques, Wrapper et diagnostic d'import/navigation Java ; aucun assemblage INT-03 ni contrat INT-05 ajouté |
-| Sources des preuves | Ancienne version de cette note : fil de dépannage JDTLS/Maven, puis reprise Maven ; fichiers actuels cités ci-dessous relus pour cette réécriture |
+| Statut | **Terminée pour le build** : blocage levé dans INT-05 ; preuve historique pré-INT-03 : `clean verify` global réussi, 59 cas de test de contrats |
+| Portée | Travaux INT-02 : parent Maven, trois bibliothèques, Wrapper et diagnostic d'import/navigation Java ; pas d'assemblage ni de contrat ajouté dans cette tâche |
+| Sources des preuves | Ancienne version de cette note : fil de dépannage JDTLS/Maven, puis reprise Maven ; fichiers cités ci-dessous relus lors de la réécriture antérieure, avant INT-03 |
 | Réécriture documentaire antérieure | Réorganisation pédagogique ; **aucune commande Maven, aucun test applicatif ni nouvelle requête LSP exécutés**. Les lectures Git locales et contrôles documentaires sont distincts des preuves historiques du build |
 
-Les versions et choix décrits concernent **[Simulation ConfluxLab]**, pas la stack historique AXA. **Mise à jour après INT-05 :** les types manquants sont maintenant définis et testés ; le build global réussit et clôt INT-02 pour son périmètre de build. Les descriptions A/B/C ci-dessous conservent le diagnostic historique, pas un blocage encore actif. La preuve nouvelle figure en section 5.3 et dans le [tutoriel INT-05](../sprint-02/INT-05-definir-les-contrats.md). Aucun assemblage ni développement de story suivante n'en découle.
+Les versions et choix décrits concernent **[Simulation ConfluxLab]**, pas la stack historique AXA. **Étape INT-05, avant INT-03 :** les types manquants ont été définis et testés ; le build global a réussi à cette étape et a permis de clôturer INT-02 pour son périmètre de build. Les descriptions A/B/C ci-dessous conservent le diagnostic historique, pas un blocage encore actif. La preuve historique figure en section 5.3 et dans le [tutoriel INT-05](../sprint-02/INT-05-definir-les-contrats.md). Cette validation ne réalisait pas à elle seule l'assemblage ou les stories suivantes.
+
+**Repère temporel — avant INT-03.** Les extraits et preuves de ce cours décrivent le socle avant son assemblage. Depuis [INT-03 — Assembler les modules](INT-03-assembler-les-modules.md), `application` a été ajouté au réacteur et porte le seul démarrage/JAR Boot ; le BFF appelle `FamilyRequests` en Java. Le client HTTP interne, sa configuration et ses propriétés, `CapabilityException`, `ExperienceApplication` et le YAML d'Experience ont été supprimés. La validation ultérieure a été exécutée dans la session INT-03 et consignée dans sa note, sans être rejouée pour cette mise à jour documentaire ; elle ne réalise ni INT-04 ni INT-06/07.
 
 **Sommaire**
 - [1. Objectif et vocabulaire](#1-objectif-et-vocabulaire)
@@ -54,13 +56,13 @@ Après relance complète de Zed, le processus JDTLS du dépannage utilisait bien
 | **A — Fil de dépannage historique** | Correction JDTLS, création du socle Maven/Wrapper, installation locale des bibliothèques, résolution des dépendances et preuves de navigation par protocole |
 | **B — Reprise Maven historique** | Feu vert explicite INT-01/INT-02 ; ajout de `.gitattributes`, README explicatif, nouvelles vérifications Maven et bootstrap du Wrapper depuis un cache de distribution neuf ; pas de nouvel essai GUI/LSP |
 | **C — Réécriture documentaire** | Lecture des fichiers et explication des preuves A/B ; aucun nouveau résultat d'exécution ni réglage utilisateur de Zed pendant cette phase |
-| **D — INT-05, état actuel** | Cinq types et tests ajoutés dans `contracts` ; 59 cas réussis et compilation globale réussie après nettoyage, sans assemblage de l'application |
+| **D — INT-05, avant INT-03** | Cinq types et tests ajoutés dans `contracts` ; 59 cas réussis et compilation globale réussie après nettoyage, sans assemblage de l'application |
 
 Le feu vert historique ne couvrait ni INT-03 ni les contrats d'INT-05. **Serveur prêt → projet importé → dépendances résolues → navigation disponible** ne signifie pas **application compilable**. Maven peut trouver le JAR `contracts` alors que le compilateur ne trouve pas les classes attendues dans ce JAR.
 
 ## 3. Travail réalisé pas à pas
 
-Les extraits suivants expliquent le socle créé en A/B et relu en C. Ils ne sont pas des fichiers à recopier intégralement : INT-05 a depuis rempli `contracts` et ajouté ses dépendances/tests, comme décrit dans sa note. Le socle parent et les réglages du Wrapper restent conservés.
+Les extraits suivants expliquent le socle créé en A/B et relu en C, **avant INT-03**. Ils ne sont pas des fichiers à recopier intégralement : INT-05 a rempli `contracts`, puis INT-03 a ajouté `application` et les dépendances de l'assemblage. En particulier, la liste historique à trois modules ci-dessous n'est plus la liste complète du POM racine. Le socle parent et les réglages du Wrapper restent conservés.
 
 ### 3.1. Donner au dépôt un parent et un agrégateur
 
@@ -86,7 +88,7 @@ Le [`pom.xml` racine](../../pom.xml) porte les coordonnées `dev.confluxlab:conf
 </modules>
 ```
 
-Le packaging `pom` fait de la racine un projet de configuration, pas une bibliothèque compilée. `<modules>` permet de travailler sur les trois enfants depuis la racine ; il ne crée aucune dépendance Java entre eux.
+Le packaging `pom` fait de la racine un projet de configuration, pas une bibliothèque compilée. Dans cet extrait historique, `<modules>` regroupait les trois enfants depuis la racine ; INT-03 en a ajouté un quatrième, `application`. Cette liste ne crée aucune dépendance Java entre eux.
 
 ```xml
 <properties>
@@ -115,7 +117,7 @@ Les POM [`contracts`](../../contracts/pom.xml), [`capability-api`](../../capabil
 
 Ici, `../pom.xml` vise réellement le parent dans le dépôt. Chaque enfant fournit son `artifactId` et hérite notamment du groupe, de la version et des réglages communs. Sans packaging explicite, le packaging Maven par défaut est `jar`.
 
-En A/B/C, `contracts` et `capability-api` n'avaient ni dépendance déclarée ni source Java. Depuis INT-05, `contracts` contient les DTO, l'API Jakarta Validation et des dépendances de test ; Capability reste vide. Experience déclare les starters Boot web, validation et test, ce dernier avec `scope=test`, ainsi que :
+En A/B/C, `contracts` et `capability-api` n'avaient ni dépendance déclarée ni source Java. À la fin d'INT-05, `contracts` contenait les DTO, l'API Jakarta Validation et des dépendances de test ; Capability était encore vide, avant son câblage dans INT-03. Experience déclarait les starters Boot web, validation et test, ce dernier avec `scope=test`, ainsi que :
 
 ```xml
 <dependency>
@@ -125,7 +127,7 @@ En A/B/C, `contracts` et `capability-api` n'avaient ni dépendance déclarée ni
 </dependency>
 ```
 
-`${project.version}` reprend ici `0.1.0-SNAPSHOT`. Cette dépendance rend l'artefact accessible ; elle ne fabrique pas ses classes. Les imports suivants existent dans [`FamilyController.java`](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java) et [`CapabilityClient.java`](../../experience-api/src/main/java/dev/confluxlab/experience/CapabilityClient.java) :
+`${project.version}` reprend ici `0.1.0-SNAPSHOT`. Cette dépendance rend l'artefact accessible ; elle ne fabrique pas ses classes. Les imports suivants étaient présents dans la version pré-INT-03 de [`FamilyController.java`](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java) et dans l'ancien `experience-api/src/main/java/dev/confluxlab/experience/CapabilityClient.java` (**supprimé dans INT-03**) :
 
 ```java
 import dev.confluxlab.contracts.CreateFamilyRequest;
@@ -135,9 +137,9 @@ import dev.confluxlab.contracts.RequestView;
 
 Ces trois types absents expliquaient l'échec global en A/B/C ; INT-05 les définit et lève ce blocage. Aucun DTO provisoire, profil d'exclusion, `skipTests` ou service métier n'a été ajouté pour masquer le problème.
 
-L'exécution Boot `repackage` a été retirée de la bibliothèque Experience pendant le dépannage. Les JAR reconstruits de `contracts` et `capability-api` ne contenaient pas de `BOOT-INF/`. Le POM effectif d'Experience ne déclarait pas de plugin Boot actif. Ce constat historique ne prouvait pas d'assemblage exécutable. Experience compile désormais après INT-05, toujours sous forme de bibliothèque, pas d'application assemblée.
+L'exécution Boot `repackage` a été retirée de la bibliothèque Experience pendant le dépannage. Les JAR reconstruits de `contracts` et `capability-api` ne contenaient pas de `BOOT-INF/`. Le POM effectif d'Experience ne déclarait pas de plugin Boot actif. Ce constat historique ne prouvait pas d'assemblage exécutable. Après INT-05, Experience compilait sous forme de bibliothèque, sans application assemblée à cette date ; INT-03 a depuis ajouté l'exécutable séparé `application`.
 
-Le client HTTP interne et [`ExperienceApplication.java`](../../experience-api/src/main/java/dev/confluxlab/experience/ExperienceApplication.java) restent présents, inchangés. L'URL Capability sur `localhost:8081` de [`application.yml`](../../experience-api/src/main/resources/application.yml) appartient à cette ébauche, pas à la cible monolithe. L'assemblage unique et l'appel Java interne relèvent d'INT-03, distincte de cette réparation.
+Le client HTTP interne, `experience-api/src/main/java/dev/confluxlab/experience/ExperienceApplication.java` et `experience-api/src/main/resources/application.yml` existaient encore à la fin d'INT-05. L'URL `localhost:8081` de cet ancien YAML appartenait à l'ébauche, pas à la cible monolithe. **Ces fichiers ont été supprimés dans INT-03**, qui a réalisé l'assemblage unique et l'appel Java interne ; le démarrage et la configuration résident désormais dans `application`.
 
 ### 3.3. Épingler Maven avec le Wrapper et son empreinte
 
@@ -170,7 +172,7 @@ Elle contourne la panne IPv6 reproduite sur cet environnement ; ce n'est ni une 
 |---|---|
 | JDTLS | Analyse le projet pour l'éditeur ; son JDK et ses arguments relèvent du lancement du serveur, pas de `.mvn/jvm.config` |
 | Maven | Exécute les plugins du build ; lit ici l'option IPv4 du projet |
-| Application | Exécutera Spring Boot ; son lancement n'hérite pas automatiquement de ce fichier Maven |
+| Application | Exécute Spring Boot ; son lancement n'hérite pas automatiquement de ce fichier Maven |
 
 Ce contournement ne convient pas nécessairement à un réseau exclusivement IPv6. Le téléchargement initial du Wrapper peut utiliser `wget`, `curl` ou un mécanisme Java distinct : le fichier JVM de Maven ne doit pas être présenté comme un réglage universel de tous ces outils.
 
@@ -183,13 +185,13 @@ mvnw.cmd text eol=crlf
 
 LF préserve le script Unix lors des checkouts ; CRLF convient au script Windows. Ces attributs ne remplacent pas le droit d'exécution Unix. Aucune renormalisation ni mise en index des fichiers utilisateur n'a été effectuée dans cette reprise.
 
-Le [`.gitignore`](../../.gitignore) ignore les sorties `target/` et les métadonnées Eclipse/JDTLS `.project`, `.classpath`, `.settings/`, `.factorypath`, sans supprimer les fichiers locaux. Le [README](../../README.md), complété en B, explique les prérequis, commandes, frontières et blocage ; il ne présente pas le projet comme une application exécutable.
+Le [`.gitignore`](../../.gitignore) ignore les sorties `target/` et les métadonnées Eclipse/JDTLS `.project`, `.classpath`, `.settings/`, `.factorypath`, sans supprimer les fichiers locaux. Le [README](../../README.md), dans sa version complétée en B, expliquait les prérequis, commandes, frontières et blocage ; il ne présentait pas encore le projet comme une application exécutable.
 
 ## 4. Commandes expliquées
 
 ### 4.1. Cadre d'exécution et options communes
 
-**Les commandes des sections 4.1 à 4.4 décrivent les vérifications historiques A/B, depuis la racine `conflux-lab/`.** La nouvelle exécution d'INT-05 est distinguée en section 5.3. Prérequis communs : JDK 21 (`java` et `javac`, éventuellement `JAVA_HOME`), script exécutable sous Linux, outils de téléchargement/extraction/contrôle d'empreinte et réseau pour les éléments non cachés. Aucun Maven préinstallé n'est nécessaire, ni Docker pour les contrôles actuels des bibliothèques vides.
+**Les commandes des sections 4.1 à 4.4 décrivent les vérifications historiques A/B, depuis la racine `conflux-lab/`.** L'exécution ultérieure d'INT-05 est distinguée en section 5.3. Prérequis communs : JDK 21 (`java` et `javac`, éventuellement `JAVA_HOME`), script exécutable sous Linux, outils de téléchargement/extraction/contrôle d'empreinte et réseau pour les éléments non cachés. Aucun Maven préinstallé n'est nécessaire, ni Docker pour ces contrôles historiques des bibliothèques alors vides.
 
 | Option | Effet précis |
 |---|---|
@@ -236,7 +238,7 @@ Contrairement à une phase, `dependency:resolve` et `help:effective-pom` sont de
 ./mvnw -B -ntp -pl experience-api help:effective-pom -Doutput=target/effective-pom.xml
 ```
 
-La première commande résout les dépendances d'Experience. Sans `-am`, elle ne construit pas `contracts` : l'installation locale précédente rendait cet artefact disponible. **A : succès**, dont `contracts`, les starters Boot 3.5.7 et Spring Web 6.2.12. Aucun contrôle du contenu métier du JAR n'est démontré par ce succès.
+Dans le graphe de dépendances de l'époque, la première commande résolvait les dépendances d'Experience. Sans `-am`, elle ne construisait pas `contracts` : l'installation locale précédente rendait cet artefact disponible. Depuis INT-03, Experience dépend aussi de `capability-api` ; ce résultat historique n'atteste pas la résolution du nouveau graphe. **A : succès**, dont `contracts`, les starters Boot 3.5.7 et Spring Web 6.2.12. Aucun contrôle du contenu métier du JAR n'est démontré par ce succès.
 
 La seconde écrit le modèle effectif, c'est-à-dire le résultat de l'héritage et de la configuration Maven, dans `target/effective-pom.xml` du module ciblé. Elle nécessite la résolution des parents et du plugin d'aide, pas une compilation réussie. **A/B : succès** ; lecture XML par Python : cible 21, Compiler 3.14.1, Surefire 3.5.4 et absence de plugin Boot dans les plugins actifs d'Experience.
 
@@ -297,7 +299,7 @@ F12 ou Ctrl + Shift + B déclenchent la navigation depuis un nom de type sous le
 | Attributs de fin de ligne, B | `git check-attr text eol -- mvnw mvnw.cmd` confirmait LF/CRLF ; commande historique, non relancée aujourd'hui |
 | Contrôles documentaires, B | Vérification Python des liens locaux du README, des fiches et des notes réussie ; INT-01 cochée, INT-02/03/04 décochées et absence de nouveaux DTO vérifiées à cette date |
 
-**Cache Wrapper neuf ≠ cache de dépendances neuf.** Le test avec `-v` porte sur le téléchargement/démarrage de Maven ; il ne compile rien et ne démontre ni la résolution de toutes les dépendances sans cache, ni un build depuis un clone neuf. Les sorties d'exécution historiques ne sont pas reproduites par cette réécriture. Les liens/ancres et la correspondance des extraits avec les fichiers ont fait l'objet d'un contrôle documentaire distinct ; il ne prouve ni nouveau build ni nouvelle navigation LSP.
+**Cache Wrapper neuf ≠ cache de dépendances neuf.** Le test avec `-v` porte sur le téléchargement/démarrage de Maven ; il ne compile rien et ne démontre ni la résolution de toutes les dépendances sans cache, ni un build depuis un clone neuf. Les sorties d'exécution historiques ne sont pas reproduites par cette réécriture. Les liens/ancres et la correspondance des extraits avec les fichiers de l'époque avaient fait l'objet d'un contrôle documentaire distinct ; il ne prouvait ni nouveau build ni nouvelle navigation LSP. Les extraits pré-INT-03 sont conservés comme preuves historiques, pas comme copies exactes de toutes les sources actuelles.
 
 `mvnw.cmd` est fourni, mais **non exécuté sous Windows**. Aucun test métier, démarrage de l'application, parcours HTTP, test d'intégration, CI ou CD n'est démontré par ces preuves. Les bibliothèques vides expliquent les succès partiels ; elles ne constituent pas une couverture de tests.
 
@@ -312,9 +314,11 @@ Dans la session INT-05, les commandes suivantes ont réellement réussi depuis l
 ./mvnw -B -ntp clean verify
 ```
 
-Le second contrôle a reconstruit le parent et les trois bibliothèques, compilé les sept sources d'Experience et exécuté **59 cas de test de contrats, sans échec, erreur ou ignoré**. Les rapports Surefire ont été relus. Les trois JAR restent ordinaires, sans `BOOT-INF/`.
+À la date d'INT-05, le second contrôle a reconstruit le parent et les trois bibliothèques, compilé les sept sources d'Experience et exécuté **59 cas de test de contrats, sans échec, erreur ou ignoré**. Les rapports Surefire ont été relus. Les trois JAR inspectés étaient ordinaires, sans `BOOT-INF/`.
 
-INT-02 est donc terminée pour le socle et le build global. Ce succès ne valide ni la GUI Zed, ni Windows, ni un test HTTP, ni un service Capability, ni une CI. Les preuves et explications des nouveaux tests sont dans la [note INT-05](../sprint-02/INT-05-definir-les-contrats.md) ; l'assemblage INT-03 reste à autoriser.
+INT-02 est donc terminée pour le socle et le build global. Ce succès ne valide ni la GUI Zed, ni Windows, ni un test HTTP, ni un service Capability, ni une CI. Les preuves et explications de ces 59 tests sont dans la [note INT-05](../sprint-02/INT-05-definir-les-contrats.md).
+
+**Validation exécutée ultérieurement dans la session INT-03 :** 5 tests ciblés réussis, puis `clean verify` réussi avec **64 tests** (59 contrats, 2 contrôleur, 3 assemblage). Le JAR réel a démarré sur le port loopback `37961` ; POST valide et GET avec UUID ont répondu `503 application/problem+json`, sans `Location` ni `requestId`, puis le processus a été arrêté. Voir [INT-03](INT-03-assembler-les-modules.md). Ces preuves complètent l'historique sans remplacer les résultats INT-02/05 ; aucun build n'a été relancé ici et INT-06/07 restent non réalisées.
 
 ## 6. Suivi centralisé
 

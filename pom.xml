@@ -20,6 +20,7 @@
         <module>contracts</module>
         <module>capability-api</module>
         <module>experience-api</module>
+        <module>application</module>
     </modules>
 
     <properties>

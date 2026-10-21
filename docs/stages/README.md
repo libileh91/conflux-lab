@@ -50,8 +50,8 @@ Les tests accompagnent chaque story : ils ne sont pas reportés au sprint 07. Le
 
 | Sprint | Ce que tu sauras faire à la fin | Stories | État actuel |
 |---|---|---|---|
-| [01 — Socle modulaire](sprint-01-socle.md) | Construire et démarrer une application aux modules séparés | INT-01 à INT-04 ; INT-37 | En cours : INT-01/02/37 terminées ; INT-03/04 à autoriser |
-| [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05 terminée en préparation ; ébauche INT-06 non validée |
+| [01 — Socle modulaire](sprint-01-socle.md) | Construire et démarrer une application aux modules séparés | INT-01 à INT-04 ; INT-37 | En cours : INT-01/02/03/37 terminées ; INT-04 à autoriser |
+| [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05 terminée ; BFF branché en Java, acceptation INT-06 non réalisée |
 | [03 — MongoDB](sprint-03-mongodb.md) | Conserver une demande après redémarrage | INT-09 à INT-12 | Planifié |
 | [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | Planifié |
 | [05 — Orchestration](sprint-05-orchestration.md) | Faire avancer les six opérations selon leurs dépendances | INT-17 à INT-20 | Planifié |
@@ -65,14 +65,15 @@ Les tests accompagnent chaque story : ils ne sont pas reportés au sprint 07. Le
 Les identifiants ne changent pas ; ils ne sont pas un ordre de développement obligatoire.
 
 - **Réalisé sur feu vert :** INT-05 a défini les types manquants et leurs tests ; le `clean verify` global a réussi et clôt le blocage d'INT-02.
-- **Suite, toujours sur feu vert individuel :** INT-03 → INT-04 → INT-06/07/08.
+- **Réalisé ensuite sur feu vert INT-03 :** assemblage unique, appel Java et indisponibilité explicite (`503`) vérifiés, sans acceptation réelle.
+- **Suite, toujours sur feu vert individuel :** INT-04 → INT-06/07/08.
 - La préparation avancée d'INT-05 ne lance ni l'assemblage ni les autres stories du sprint 02.
 
 ## Architecture à conserver
 
 Une application Spring Boot et un seul JAR exécutable. BFF et Capability restent séparés : le BFF gère l'HTTP ; Capability protège le métier et possède son stockage. La communication interne est un appel Java via l'interface publique de Capability. Feign/Resilience4j servira uniquement au partenaire externe fictif.
 
-Aujourd'hui, les POM, le Wrapper et les contrats permettent un build global réussi avec 59 cas de test de données/JSON, sans démonstration HTTP. Le client HTTP interne de l'ébauche et l'assemblage unique doivent encore être corrigés dans INT-03. Voir le [README du projet](../../README.md) pour les commandes et la limite actuelle.
+Aujourd'hui, le build global réussit avec 64 tests : 59 de données/JSON, 2 de délégation Java et 3 d'assemblage/disponibilité. INT-03 a remplacé l'HTTP interne et livré le seul JAR Boot, démarré sans base ni partenaire. POST valide et GET avec UUID valide retournent provisoirement `503`, sans prise en charge métier ; cela ne termine pas INT-06/07/08. Voir le [README du projet](../../README.md) pour les commandes et les limites.
 
 ## Notes de fin de tâche
 

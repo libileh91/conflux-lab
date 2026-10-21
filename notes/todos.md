@@ -17,9 +17,9 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 |---|---|---|---|
 | [TD-B001](#td-b001) | Définir les types d'échange | INT-05 | Terminée dans INT-05 : types et tests disponibles |
 | [TD-B002](#td-b002) | Réévaluer `verify` global | INT-02 | Terminée : `clean verify` global réussi après INT-05 |
-| [TD-B003](#td-b003) | Assembler l'application et retirer l'HTTP interne | INT-03 | Feu vert requis, après build corrigé |
-| [TD-B004](#td-b004) | Contrôler les frontières | INT-04 | Feu vert requis, après assemblage |
-| [TD-B005](#td-b005) | Valider le parcours REST | INT-06/07/08 | Ébauche seulement ; feu vert requis |
+| [TD-B003](#td-b003) | Assembler l'application et retirer l'HTTP interne | INT-03 | Terminée : seul JAR Boot démarré et appel Java vérifié |
+| [TD-B004](#td-b004) | Contrôler les frontières | INT-04 | Feu vert requis ; assemblage INT-03 terminé |
+| [TD-B005](#td-b005) | Valider le parcours REST | INT-06/07/08 | Appel Java branché ; métier absent (`503`), feu vert requis |
 | [TD-B006](#td-b006) | Vérifier les raccourcis dans l'interface Zed | INT-02 | Vérification manuelle non constatée |
 | [TD-B007](#td-b007) | Vérifier le Wrapper sous Windows | INT-02 | Optionnel ; environnement Windows requis |
 | [TD-B008](#td-b008) | Revoir `gh` ou SSH si nécessaire | INT-37 | Non prioritaire : Git HTTPS a fonctionné |
@@ -62,11 +62,11 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 |---|---|
 | **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md), écart aussi décrit dans INT-06 |
 | **Story liée** | [INT-03 — Assembler les modules](../docs/stages/sprint-01-socle.md#int-03--assembler-les-modules) |
-| **Dépend de** | [TD-B002](#td-b002) et feu vert pour INT-03 |
-| **Fichiers** | `application/` à créer ; [ExperienceApplication.java](../experience-api/src/main/java/dev/confluxlab/experience/ExperienceApplication.java), [CapabilityClient.java](../experience-api/src/main/java/dev/confluxlab/experience/CapabilityClient.java), [sa configuration](../experience-api/src/main/java/dev/confluxlab/experience/CapabilityClientConfiguration.java), [application.yml](../experience-api/src/main/resources/application.yml) et POM des modules |
+| **Dépend de** | [TD-B002](#td-b002), terminée ; feu vert INT-03 reçu et exécuté |
+| **Fichiers** | [POM d'application](../application/pom.xml), [ConfluxLabApplication.java](../application/src/main/java/dev/confluxlab/ConfluxLabApplication.java), [FamilyRequests.java](../capability-api/src/main/java/dev/confluxlab/capability/api/FamilyRequests.java), [FamilyController.java](../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java), [configuration unique](../application/src/main/resources/application.yml) et tests d'assemblage/délégation |
 | **Action** | Créer le seul assemblage Boot et une API Java publique de Capability ; remplacer le chemin BFF → Capability par cet appel Java |
 | **Validation** | Un seul JAR Boot démarre sans base/partenaire obligatoire à ce stade ; un test confirme l'appel Java, sans faux parcours métier réussi |
-| **Statut** | ⏳ À autoriser ; graphe cible documenté, pas encore implémenté |
+| **Statut** | ✅ Terminée sur feu vert INT-03 ; [tutoriel et preuves](sprint-01/INT-03-assembler-les-modules.md), 64 tests globaux, JAR réel démarré, POST/GET valides `503` sans faux succès |
 
 ## TD-B004
 
@@ -77,10 +77,10 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) |
 | **Story liée** | [INT-04 — Vérifier les frontières](../docs/stages/sprint-01-socle.md#int-04--vérifier-les-frontières) |
 | **Dépend de** | [TD-B003](#td-b003) et feu vert pour INT-04 |
-| **Fichiers** | Tests sous `experience-api/src/test/`, `capability-api/src/test/` et futur assemblage, selon le mécanisme retenu |
-| **Action** | Ajouter un test de contexte et des contrôles simples contre les cycles, la dépendance Capability → BFF et les accès aux internals/repositories |
+| **Fichiers** | Tests sous `experience-api/src/test/`, `capability-api/src/test/` et `application/src/test/`, selon le mécanisme retenu ; test d'assemblage déjà présent dans INT-03 |
+| **Action** | S'appuyer sur le test de contexte ajouté dans INT-03 et ajouter des contrôles simples contre les cycles, la dépendance Capability → BFF et les accès aux internals/repositories |
 | **Validation** | Les contrôles passent dans `verify` et détectent une violation introduite dans un test contrôlé ; aucune infrastructure imposée sans nécessité |
-| **Statut** | ⏳ À autoriser ; un schéma ne remplace pas ces tests |
+| **Statut** | ⏳ À autoriser ; assemblage et contexte vérifiés dans INT-03, mais aucun contrôle automatique de frontières encore ajouté |
 
 ## TD-B005
 
@@ -94,7 +94,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `experience-api/src/`, `capability-api/src/`, `contracts/src/` |
 | **Action** | Brancher une acceptation réelle en mémoire dans Capability, puis le GET et les refus, sans HTTP interne ni prétendre que la famille est créée |
 | **Validation** | Tests POST `202`, GET `200`/`404`, entrée invalide `400`, refus sans enregistrement et demandes distinctes ; état `PENDING` et limite de mémoire explicités |
-| **Statut** | ⏳ À autoriser story par story ; aucun échange HTTP exécuté n'est revendiqué pour l'ébauche |
+| **Statut** | ⏳ À autoriser story par story ; INT-03 a seulement branché l'API Java et vérifié POST/GET valides `503`, sans enregistrement ni suivi métier |
 
 ## TD-B006
 
@@ -106,7 +106,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Story liée** | Diagnostic éditeur associé à INT-02, distinct du build global |
 | **Dépend de** | JDTLS opérationnel ; disponibilité de l'utilisateur pour la vérification visuelle |
 | **Fichiers** | `FamilyController.java` ; réglages et raccourcis utilisateur Zed hors dépôt |
-| **Action** | Placer le curseur sur `CapabilityClient`, `UUID`, puis `ResponseEntity` et essayer F12 ou Ctrl + Shift + B ; comparer avec la commande de navigation de la palette si nécessaire |
+| **Action** | Placer le curseur sur `FamilyRequests` (remplace l'ancien `CapabilityClient` depuis INT-03), `UUID`, puis `ResponseEntity` et essayer F12 ou Ctrl + Shift + B ; comparer avec la commande de navigation de la palette si nécessaire |
 | **Validation** | Constater l'ouverture visuelle de la bonne définition ; noter séparément reconnaissance du raccourci et navigation. Ne pas redéduire ce résultat des réponses LSP historiques |
 | **Statut** | 🧭 Manuel — non constaté ; serveur LSP vérifié historiquement, interaction GUI non vérifiée |
 
@@ -146,11 +146,11 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 
 | Champ | Valeur |
 |---|---|
-| **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) |
+| **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md), illustré par l'[assemblage INT-03](sprint-01/INT-03-assembler-les-modules.md) |
 | **Stories liées** | INT-01, INT-03 et INT-04 |
-| **Dépend de** | Aucune exécution requise pour lire le repère ; implémentation distincte dans INT-03/04 |
+| **Dépend de** | Aucune exécution requise pour lire le repère ; assemblage réalisé dans INT-03, contrôles de frontières distincts dans INT-04 |
 | **Fichiers** | `docs/dat/ConfluxLab.md`, POM des modules |
-| **À retenir** | Un module organise le code ; un processus exécute l'application. BFF = HTTP ; Capability = métier/stockage ; `contracts` = types. La cible est une JVM avec appels Java internes |
+| **À retenir** | Un module organise le code ; un processus exécute l'application. BFF = HTTP ; Capability = métier/stockage ; `contracts` = types. INT-03 assemble trois bibliothèques dans le seul JAR Boot d'application, avec appels Java internes ; cela ne réalise pas encore le métier |
 | **Vérification pédagogique** | Expliquer pourquoi une flèche de dépendance Maven n'est pas un appel HTTP et pourquoi le BFF n'accède pas au repository |
 | **Statut** | 📘 Référence documentée — compréhension de l'apprenant non évaluée par cette réécriture |
 
@@ -208,7 +208,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `FamilyController.java`, types `contracts` et tests réalisés dans [INT-05](sprint-02/INT-05-definir-les-contrats.md), `ApiExceptionHandler.java` |
 | **À retenir** | Le contrôleur reçoit des données et délègue ; `@Valid` déclenche les contraintes réellement déclarées, il ne les invente pas. Un DTO transporte des données ; ce n'est pas un document MongoDB. Une annotation et une branche `ResponseEntity` ne prouvent ni compilation, ni démarrage, ni réponse observée |
 | **Vérification pédagogique** | Distinguer lecture du code, test du contrat et requête réellement exécutée ; expliquer pourquoi Capability protège aussi ses invariants |
-| **Statut** | 📘 Référence documentée — DTO testés dans INT-05 ; parcours HTTP et métier toujours non validés |
+| **Statut** | 📘 Référence documentée — DTO testés dans INT-05 ; délégation Java et indisponibilité `503` vérifiées dans INT-03, mais acceptation et suivi métier toujours non réalisés |
 
 ## TD-R006
 
@@ -265,3 +265,17 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **À retenir** | Un record rend le rôle de transport explicite et génère constructeur, accesseurs, comparaison et représentation textuelle, sans setters. Ses champs sont finaux, mais les objets référencés peuvent rester mutables ; sa construction ne lance pas Bean Validation |
 | **Vérification pédagogique** | Expliquer `firstName()` plutôt que `getFirstName()`, pourquoi la liste peut rester modifiable et quand préférer une classe classique |
 | **Statut** | 📘 Explication ajoutée sur demande — conversion JSON déjà testée dans INT-05 ; aucun nouveau test exécuté pour cet ajout documentaire |
+
+## TD-R010
+
+**Assembler Spring sans confondre double de test et comportement livré**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-03](sprint-01/INT-03-assembler-les-modules.md) |
+| **Story liée** | INT-03 — Assembler les modules |
+| **Dépend de** | Lire l'assemblage et ses deux niveaux de tests ; aucune nouvelle exécution requise |
+| **Fichiers** | `application/pom.xml`, `ConfluxLabApplication.java`, `FamilyRequests.java`, `UnavailableFamilyRequests.java`, `FamilyControllerTest.java`, `ApplicationAssemblyTest.java` |
+| **À retenir** | Une dépendance Maven fournit des types, pas automatiquement un bean. Le démarrage placé au-dessus des packages découvre l'implémentation, injectée via l'interface publique. Le test unitaire peut retourner un succès préparé ; le contexte réel et le JAR doivent refléter l'indisponibilité des opérations absentes (`503`), sans faux identifiant ni prise en charge |
+| **Vérification pédagogique** | Expliquer pourquoi le contrôleur obtient `202` avec un double mais le JAR répond `503`, et pourquoi un test MockMvc ne prouve pas à lui seul le démarrage du JAR |
+| **Statut** | 📘 Référence fondée sur les vérifications INT-03 (64 tests, inspection et démarrage du JAR) — compréhension de l'apprenant non évaluée |

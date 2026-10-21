@@ -16,6 +16,11 @@
     <dependencies>
         <dependency>
             <groupId>dev.confluxlab</groupId>
+            <artifactId>capability-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.confluxlab</groupId>
             <artifactId>contracts</artifactId>
             <version>${project.version}</version>
         </dependency>
