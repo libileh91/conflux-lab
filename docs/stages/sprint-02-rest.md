@@ -1,6 +1,6 @@
 # Sprint 02 — Contrat REST et BFF mince
 
-**Statut : stories techniques INT-05 à INT-08 terminées sur feux verts individuels ; clôture à confirmer.** Acceptation, suivi mémoire et refus sont vérifiés. Le point avec l'apprenant n'est pas déclaré réalisé.
+**Statut : stories techniques INT-05 à INT-08 terminées sur feux verts individuels ; passage à INT-09 demandé par l'utilisateur.** Acceptation, suivi mémoire et refus sont vérifiés. La restitution pédagogique de l'apprenant reste non évaluée ; le passage à la suite ne la valide pas.
 
 ## Objectif
 
@@ -85,4 +85,14 @@ INT-06 vérifie l'acceptation réelle en mémoire et INT-07 sa consultation via 
 - [x] Montrer un POST valide, son GET de suivi et un refus de données invalides : démonstrations INT-06/07 et tests associés ; preuves complétées dans INT-08 ; la clôture du sprint et la restitution de l'apprenant restent distinctes.
 - [ ] Expliquer la différence entre « demande acceptée » et « famille créée » ainsi que le partage des validations BFF/Capability.
 
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les exemples fictifs et résultats réellement observés.
+### Bilan technique et passage à la suite — 2026-10-21
+
+| Élément | Constat |
+|---|---|
+| Stories réalisées | INT-05 à INT-08 ; acceptation, consultation et refus en mémoire |
+| Preuves historiques | `clean verify` INT-08 : 181 tests réussis et démonstration du JAR réel ; détails dans le [cours INT-08](../../notes/sprint-02/INT-08-tester-les-refus.md) |
+| Contrôle avant commit | 1 test ciblé de confidentialité réussi ; suite globale et démonstration non relancées |
+| Git | INT-08 commitée localement : `fedb8b7` ; aucun push |
+| Limites | Mémoire volatile, demandes `PENDING`, aucune famille créée ni persistance durable |
+| Accord pour la suite | Demande « commit la 08 & passer 09 » ; périmètre limité à INT-09, pas INT-10 |
+| Point pédagogique | Restitution orale non évaluée ; le critère correspondant reste décoché |

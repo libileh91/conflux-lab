@@ -185,8 +185,14 @@ class InMemoryFamilyRequestsTest {
     void readsTheStoredStatusWithoutWritingToTheStore(RequestStatus status) {
         InMemoryFamilyRequestStore store = mock(InMemoryFamilyRequestStore.class);
         UUID requestId = UUID.randomUUID();
-        StoredFamilyRequest stored = new StoredFamilyRequest(requestId, status,
+        StoredFamilyRequest stored = StoredFamilyRequest.pending(requestId,
                 new CreateFamilyRequest(PRINCIPAL, DEPENDENTS), CLOCK.instant());
+        if (status != RequestStatus.PENDING) {
+            stored = stored.transitionTo(RequestStatus.PROCESSING, CLOCK.instant());
+        }
+        if (status == RequestStatus.SUCCEEDED || status == RequestStatus.FAILED) {
+            stored = stored.transitionTo(status, CLOCK.instant());
+        }
         when(store.findById(requestId)).thenReturn(Optional.of(stored));
         InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
 

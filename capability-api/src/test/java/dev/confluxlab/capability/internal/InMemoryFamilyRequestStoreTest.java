@@ -7,7 +7,6 @@ import java.util.UUID;
 
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.PersonPayload;
-import dev.confluxlab.contracts.RequestStatus;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -47,7 +46,6 @@ class InMemoryFamilyRequestStoreTest {
                 new PersonPayload("Alex", "Exemple", LocalDate.of(1990, 4, 12)),
                 List.of(new PersonPayload("Camille", "Exemple", LocalDate.of(2015, 8, 21)),
                         new PersonPayload("Noa", "Exemple", LocalDate.of(2018, 2, 3))));
-        return new StoredFamilyRequest(requestId, RequestStatus.PENDING, payload,
-                Instant.parse("2026-10-21T12:00:00Z"));
+        return StoredFamilyRequest.pending(requestId, payload, Instant.parse("2026-10-21T12:00:00Z"));
     }
 }

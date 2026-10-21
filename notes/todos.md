@@ -23,6 +23,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B006](#td-b006) | Vérifier les raccourcis dans l'interface Zed | INT-02 | Vérification manuelle non constatée |
 | [TD-B007](#td-b007) | Vérifier le Wrapper sous Windows | INT-02 | Optionnel ; environnement Windows requis |
 | [TD-B008](#td-b008) | Revoir `gh` ou SSH si nécessaire | INT-37 | Non prioritaire : Git HTTPS a fonctionné |
+| [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | À autoriser ; modèle INT-09 disponible |
 
 ## Actions restantes
 
@@ -137,6 +138,20 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Action** | Si nécessaire, authentifier le canal choisi via son mécanisme normal ; ne pas modifier le HTTPS Git déjà fonctionnel pour cette seule raison |
 | **Validation** | Commande de lecture réussie avec le canal voulu, sans exposition de token ni clé privée |
 | **Statut** | ⏳ Non prioritaire — erreurs historiques `gh`/SSH, mais le push Git HTTPS a réussi ; pas de blocage Git déduit aujourd'hui |
+
+## TD-B009
+
+**Persister la demande avant de l'accepter**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-09](sprint-03/INT-09-definir-les-donnees-et-transitions.md) |
+| **Story liée** | [INT-10 — Persister avant d'accepter](../docs/stages/sprint-03-mongodb.md#int-10--persister-avant-daccepter) |
+| **Dépend de** | INT-09 terminée ; nouveau feu vert individuel et MongoDB disponible pour la validation réelle |
+| **Fichiers** | `capability-api/pom.xml`, `StoredFamilyRequest.java`, stockage et service sous `capability-api/src/` ; repository et configuration MongoDB à créer, pas encore présents |
+| **Action** | Remplacer le stockage mémoire par MongoDB en conservant les frontières ; confirmer l'écriture avant le retour d'acceptation |
+| **Validation** | Enregistrement/relecture du même UUID et payload, unicité en base, échec d'écriture sans faux `202` selon les critères d'INT-10 ; ne pas confondre modèle Java et persistance réelle |
+| **Statut** | ⏸ À autoriser — INT-10 non commencée ; ce suivi reprend la story existante, sans nouvelle tâche de développement |
 
 ## Repères de cours
 
@@ -334,4 +349,18 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `FamilyRequestRefusalHttpTest.java`, `FamilyRequestAcceptanceFailureHttpTest.java`, `InMemoryFamilyRequestsTest.java`, `ApiExceptionHandler.java`, `ApiExceptionHandlerTest.java` |
 | **À retenir** | Quelques scénarios suffisent pour comprendre le principe ; une matrice paramétrée teste davantage de variantes et de frontières. Un `400` ne prouve pas seul l'absence d'écriture : spy et mock permettent de vérifier les appels. Un détail générique ne suffit pas si `instance` recopie une saisie rejetée ; le correctif et la représentation JSON doivent aussi être testés. Le nombre de cas n'est ni une mesure de compréhension ni une preuve de sécurité exhaustive |
 | **Vérification pédagogique** | Expliquer pourquoi on teste aussi un cas valide, ce que prouvent respectivement MVC, appel Java direct et doublure de panne, et comment la fuite via `instance` a été reproduite puis corrigée |
-| **Statut** | 📘 Référence fondée sur 93 cas ciblés finaux et 181 tests globaux réussis ; 73 cas nets ajoutés à la suite existante, compréhension de l'apprenant non évaluée et clôture du sprint à confirmer |
+| **Statut** | 📘 Référence fondée sur 93 cas ciblés finaux et 181 tests globaux réussis ; 73 cas nets ajoutés à la suite existante. Le passage à INT-09 a depuis été demandé ; compréhension de l'apprenant toujours non évaluée |
+
+## TD-R015
+
+**Un cycle d'état local n'est ni une sauvegarde ni un verrou**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-09](sprint-03/INT-09-definir-les-donnees-et-transitions.md) |
+| **Story liée** | INT-09 — Définir les données et transitions |
+| **Dépend de** | États de `RequestStatus` et modèle interne de Capability ; aucune nouvelle exécution pour lire ce repère |
+| **Fichiers** | `StoredFamilyRequest.java`, `StoredFamilyRequestTest.java`, `InMemoryFamilyRequests.java`, [DAT — données](../docs/dat/ConfluxLab.md#6-données-mongodb) |
+| **À retenir** | `pending(...)` initialise `createdAt == updatedAt`, sans `completedAt`. `transitionTo(...)` retourne une nouvelle valeur selon le graphe autorisé ; `createdAt` reste fixe, `updatedAt` ne recule pas, `completedAt` apparaît à la fin. Un état final ne se rouvre pas. Cela ne modifie pas le store et ne protège pas deux appelants concurrents ; l'écriture atomique sera traitée dans INT-11. `result?`/`error?` sont documentés pour la cible mais non implémentés |
+| **Vérification pédagogique** | Expliquer pourquoi deux threads pourraient chacun produire `PROCESSING` à partir du même objet `PENDING`, et pourquoi un POST actuel ne prouve toujours pas une persistance durable |
+| **Statut** | 📘 Référence fondée sur 2 nouveaux tests unitaires et 1 test existant d'acceptation réussis ; pas de nouveau build global, MongoDB ou évaluation orale |

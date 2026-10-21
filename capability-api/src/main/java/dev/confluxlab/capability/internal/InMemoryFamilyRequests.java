@@ -10,7 +10,6 @@ import dev.confluxlab.capability.api.InvalidFamilyRequestException;
 import dev.confluxlab.capability.api.RequestNotFoundException;
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.RequestAccepted;
-import dev.confluxlab.contracts.RequestStatus;
 import dev.confluxlab.contracts.RequestView;
 import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
@@ -41,8 +40,7 @@ class InMemoryFamilyRequests implements FamilyRequests {
         }
 
         UUID requestId = UUID.randomUUID();
-        StoredFamilyRequest stored = new StoredFamilyRequest(
-                requestId, RequestStatus.PENDING, snapshot, Instant.now(clock));
+        StoredFamilyRequest stored = StoredFamilyRequest.pending(requestId, snapshot, Instant.now(clock));
         store.save(stored);
         return new RequestAccepted(requestId, stored.status(), "/api/v1/requests/" + requestId);
     }

@@ -1,6 +1,6 @@
 # Sprint 03 — Persistance MongoDB et cycle des états
 
-**Statut : planifié.** Prérequis : sprint 02 clos et Docker disponible pour les tests. Chaque story attend son feu vert individuel.
+**Statut : en cours — INT-09 terminée ; INT-10 à INT-12 restent à autoriser.** Le passage à INT-09 a été demandé après les stories techniques INT-05 à INT-08 ; la restitution pédagogique du sprint 02 n'a pas été évaluée. Docker n'est pas nécessaire au modèle et aux tests unitaires INT-09 ; il sera requis pour les tests avec MongoDB. Chaque story conserve son feu vert individuel.
 
 ## Objectif
 
@@ -15,7 +15,7 @@ Remplacer le stockage en mémoire par MongoDB pour retrouver une demande après 
 ## Stories — un feu vert par tâche
 
 ### INT-09 — Définir les données et transitions
-**Statut : à faire — feu vert requis.**
+**Statut : terminée sur demande « commit la 08 & passer 09 ».** Commit local préalable INT-08 : `fedb8b7`, sans push. [Cours et preuves INT-09](../../notes/sprint-03/INT-09-definir-les-donnees-et-transitions.md).
 
 En tant que développeur, je veux définir les informations conservées et les changements d'état permis, afin de représenter correctement la vie d'une demande.
 
@@ -24,8 +24,10 @@ En tant que développeur, je veux définir les informations conservées et les c
 - Définir `PENDING → PROCESSING → SUCCEEDED/FAILED`, en expliquant chaque état.
 
 **Terminé quand :**
-- [ ] Le modèle décrit les champs et leurs dates de mise à jour, sans exposer le document MongoDB au BFF.
-- [ ] Les tests acceptent les transitions prévues et refusent de revenir d'un état final vers un état en cours.
+- [x] Le [modèle documenté](../dat/ConfluxLab.md#6-données-mongodb) décrit les champs et dates ; `StoredFamilyRequest` porte les six champs utiles au cycle. `result?`/`error?` restent des champs cibles optionnels explicitement différés, sans schéma métier inventé ni exposition au BFF.
+- [x] Deux tests unitaires vérifient les deux issues du cycle et les refus, notamment la sortie de `SUCCEEDED`/`FAILED` ; un test existant confirme toujours l'acceptation en mémoire avant retour.
+
+**Preuves :** 3 tests ciblés exécutés, aucun échec/erreur/ignoré, `BUILD SUCCESS`. Seuls deux tests ont été ajoutés. Aucun MongoDB, nouveau test HTTP, build global ou traitement asynchrone. Les transitions retournent une copie et ne réalisent ni sauvegarde ni prise en charge atomique.
 
 ### INT-10 — Persister avant d'accepter
 **Statut : à faire — feu vert requis.** Prérequis : INT-09 terminée.

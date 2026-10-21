@@ -152,11 +152,36 @@ Le [contrat initial INT-05](http-contracts.md) précise les champs, contraintes,
 
 ## 6. Données MongoDB
 
-Collection : **`family_requests`**.
+Collection cible : **`family_requests`**, non créée à l'étape INT-09.
 
-Champs : `requestId`, `status`, `payload`, `createdAt`, `updatedAt`, `completedAt?`, `result?`, `error?`.
+**[Simulation ConfluxLab — INT-09 réalisée sur demande de passage à cette tâche]** : le modèle interne `StoredFamilyRequest` reste un record Java sans annotation MongoDB, non exposé au BFF. Son contrat de données est le suivant :
 
-L'UUID **corrèle** la demande HTTP, le document persisté, l'événement et le traitement ; il n'assure ni idempotence, ni verrouillage, ni unicité de la création côté partenaire.
+| Champ | Rôle et règle de mise à jour |
+|---|---|
+| `requestId` | UUID de corrélation fixé à la création ; unicité en base à réaliser dans INT-10 |
+| `status` | `PENDING` à la création, puis transitions autorisées ci-dessous |
+| `payload` | Copie des données reçues, liste des ayants droit non modifiable ; inchangée pendant le cycle |
+| `createdAt` | `Instant` de création fourni par l'horloge de Capability ; ne change jamais |
+| `updatedAt` | Initialement égal à `createdAt`, puis date de la dernière transition ; ne recule pas |
+| `completedAt` | Absent en `PENDING`/`PROCESSING` ; égal à `updatedAt` à l'entrée dans un état final |
+| `result?` | Champ cible optionnel pour un résultat métier en succès ; structure et implémentation différées au traitement partenaire, aucun champ vide ajouté au record |
+| `error?` | Champ cible optionnel pour un motif métier d'échec, pas une exception/trace brute ; structure et implémentation différées, aucune exposition HTTP ajoutée |
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> PROCESSING
+    PROCESSING --> SUCCEEDED
+    PROCESSING --> FAILED
+```
+
+`PENDING` signifie « acceptée, en attente », `PROCESSING` « prise en charge », `SUCCEEDED` « terminée en succès » et `FAILED` « terminée en échec ». Le modèle refuse tout autre passage, y compris une répétition du même état ou la sortie d'un état final. Un échec technique avant l'acceptation n'est pas une transition de ce graphe ; il ne produit pas de faux `202`.
+
+`pending(...)` initialise les dates. `transitionTo(...)` retourne un **nouveau record**, conserve l'UUID, le payload et `createdAt`, et met à jour les dates. Elle ne sauvegarde rien. Deux appelants partant du même objet pourraient chacun produire un objet `PROCESSING` : la prise en charge atomique en base appartient à INT-11, pas à cette validation locale. Le constructeur permet de représenter un état stocké avec des dates cohérentes ; il ne prouve pas l'historique des transitions.
+
+**Preuves INT-09 :** deux nouveaux tests de cycle/refus et un test existant d'acceptation exécutés avec succès ; pas de nouveau build global ni de test MongoDB. Le POST utilise désormais `pending(...)` mais reste en mémoire ; aucun traitement de production n'appelle les transitions. Le suivi HTTP reste limité à `requestId`, `status`, `createdAt`. Voir le [cours INT-09](../../notes/sprint-03/INT-09-definir-les-donnees-et-transitions.md).
+
+L'UUID **corrèle** la demande HTTP, le futur document persisté, l'événement et le traitement ; il n'assure ni idempotence, ni verrouillage, ni unicité de la création côté partenaire.
 
 ## 7. Sujets techniques prioritaires
 

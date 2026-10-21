@@ -4,12 +4,13 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 ## État actuel
 
-- **INT-01 à INT-08 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi mémoire et tests de refus. Les stories techniques du sprint 02 sont réalisées ; sa clôture reste à confirmer. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
+- **INT-01 à INT-09 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi mémoire, refus et modèle des transitions. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
-- Le `clean verify` global réussit : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré.
+- Le dernier `clean verify` global observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré.
 - Le JAR démarre sans MongoDB ni partenaire. Un **POST valide retourne `202`, UUID, `PENDING` et des liens cohérents après conservation en mémoire**. Deux POST identiques ont produit deux UUID distincts lors de la démonstration.
 - Le **GET retourne `200` pour une demande connue**, avec seulement `requestId`, `status` et `createdAt` ; UUID inconnu `404`, identifiant mal formé `400`. Le GET ne modifie ni statut ni date.
 - La mémoire est perdue au redémarrage et non bornée : une ancienne demande reçoit alors `404`. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré. INT-08 complète les refus et l'isolation, sans règle métier supplémentaire.
+- **INT-09** ajoute les dates internes et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition ni appel en production. Deux tests ajoutés et un test existant d'acceptation passent ; la suite globale n'a pas été relancée.
 
 ## Prérequis
 
@@ -87,6 +88,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-06 — Acceptation et stockage temporaire](notes/sprint-02/INT-06-accepter-une-demande.md).
 - [INT-07 — Suivi des métadonnées et erreurs de consultation](notes/sprint-02/INT-07-consulter-la-demande.md).
 - [INT-08 — Comprendre les refus et leurs preuves](notes/sprint-02/INT-08-tester-les-refus.md).
+- [INT-09 — Données, dates et transitions internes](notes/sprint-03/INT-09-definir-les-donnees-et-transitions.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 
