@@ -71,6 +71,12 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 
 Les preuves historiques restent datées : INT-01 conserve le cadrage initial ; le cours INT-06 explique désormais l'acceptation réalisée et renvoie à la version publiée de sa rétrospective pour l'ébauche antérieure. Les autres dossiers n'ont pas de compte rendu de réussite anticipé.
 
+## Compléments théoriques
+
+Ces notes approfondissent une story existante sans ajouter de tâche, modifier l'architecture implémentée ou autoriser une expérimentation.
+
+- **INT-10 — [MongoDB standalone ou replica set](sprint-03/INT-10-complement-mongodb-replica-set.md)** : deux ou trois membres, quorum, acquittement, URI, délais et limites des reprises ; théorie uniquement. [Repère TD-R017](todos.md#td-r017).
+
 ## Clôtures de sprint
 
 - [Sprint 01 — Bilan technique et synthèse documentaire](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) : clôturé sur demande explicite le 2026-10-21 ; 76 tests globaux au moment de la clôture, restitution orale non évaluée ; le feu vert INT-06 a été donné ensuite, séparément.

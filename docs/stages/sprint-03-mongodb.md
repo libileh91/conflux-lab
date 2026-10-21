@@ -44,6 +44,8 @@ En tant que client de l'API, je veux que ma demande soit enregistrée avant son 
 
 **Preuves :** 2 nouveaux tests et 1 test de suivi POST/GET réutilisé, tous réussis avec un MongoDB standalone Testcontainers `mongo:8.0.16`. Le service attend l'insertion acquittée (`majority` + journal) avant le reçu. Aucun fallback mémoire de production. Testcontainers est épinglé en 1.21.4 après reproduction d'une incompatibilité API Docker en 1.21.3 ; conteneurs temporaires supprimés. Suite globale, JAR et redémarrage non exécutés. INT-11/12 restent non commencées.
 
+**Complément documentaire, sans changement de périmètre :** [MongoDB standalone ou replica set](../../notes/sprint-03/INT-10-complement-mongodb-replica-set.md), lié à INT-10 ; aucune topologie répliquée créée ou testée.
+
 ### INT-11 — Sécuriser les mises à jour
 **Statut : à faire — feu vert requis.** Prérequis : INT-10 terminée.
 

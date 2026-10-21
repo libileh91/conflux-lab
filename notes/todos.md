@@ -395,3 +395,17 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **À retenir** | `insert` attend l'acquittement du journal avant le reçu, et l'index `_id` interdit une collision sans upsert. Sur un standalone, `majority` ne signifie pas réplication. Une panne réseau peut masquer une écriture réussie : `500` ne garantit pas l'absence en base. UUID unique ne signifie pas idempotence du POST. Le store mémoire ne sert plus qu'aux tests ; les deux nouveaux tests vérifient MongoDB réel et un échec simulé, sans matrice exhaustive |
 | **Vérification pédagogique** | Expliquer pourquoi remplacer `insert` par `save` pourrait écraser un document, pourquoi `202` n'est pas une famille créée et pourquoi rejouer un POST après timeout peut créer un doublon métier |
 | **Statut** | 📘 Référence fondée sur 3 tests ciblés réussis ; incompatibilité Docker initiale corrigée par Testcontainers 1.21.4. Suite globale et redémarrage non exécutés, compréhension de l'apprenant non évaluée |
+
+## TD-R017
+
+**Distinguer quorum, acquittement et découverte d'un replica set**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Complément INT-10 — MongoDB standalone ou replica set](sprint-03/INT-10-complement-mongodb-replica-set.md), sur demande documentaire de l'utilisateur |
+| **Story liée** | INT-10 — Persister avant d'accepter ; complément théorique, pas une nouvelle story |
+| **Dépend de** | Configuration actuelle d'acquittement et hypothèse de membres votants contenant les données, sans arbitre |
+| **Fichiers** | `FamilyRequestConfiguration.java` et `application.yml` relus, non modifiés ; complément sous `notes/sprint-03/` |
+| **À retenir** | `MAJORITY` reste pertinent ; deux membres exigent les deux, trois en exigent deux dans l'hypothèse retenue. L'URI doit permettre la découverte du replica set réellement configuré côté serveurs ; les délais sont à réévaluer. Garder les lectures sur le primary évite le détour vers un secondary en retard. Réplication, sauvegarde et idempotence sont des garanties différentes |
+| **Vérification pédagogique** | Expliquer pourquoi deux instances ne suffisent pas à continuer les écritures après une perte, pourquoi l'URI ne crée pas le replica set et pourquoi un retry du driver ne rend pas un nouveau POST idempotent |
+| **Statut** | 📘 Référence théorique uniquement — aucun replica set créé, aucun test exécuté, aucune modification de configuration ou connaissance évaluée |

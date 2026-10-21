@@ -11,6 +11,8 @@
 
 **[Simulation ConfluxLab]** Ce travail concerne le laboratoire, avec des personnes fictives. Ni l'image, ni les versions, ni les réglages d'acquittement ne décrivent une configuration historique AXA.
 
+> **Complément théorique :** [MongoDB standalone ou replica set](INT-10-complement-mongodb-replica-set.md) explique ce qui resterait valable et ce qui changerait avec deux ou trois membres. Aucun replica set n'est implémenté ; voir le [repère TD-R017](../todos.md#td-r017).
+
 ## Parcours de lecture
 
 Cette note est un **cours sur l'incrément réellement implémenté**, pas un catalogue de tout MongoDB. Les passages « extrait exact/partiel » viennent des fichiers liés ; les exemples pédagogiques non exécutés sont signalés. Les schémas décrivent INT-10, sans événement Spring, `@Async` ou partenaire ajouté par anticipation.
