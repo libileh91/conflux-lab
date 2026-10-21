@@ -1,6 +1,6 @@
 # Sprint 03 — Persistance MongoDB et cycle des états
 
-**Statut : en cours — INT-09 et INT-10 terminées ; INT-11/12 restent à autoriser.** Le passage à INT-09 a été demandé après les stories techniques INT-05 à INT-08 ; la restitution pédagogique du sprint 02 n'a pas été évaluée. Docker n'est pas nécessaire au modèle et aux tests unitaires INT-09 ; depuis INT-10, il est requis pour les tests MongoDB et les tests Spring d'assemblage/HTTP qui partagent cette base temporaire. Chaque story conserve son feu vert individuel.
+**Statut : en cours — INT-09 à INT-11 terminées ; INT-12 reste à autoriser.** Le passage à INT-09 a été demandé après les stories techniques INT-05 à INT-08 ; la restitution pédagogique du sprint 02 n'a pas été évaluée. Docker n'est pas nécessaire au modèle et aux tests unitaires INT-09 ; depuis INT-10, il est requis pour les tests MongoDB et les tests Spring d'assemblage/HTTP qui partagent cette base temporaire. Chaque story conserve son feu vert individuel.
 
 ## Objectif
 
@@ -47,7 +47,7 @@ En tant que client de l'API, je veux que ma demande soit enregistrée avant son 
 **Complément documentaire, sans changement de périmètre :** [MongoDB standalone ou replica set](../../notes/sprint-03/INT-10-complement-mongodb-replica-set.md), lié à INT-10 ; aucune topologie répliquée créée ou testée.
 
 ### INT-11 — Sécuriser les mises à jour
-**Statut : à faire — feu vert requis.** Prérequis : INT-10 terminée.
+**Statut : terminée sur feu vert « commit ça & push puis go INT-11 ».** Le complément théorique INT-10 a été commité et poussé auparavant : `66e0ade`. [Cours et preuves INT-11](../../notes/sprint-03/INT-11-securiser-les-mises-a-jour.md).
 
 En tant que développeur, je veux empêcher deux traitements de prendre la même demande en charge simultanément, afin d'éviter des exécutions concurrentes incohérentes.
 
@@ -56,8 +56,10 @@ En tant que développeur, je veux empêcher deux traitements de prendre la même
 - Conserver des dates et erreurs cohérentes, sans écraser un résultat final.
 
 **Terminé quand :**
-- [ ] Un test de double prise en charge simultanée ne laisse qu'un passage de `PENDING` à `PROCESSING`.
-- [ ] Les tests refusent les transitions invalides et les écrasements d'états finaux ; le suivi ne divulgue pas d'erreur interne.
+- [x] Deux appelants libérés ensemble tentent la prise en charge sur MongoDB réel ; un seul `findAndModify` correspond au statut `PENDING` et retourne le document passé à `PROCESSING`.
+- [x] Graphe interdit, date antérieure, statut attendu périmé et écrasement des deux états finaux sont refusés ; dates et données restent cohérentes. Le suivi HTTP n'expose pas le diagnostic fictif conservé dans la fixture.
+
+**Preuves :** 2 nouveaux tests MongoDB + 2 tests du modèle existants, tous réussis (`BUILD SUCCESS`), sans suite globale. Mise à jour conditionnelle en une commande, sans upsert, préservant payload et dates d'origine. Le diagnostic du test ne constitue pas un nouveau schéma d'erreur métier ; `error`/`result` restent différés. Aucun appelant de production n'exécute encore de traitement, aucune route de transition n'est créée et INT-12 n'est pas commencée.
 
 ### INT-12 — Vérifier la persistance
 **Statut : à faire — feu vert requis.** Prérequis : INT-09/10/11 disponibles.

@@ -38,14 +38,7 @@ record StoredFamilyRequest(
     }
 
     StoredFamilyRequest transitionTo(RequestStatus nextStatus, Instant changedAt) {
-        boolean allowed = switch (status) {
-            case PENDING -> nextStatus == RequestStatus.PROCESSING;
-            case PROCESSING -> nextStatus == RequestStatus.SUCCEEDED || nextStatus == RequestStatus.FAILED;
-            case SUCCEEDED, FAILED -> false;
-        };
-        if (!allowed) {
-            throw new IllegalStateException("Invalid request status transition: " + status + " -> " + nextStatus);
-        }
+        requireTransition(status, nextStatus);
         Objects.requireNonNull(changedAt, "changedAt");
         if (changedAt.isBefore(updatedAt)) {
             throw new IllegalArgumentException("A transition cannot precede the last update.");
@@ -58,6 +51,19 @@ record StoredFamilyRequest(
             changedAt,
             isTerminal(nextStatus) ? changedAt : null
         );
+    }
+
+    static void requireTransition(RequestStatus currentStatus, RequestStatus nextStatus) {
+        Objects.requireNonNull(currentStatus, "currentStatus");
+        Objects.requireNonNull(nextStatus, "nextStatus");
+        boolean allowed = switch (currentStatus) {
+            case PENDING -> nextStatus == RequestStatus.PROCESSING;
+            case PROCESSING -> nextStatus == RequestStatus.SUCCEEDED || nextStatus == RequestStatus.FAILED;
+            case SUCCEEDED, FAILED -> false;
+        };
+        if (!allowed) {
+            throw new IllegalStateException("Invalid request status transition: " + currentStatus + " -> " + nextStatus);
+        }
     }
 
     private static boolean isTerminal(RequestStatus status) {

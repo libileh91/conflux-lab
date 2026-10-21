@@ -4,13 +4,15 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 ## État actuel
 
-- **INT-01 à INT-10 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi, refus, modèle des transitions et stockage MongoDB. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
+- **INT-01 à INT-11 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi, refus, stockage MongoDB et transitions atomiques. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
 - Le dernier `clean verify` global observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré.
 - Depuis **INT-10**, un **POST valide retourne `202`, UUID, `PENDING` et des liens cohérents après insertion acquittée dans MongoDB**. Le GET relit cette base ; MongoDB doit donc être accessible pour réussir ces opérations. Aucun partenaire n'est nécessaire.
 - Le **GET retourne `200` pour une demande connue**, avec seulement `requestId`, `status` et `createdAt` ; UUID inconnu `404`, identifiant mal formé `400`. Le GET ne modifie ni statut ni date.
 - L'ancien stockage mémoire n'existe plus en production ; il reste une doublure de test. Un `_id` UUID unique interdit l'écrasement à l'insertion. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré. La conservation après redémarrage de l'application avec la même base reste à démontrer dans INT-12.
-- **INT-09** définit les dates et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition ni appel en production. **INT-10 : 2 nouveaux tests + 1 test POST/GET existant réussis** avec un MongoDB temporaire réel ; panne d'insertion simulée renvoyant `500`, sans faux reçu. Suite globale et JAR non relancés.
+- **INT-09** a défini les dates et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition à cette étape. **INT-10 : 2 nouveaux tests + 1 test POST/GET existant réussis** avec un MongoDB temporaire réel ; panne d'insertion simulée renvoyant `500`, sans faux reçu. Suite globale et JAR non relancés.
+
+- **INT-11** ajoute une transition MongoDB conditionnelle et atomique, sans upsert : un seul appelant prend la demande en charge, les dates ne reculent pas et un état final ne peut être écrasé. **2 nouveaux tests + 2 tests du modèle passent** ; aucun appelant de production n'exécute encore ces transitions. Les POST restent normalement `PENDING` et le GET demeure en lecture seule.
 
 ## Prérequis
 
@@ -47,6 +49,14 @@ Le contrôle global reste disponible pour une validation plus large, mais **n'a 
 **Résultat observé dans INT-08 : succès du réacteur complet, 181 tests, aucun échec/erreur/ignoré.** Le build produit les trois bibliothèques et le JAR Boot d'assemblage. `clean` supprime les sorties `target/`, pas les sources. Une résolution de dépendances ou un simple `validate` ne remplace pas ce contrôle. Les avertissements Mockito d'auto-attachement d'agent sous Java 21 n'ont pas fait échouer les tests ; la compatibilité avec un futur JDK n'est pas validée ici.
 
 Sous Windows/PowerShell, utiliser `./mvnw.cmd` à la place de `./mvnw` ; le script Windows est fourni mais son exécution n'a pas été testée dans cet environnement Linux. `.gitattributes` fixe LF pour le script Unix et CRLF pour le script Windows.
+
+### Vérification ciblée INT-11
+
+```sh
+./mvnw -B -ntp -pl application -am -Dtest=StoredFamilyRequestTest,MongoFamilyRequestTransitionTest -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
+**Résultat observé : 4 tests réussis**, dont 2 nouveaux tests MongoDB et 2 tests unitaires existants. Double prise en charge, transitions refusées, dates, états finaux et confidentialité du suivi sont vérifiés ; la suite globale et le JAR n'ont pas été relancés. Voir le [cours INT-11](notes/sprint-03/INT-11-securiser-les-mises-a-jour.md).
 
 ### Particularité réseau de cet environnement
 
@@ -103,6 +113,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-08 — Comprendre les refus et leurs preuves](notes/sprint-02/INT-08-tester-les-refus.md).
 - [INT-09 — Données, dates et transitions internes](notes/sprint-03/INT-09-definir-les-donnees-et-transitions.md).
 - [INT-10 — MongoDB avant acceptation](notes/sprint-03/INT-10-persister-avant-d-accepter.md).
+- [INT-11 — Transitions conditionnelles atomiques](notes/sprint-03/INT-11-securiser-les-mises-a-jour.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 

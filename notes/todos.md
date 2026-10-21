@@ -24,7 +24,8 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B007](#td-b007) | Vérifier le Wrapper sous Windows | INT-02 | Optionnel ; environnement Windows requis |
 | [TD-B008](#td-b008) | Revoir `gh` ou SSH si nécessaire | INT-37 | Non prioritaire : Git HTTPS a fonctionné |
 | [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | Terminée : insertion/relecture et unicité réelles, erreur sans faux reçu |
-| [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | À autoriser ; MongoDB INT-10 disponible |
+| [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | Terminée : transitions atomiques, un seul gagnant et états finaux protégés |
+| [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | À autoriser ; INT-09 à INT-11 disponibles |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
@@ -164,11 +165,25 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-10](sprint-03/INT-10-persister-avant-d-accepter.md) |
 | **Story liée** | [INT-11 — Sécuriser les mises à jour](../docs/stages/sprint-03-mongodb.md#int-11--sécuriser-les-mises-à-jour) |
-| **Dépend de** | INT-10 terminée ; nouveau feu vert individuel |
-| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java` et leurs tests à étendre ; pas de méthode de prise en charge ajoutée dans INT-10 |
+| **Dépend de** | INT-10 terminée ; feu vert INT-11 reçu après commit/push du complément `66e0ade` |
+| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionTest.java` ; `StoredFamilyRequestTest.java` réutilisé |
 | **Action** | Faire dépendre la mise à jour atomique du statut actuel autorisé, conserver les dates cohérentes et interdire l'écrasement d'un état final |
 | **Validation** | Une seule prise en charge gagne lors d'un double passage concurrent `PENDING → PROCESSING` ; transitions invalides et écrasement final refusés selon les critères de la story |
-| **Statut** | ⏸ À autoriser — INT-11 non commencée ; cette entrée suit la story existante, sans autoriser son développement |
+| **Statut** | ✅ Terminée sur feu vert INT-11 ; [cours et preuves](sprint-03/INT-11-securiser-les-mises-a-jour.md), 2 nouveaux tests MongoDB + 2 tests du modèle réussis. Pas de traitement réel, redémarrage ou suite globale |
+
+## TD-B011
+
+**Démontrer la persistance et raccorder les tests d'intégration à Maven**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-11](sprint-03/INT-11-securiser-les-mises-a-jour.md) |
+| **Story liée** | [INT-12 — Vérifier la persistance](../docs/stages/sprint-03-mongodb.md#int-12--vérifier-la-persistance) |
+| **Dépend de** | INT-09/10/11 terminées ; nouveau feu vert individuel et Docker disponible |
+| **Fichiers** | POM racine et d'assemblage, `MongoTestSupport.java`, tests MongoDB existants ; démonstration de redémarrage et éventuelles classes `*IT` à définir selon la story |
+| **Action** | Relancer l'application avec la même base conservée et vérifier la relecture ; raccorder explicitement les tests `*IT` au cycle Maven Failsafe |
+| **Validation** | Même demande consultable après redémarrage ; exécution des tests d'intégration réellement observée dans `verify` et rapports exploitables, sans accès d'Experience au stockage |
+| **Statut** | ⏸ À autoriser — INT-12 non commencée ; ce suivi reprend la story existante et n'autorise pas son exécution |
 
 ## Repères de cours
 
@@ -409,3 +424,17 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **À retenir** | `MAJORITY` reste pertinent ; deux membres exigent les deux, trois en exigent deux dans l'hypothèse retenue. L'URI doit permettre la découverte du replica set réellement configuré côté serveurs ; les délais sont à réévaluer. Garder les lectures sur le primary évite le détour vers un secondary en retard. Réplication, sauvegarde et idempotence sont des garanties différentes |
 | **Vérification pédagogique** | Expliquer pourquoi deux instances ne suffisent pas à continuer les écritures après une perte, pourquoi l'URI ne crée pas le replica set et pourquoi un retry du driver ne rend pas un nouveau POST idempotent |
 | **Statut** | 📘 Référence théorique uniquement — aucun replica set créé, aucun test exécuté, aucune modification de configuration ou connaissance évaluée |
+
+## TD-R018
+
+**Comparer et modifier atomiquement plutôt que lire puis écraser**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-11](sprint-03/INT-11-securiser-les-mises-a-jour.md) |
+| **Story liée** | INT-11 — Sécuriser les mises à jour |
+| **Dépend de** | Graphe d'état INT-09, persistance MongoDB INT-10 et opération interne INT-11 |
+| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionTest.java`, `StoredFamilyRequestTest.java` |
+| **À retenir** | `requireTransition` valide les flèches entre statuts, pas des dates ; `transitionTo` vérifie la chronologie de l'objet local puis retourne une copie, sans sauvegarder. Le store vérifie `_id + statut attendu + updatedAt <= date` avec l'Update dans un seul `findAndModify` : le second candidat perd sur le statut déjà changé, même avec une date plus récente. `transition(...)` n'a pour l'instant que des appelants de test, pas de production. Un résultat présent désigne la modification gagnante, un résultat vide une absence de correspondance ; une panne reste une exception. `returnNew` retourne le document modifié, aucun upsert ne crée de demande ; les champs non concernés sont préservés. Atomicité d'un document n'est ni exactly-once, ni bail/propriétaire de traitement, ni transaction avec un partenaire |
+| **Vérification pédagogique** | Distinguer graphe des statuts, chronologie et concurrence ; expliquer pourquoi un candidat avec une date plus récente peut perdre, pourquoi une mise à jour périmée ne peut pas écraser `FAILED` et pourquoi `Optional.empty()` ne doit pas masquer une panne MongoDB |
+| **Statut** | 📘 Référence fondée sur 2 nouveaux tests MongoDB et 2 tests du modèle réussis ; aucun traitement réel ni évaluation orale |
