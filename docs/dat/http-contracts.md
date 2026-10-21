@@ -2,14 +2,14 @@
 
 **[Simulation ConfluxLab] — étape initiale INT-05.** Ce document fixe le contrat pédagogique de création et de suivi d'une demande fictive, dans le contexte Java 21 / Spring Boot 3.5.7.
 Les termes « doit » et « ne doit pas » décrivent les obligations du contrat, pas des comportements déjà démontrés.
-**Les échanges de succès et les exemples de refus ci-dessous restent contractuels, pas des réponses métier observées.** L'état provisoire livré dans INT-03 est distingué en section 1.
+**Les JSON et UUID d'exemple ci-dessous restent contractuels.** Le comportement POST `202` après conservation en mémoire est désormais démontré dans INT-06 ; les succès GET ne sont pas implémentés. L'état réellement livré est distingué en section 1.
 
 ## 1. Périmètre et responsabilités
 
 Le [DAT de référence](ConfluxLab.md) conserve la cible globale ; cette page précise uniquement le contrat initial de [INT-05 — Définir les contrats](../stages/sprint-02-rest.md#int-05--définir-les-contrats).
 Experience est un **BFF mince** : réception HTTP, validation de forme et adaptation des réponses. Capability porte le métier, les invariants, les états et le stockage.
 Le **monolithe modulaire** est assemblé dans INT-03 : une application, avec appels Java via l'API publique de Capability, sans HTTP interne.
-L'ancien client HTTP interne a été supprimé. Tant que les opérations INT-06/07 ne sont pas développées, un POST valide et un GET avec UUID valide retournent **`503 Service Unavailable`**, avec le détail `Family request operations are not available yet.`, sans `Location` ni `requestId`. Cette réponse a été vérifiée dans l'assemblage et sur le JAR réel ; elle ne constitue ni une acceptation, ni une panne de base/partenaire. Voir le [tutoriel INT-03](../../notes/sprint-01/INT-03-assembler-les-modules.md).
+L'ancien client HTTP interne a été supprimé. INT-03/04 répondaient `503` sur les deux routes avant l'acceptation. **Depuis INT-06, un POST valide retourne `202`, UUID et `PENDING`, après conservation en mémoire**, avec `Location` et `statusUrl` publics cohérents. Un refus de validation retourne `400` et un échec d'acceptation inattendu `500` génériques, sans faux acquittement. Le **GET seul reste `503 Service Unavailable`**, même pour un UUID accepté ; le lien prépare INT-07, sans garantir un suivi déjà fonctionnel. La mémoire est perdue au redémarrage, sans bornage ni nettoyage à ce stade. Voir le [tutoriel INT-06](../../notes/sprint-02/INT-06-accepter-une-demande.md).
 INT-05 ne réalise ni service d'acceptation, ni génération d'UUID, ni stockage, ni asynchronisme, ni test HTTP, ni assemblage applicatif.
 `contracts` est une bibliothèque de DTO (objets de transport) : Java et API Jakarta Validation seulement en production, sans contrôleur Spring ni dépendance OpenAPI.
 Jackson et son support des dates Java sont des dépendances de test de ce module ; leur usage vérifie la représentation JSON, pas les règles métier.
@@ -43,7 +43,7 @@ La longueur des noms est celle de `String.length()` : **unités de code UTF-16 J
 | `RequestView.createdAt` | `Instant` | `@NotNull` ; instant de création de la demande, représenté en ISO-8601 UTC dans l'exemple |
 
 Un constructeur de record et Jackson **ne valident pas automatiquement** ces annotations : un appel explicite à `Validator` ou une intégration de validation est nécessaire.
-Le `@Valid @RequestBody` du contrôleur exprime cette validation à l'entrée HTTP ; cela ne prouve pas son exécution dans une application assemblée.
+Le `@Valid @RequestBody` du contrôleur déclenche cette validation à l'entrée HTTP ; INT-06 vérifie son exécution et les contrôles directs de Capability, qui ne se reposent pas uniquement sur le BFF.
 Les annotations des réponses ne déclenchent pas automatiquement la validation des retours des endpoints actuels. Elles ne garantissent pas à elles seules la cohérence des liens ou l'état initial.
 Un record rend ses références finales, **pas une liste profondément immuable** : ces records ne font pas de copie défensive de `dependents`.
 
@@ -176,4 +176,4 @@ Aucune politique HTTP stricte de coercition des types ou de rejet des champs inc
 - [ContractJsonTest.java](../../contracts/src/test/java/dev/confluxlab/contracts/ContractJsonTest.java) et [ContractValidationTest.java](../../contracts/src/test/java/dev/confluxlab/contracts/ContractValidationTest.java) : 59 cas de test réussis lors d'INT-05 ; les [commandes et preuves](../../notes/sprint-02/INT-05-definir-les-contrats.md#5-vérifications-et-limites) portent sur les données et la compilation, pas sur un parcours HTTP.
 - [INT-05](../stages/sprint-02-rest.md#int-05--définir-les-contrats) et [registre central](../../notes/todos.md) : critères et suivi existants, sans nouvelle liste de TODO ni changement de statut.
 
-**Validation historique INT-05 :** tests ciblés puis `./mvnw -B -ntp clean verify` global réussis ; aucun démarrage ni échange HTTP à cette étape. **Vérification ultérieure INT-03 :** assemblage, démarrage du JAR et réponses d'indisponibilité `503` uniquement. **Toujours non réalisés :** acceptation réelle, stockage, suivi métier, traitement et transitions d'état. Le succès des tests DTO ou de délégation avec double ne constitue aucune preuve de ces comportements.
+**Validation historique INT-05 :** 59 tests de données et compilation, sans HTTP. **INT-03/04 :** assemblage et frontières, sans acceptation. **INT-06 :** `clean verify` global réussi (96 tests), payload conservé en mémoire testé côté Capability, POST `202` avec vraie implémentation testé via MVC et sur le JAR réel ; le test de panne HTTP utilise un double explicite. **Toujours non réalisés :** suivi GET effectif, persistance durable, traitement et transitions d'état. Les refus minimaux d'INT-06 ne clôturent pas la suite de refus INT-08.

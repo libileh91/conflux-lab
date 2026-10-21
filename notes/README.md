@@ -60,14 +60,14 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 | INT-03 | [Assembler les modules](sprint-01/INT-03-assembler-les-modules.md) | Terminée : seul JAR Boot démarré, appel Java et indisponibilité explicite ; 64 tests globaux, sans acceptation métier |
 | INT-04 | [Vérifier les frontières](sprint-01/INT-04-verifier-les-frontieres.md) | Terminée : 5 règles testées sur la production, 7 tests de détection, contexte réutilisé ; 76 tests globaux, métier inchangé |
 | INT-05 | [Définir les contrats](sprint-02/INT-05-definir-les-contrats.md) | Terminée : cinq types, exemples JSON et 59 cas de test ; pas de service ni de test HTTP |
-| INT-06 | [Accepter une demande](sprint-02/INT-06-accepter-une-demande.md) | Historique de l'ébauche ; HTTP interne retiré dans INT-03, mais aucune acceptation réelle (routes valides provisoirement `503`) |
+| INT-06 | [Accepter une demande](sprint-02/INT-06-accepter-une-demande.md) | Terminée : conservation mémoire UUID/`PENDING` avant `202`, copie du payload, refus sans acquittement ; 96 tests globaux, GET toujours `503` |
 | INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
 
-Les notes INT-01 et INT-06 conservent le constat du travail amorcé **avant** la planification finale. INT-01 a ensuite été complétée sur feu vert et son cadrage est terminé ; INT-06 reste une rétrospective partielle, non terminée. Les autres dossiers sont préparés sans compte rendu anticipé.
+Les preuves historiques restent datées : INT-01 conserve le cadrage initial ; le cours INT-06 explique désormais l'acceptation réalisée et renvoie à la version publiée de sa rétrospective pour l'ébauche antérieure. Les autres dossiers n'ont pas de compte rendu de réussite anticipé.
 
 ## Clôtures de sprint
 
-- [Sprint 01 — Bilan technique et synthèse documentaire](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) : clôturé sur demande explicite le 2026-10-21 ; 76 tests globaux, restitution orale non évaluée, aucun feu vert pour INT-06.
+- [Sprint 01 — Bilan technique et synthèse documentaire](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) : clôturé sur demande explicite le 2026-10-21 ; 76 tests globaux au moment de la clôture, restitution orale non évaluée ; le feu vert INT-06 a été donné ensuite, séparément.
 
 ## Documentation déjà produite
 
@@ -77,4 +77,4 @@ Les notes INT-01 et INT-06 conservent le constat du travail amorcé **avant** la
 - Le plan a été déplacé dans `docs/stages/` ; ses liens locaux ont été vérifiés lors du déplacement.
 - La demande initiale d'organisation des notes et des identifiants n'a modifié ni les sources Java, ni le POM existant, ni la configuration applicative. La réparation Maven autorisée ultérieurement est décrite dans la note INT-02.
 
-Après INT-04, le `clean verify` global réussit : 76 tests (59 validation/JSON, 2 délégation Java, 3 assemblage/disponibilité, 5 frontières et 7 détection). Le JAR réel a démarré sans base ni partenaire ; POST valide et GET avec UUID valide ont répondu `503`, sans acceptation ni suivi métier. Le contexte Spring est testé et les contrôles automatiques de frontières sont réalisés dans INT-04, y compris leur détection de violations contrôlées. La résolution des dépendances et la navigation Java/Spring côté JDTLS restent des preuves historiques d'INT-02, pas une nouvelle validation GUI. Aucun parcours métier, CI verte ou mesure de performance n'est revendiqué.
+Après INT-06, le `clean verify` global réussit : 96 tests (59 contrats, 16 Capability, 3 BFF, 18 assemblage/HTTP/architecture). Le JAR réel a répondu `202 PENDING` à deux POST avec UUID distincts, puis `503` au GET d'un UUID accepté et `400` au corps invalide ; le processus a été arrêté. La conservation du payload et l'absence d'acquittement en cas d'échec sont prouvées par les tests, sans réaliser le suivi ni le traitement. Les contrôles de frontières restent verts. La résolution des dépendances et la navigation Java/Spring côté JDTLS restent des preuves historiques d'INT-02, pas une nouvelle validation GUI. Aucun traitement de création de famille, suivi fonctionnel, CI verte ou mesure de performance n'est revendiqué.

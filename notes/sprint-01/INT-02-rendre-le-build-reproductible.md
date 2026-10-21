@@ -1,5 +1,7 @@
 # INT-02 — Rendre le build reproductible
 
+> **Actualisation INT-06 — 2026-10-21, après la clôture du sprint 01.** L'[acceptation INT-06](../sprint-02/INT-06-accepter-une-demande.md) est désormais réalisée : enregistrement en mémoire avant retour du `202`, avec UUID et statut `PENDING`. Le GET reste en `503` jusqu'à INT-07 ; pas de MongoDB, d'événement Spring ni d'asynchronisme. Les vérifications historiques ci-dessous ont été exécutées par l'agent ; aucun build n'est relancé pour cette actualisation.
+
 | Contexte | Description |
 |---|---|
 | Sprint | [01 — Socle](../../docs/stages/sprint-01-socle.md) |
@@ -11,7 +13,7 @@
 
 Les versions et choix décrits concernent **[Simulation ConfluxLab]**, pas la stack historique AXA. **Étape INT-05, avant INT-03 :** les types manquants ont été définis et testés ; le build global a réussi à cette étape et a permis de clôturer INT-02 pour son périmètre de build. Les descriptions A/B/C ci-dessous conservent le diagnostic historique, pas un blocage encore actif. La preuve historique figure en section 5.3 et dans le [tutoriel INT-05](../sprint-02/INT-05-definir-les-contrats.md). Cette validation ne réalisait pas à elle seule l'assemblage ou les stories suivantes.
 
-**Repère temporel — avant INT-03.** Les extraits et preuves de ce cours décrivent le socle avant son assemblage. Depuis [INT-03 — Assembler les modules](INT-03-assembler-les-modules.md), `application` a été ajouté au réacteur et porte le seul démarrage/JAR Boot ; le BFF appelle `FamilyRequests` en Java. Le client HTTP interne, sa configuration et ses propriétés, `CapabilityException`, `ExperienceApplication` et le YAML d'Experience ont été supprimés. La validation ultérieure a été exécutée dans la session INT-03 et consignée dans sa note, sans être rejouée pour cette mise à jour documentaire. Les contrôles de frontières ont depuis été réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](INT-04-verifier-les-frontieres.md) ; INT-06/07 restent non réalisées.
+**Repère temporel — avant INT-03.** Les extraits et preuves de ce cours décrivent le socle avant son assemblage. Depuis [INT-03 — Assembler les modules](INT-03-assembler-les-modules.md), `application` a été ajouté au réacteur et porte le seul démarrage/JAR Boot ; le BFF appelle `FamilyRequests` en Java. Le client HTTP interne, sa configuration et ses propriétés, `CapabilityException`, `ExperienceApplication` et le YAML d'Experience ont été supprimés. La validation ultérieure a été exécutée dans la session INT-03 et consignée dans sa note, sans être rejouée pour cette mise à jour documentaire. Les contrôles de frontières ont depuis été réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](INT-04-verifier-les-frontieres.md) ; à l'issue d'INT-04 (2026-10-21, avant INT-06), INT-06/07 n'étaient pas réalisées.
 
 **Sommaire**
 - [1. Objectif et vocabulaire](#1-objectif-et-vocabulaire)
@@ -318,7 +320,7 @@ Dans la session INT-05, les commandes suivantes ont réellement réussi depuis l
 
 INT-02 est donc terminée pour le socle et le build global. Ce succès ne valide ni la GUI Zed, ni Windows, ni un test HTTP, ni un service Capability, ni une CI. Les preuves et explications de ces 59 tests sont dans la [note INT-05](../sprint-02/INT-05-definir-les-contrats.md).
 
-**Validation historique exécutée dans la session INT-03 (2026-10-21, avant INT-04) :** 5 tests ciblés réussis, puis `clean verify` réussi avec **64 tests** (59 contrats, 2 contrôleur, 3 assemblage). Le JAR réel a démarré sur le port loopback `37961` ; POST valide et GET avec UUID ont répondu `503 application/problem+json`, sans `Location` ni `requestId`, puis le processus a été arrêté. Voir [INT-03](INT-03-assembler-les-modules.md). Ces preuves complètent l'historique sans remplacer les résultats INT-02/05 ; aucun build n'a été relancé ici et INT-06/07 restent non réalisées.
+**Validation historique exécutée dans la session INT-03 (2026-10-21, avant INT-04) :** 5 tests ciblés réussis, puis `clean verify` réussi avec **64 tests** (59 contrats, 2 contrôleur, 3 assemblage). Le JAR réel a démarré sur le port loopback `37961` ; POST valide et GET avec UUID ont répondu `503 application/problem+json`, sans `Location` ni `requestId`, puis le processus a été arrêté. Voir [INT-03](INT-03-assembler-les-modules.md). Ces preuves complètent l'historique sans remplacer les résultats INT-02/05 ; aucun build n'a été relancé ici et INT-06/07 n'étaient pas réalisées à cette étape INT-03 du 2026-10-21.
 
 ## 6. Suivi centralisé
 

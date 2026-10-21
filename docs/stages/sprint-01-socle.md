@@ -99,6 +99,8 @@ Pas de parcours métier complet, stockage, événement, appel partenaire, CI ou 
 
 ## Journal de clôture — 2026-10-21
 
+**Repère historique :** le bilan ci-dessous décrit la clôture avant le feu vert ultérieur « ok go 06 ». L'[acceptation INT-06](../../notes/sprint-02/INT-06-accepter-une-demande.md) a depuis été réalisée en mémoire ; ses 96 tests ne remplacent pas les 76 tests constatés à cette clôture. Le suivi INT-07 reste distinct et à autoriser.
+
 Ce journal applique le [format commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint). La demande « oui fait la cloture - then commit l'ensemble & push » autorise la clôture et la publication du travail existant, pas le développement de la story suivante.
 
 | Élément | Résultat constaté |

@@ -1,9 +1,11 @@
 # INT-04 — Vérifier les frontières
 
+> **Actualisation INT-06 — 2026-10-21, après la clôture du sprint 01.** L'[acceptation INT-06](../sprint-02/INT-06-accepter-une-demande.md) est désormais réalisée : enregistrement en mémoire avant retour du `202`, avec UUID et statut `PENDING`. Le GET reste en `503` jusqu'à INT-07 ; pas de MongoDB, d'événement Spring ni d'asynchronisme. Les vérifications historiques ci-dessous ont été exécutées par l'agent ; aucun build n'est relancé pour cette actualisation.
+
 | Contexte | Description |
 |---|---|
 | **Sprint** | [01 — Socle du monolithe modulaire](../../docs/stages/sprint-01-socle.md) |
-| **Statut** | **Terminée sur demande explicite « commit INT-03 & go 04 »** ; aucun feu vert pour INT-06 |
+| **Statut** | **Terminée sur demande explicite « commit INT-03 & go 04 »** ; aucun feu vert pour INT-06 à l'issue d'INT-04, le 2026-10-21, avant INT-06 |
 | **Date des vérifications** | 2026-10-21 |
 | **Objectif du tutoriel** | Rendre les frontières détectables dans le build et vérifier que les détecteurs refusent vraiment les écarts |
 | **Origine des preuves** | Nouveaux tests ciblés, `clean verify` global, rapports Surefire, diagnostics et inspection de l'archive dans cette session |
@@ -13,7 +15,7 @@
 
 **[Simulation ConfluxLab]** Ces tests protègent le découpage du laboratoire. ArchUnit est un choix pédagogique actuel, pas un outil attribué au contexte historique AXA.
 
-**Clôture ultérieure, le 2026-10-21 :** l'utilisateur a demandé la clôture, puis le commit de l'ensemble et son push. Le [journal de clôture du sprint 01](../../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) conserve le bilan, la synthèse et les limites. La restitution orale n'a pas été évaluée et INT-06 reste non autorisée. Les constats Git de la section 4.1 décrivent l'étape antérieure à cette demande de publication.
+**Clôture ultérieure, le 2026-10-21 :** l'utilisateur a demandé la clôture, puis le commit de l'ensemble et son push. Le [journal de clôture du sprint 01](../../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) conserve le bilan, la synthèse et les limites. La restitution orale n'a pas été évaluée et INT-06 n'était pas autorisée lors de cette clôture du 2026-10-21, avant sa réalisation ultérieure. Les constats Git de la section 4.1 décrivent l'étape antérieure à cette demande de publication.
 
 ## Sommaire
 
@@ -50,7 +52,7 @@ Ces tests ne créent pas de famille et ne déterminent pas les règles métier. 
 
 Le POM d'Experience dépend de `capability-api`. Cette dépendance rend disponibles les classes publiques de l'artefact, pas uniquement celles de `capability.api`.
 
-L'implémentation provisoire d'INT-03 est package-private, mais un futur document ou repository pourrait être public pour répondre à un besoin technique. Java autoriserait alors une référence depuis le BFF si les types sont accessibles. Le nom `internal` exprime une intention ; **ce nom n'interdit pas les accès à lui seul**.
+L'implémentation provisoire d'INT-03 était package-private (service supprimé dans INT-06), mais un futur document ou repository pourrait être public pour répondre à un besoin technique. Java autoriserait alors une référence depuis le BFF si les types sont accessibles. Le nom `internal` exprime une intention ; **ce nom n'interdit pas les accès à lui seul**.
 
 ### 2.2. Démarrer Spring ne suffit pas non plus
 
@@ -269,7 +271,7 @@ Les rapports Surefire ont été relus par un contrôle XML :
 | `ArchitectureRuleDetectionTest` | 7 | 0 / 0 / 0 |
 | **Total** | **76** | **0 / 0 / 0** |
 
-**Résultat : `BUILD SUCCESS`** pour le parent et les quatre modules. Les 12 nouveaux tests s'ajoutent aux 64 tests existants. Le test de contexte est réexécuté et les deux routes valides restent vérifiées en `503` via MockMvc.
+**Résultat : `BUILD SUCCESS`** pour le parent et les quatre modules. Les 12 nouveaux tests s'ajoutent aux 64 tests existants. Lors d'INT-04 (2026-10-21, avant INT-06), le test de contexte a été réexécuté et les deux routes valides ont été vérifiées en `503` via MockMvc.
 
 ### 4.4. Contrôler l'archive et les diagnostics
 
@@ -290,13 +292,13 @@ L'outil de diagnostics de l'éditeur a également été exécuté : **aucune err
 
 - Les frontières définies sont vérifiées sur les classes de production, indépendamment du démarrage Spring.
 - Les cinq mêmes règles détectent les six violations contrôlées, avec origine et cible attendues, et acceptent le graphe valide.
-- Les 76 tests globaux passent, dont le contexte et les refus `503` existants.
+- Lors d'INT-04 (2026-10-21, avant INT-06), les 76 tests globaux ont réussi, dont le contexte et les refus `503` existants.
 - Le nouvel outil et les exemples de test ne sont pas embarqués dans l'application.
 - Une revue indépendante n'a pas identifié de défaut bloquant ou important ; sa suggestion sur la précision des diagnostics a été intégrée avant le build final.
 
 ### Limites explicites
 
-- **Pas de modification de `src/main` ni de comportement métier.** Acceptation, stockage et suivi réels restent les stories INT-06/07/08, non démarrées ici.
+- **Pas de modification de `src/main` ni de comportement métier dans INT-04 (2026-10-21, avant INT-06).** L'acceptation, le stockage, le suivi et les refus réels des stories INT-06/07/08 n'étaient pas démarrés à cette étape.
 - Les règles utilisent la convention des packages du DAT. Elles ne devinent pas le rôle métier d'une classe volontairement mal placée dans `api`. Toute nouvelle organisation de packages doit être répercutée dans ces contrôles.
 - L'analyse porte sur le bytecode importé sous `dev.confluxlab`, pas sur tous les usages indirects par réflexion, chaînes de caractères, configuration ou code externe. Elle ne prouve pas non plus à elle seule l'absence d'un appel HTTP déterminé à l'exécution.
 - Les cycles visés sont intermodules, pas tous les cycles entre classes internes d'un même module. Les cycles de POM sont également une contrainte de construction Maven ; ces tests ne constituent pas un parseur du graphe des POM.
@@ -307,7 +309,7 @@ L'outil de diagnostics de l'éditeur a également été exécuté : **aucune err
 
 ## 6. Formulation d'entretien
 
-> « Dans ConfluxLab, j'ai complété le monolithe modulaire avec des tests d'architecture ArchUnit exécutés par Maven. Ils interdisent les cycles, le retour de Capability vers le BFF et l'accès du BFF aux types de Capability hors de son API publique. Les contrats restent indépendants et les bibliothèques ne dépendent pas du module de démarrage. Pour vérifier que les règles fonctionnent réellement, je les exerce aussi sur des classes de test volontairement fautives et sur un graphe autorisé. Je conserve séparément le test de contexte Spring : démarrer ne prouve pas le respect des frontières. Ces protections sont limitées au bytecode et aux conventions de packages ; elles ne remplacent ni les tests métier ni les revues. »
+> « Dans ConfluxLab, le monolithe modulaire a été complété avec des tests d'architecture ArchUnit exécutés par Maven. Ils interdisent les cycles, le retour de Capability vers le BFF et l'accès du BFF aux types de Capability hors de son API publique. Les contrats restent indépendants et les bibliothèques ne dépendent pas du module de démarrage. Pour vérifier que les règles fonctionnent réellement, l'agent les a exercées aussi sur des classes de test volontairement fautives et sur un graphe autorisé. Le projet conserve séparément le test de contexte Spring : démarrer ne prouve pas le respect des frontières. Ces protections sont limitées au bytecode et aux conventions de packages ; elles ne remplacent ni les tests métier ni les revues. »
 
 **Relance :** « Pourquoi les tests négatifs passent-ils alors qu'ils contiennent des cycles ? » **Parce qu'ils attendent une violation.** Les fixtures sont importées dans un contrôle séparé ; elles sont exclues de l'analyse de la production et du JAR livré.
 
@@ -317,7 +319,7 @@ L'outil de diagnostics de l'éditeur a également été exécuté : **aucune err
 
 - [TD-B003 — Assemblage unique, terminé dans INT-03](../todos.md#td-b003).
 - [TD-B004 — Frontières et détection de violations, terminé dans INT-04](../todos.md#td-b004).
-- [TD-B005 — Acceptation, suivi et refus métier, toujours sur autorisation individuelle](../todos.md#td-b005).
+- [TD-B005 — Acceptation, suivi et refus métier, non démarrés à la clôture du sprint 01 (2026-10-21, avant INT-06)](../todos.md#td-b005).
 - [TD-R001 — Modules distincts, une seule application](../todos.md#td-r001).
 - [TD-R010 — Assemblage et différence entre doubles et comportement livré](../todos.md#td-r010).
 - [TD-R011 — Tester les frontières et leurs détecteurs](../todos.md#td-r011).

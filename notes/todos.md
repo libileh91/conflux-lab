@@ -19,7 +19,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B002](#td-b002) | Réévaluer `verify` global | INT-02 | Terminée : `clean verify` global réussi après INT-05 |
 | [TD-B003](#td-b003) | Assembler l'application et retirer l'HTTP interne | INT-03 | Terminée : seul JAR Boot démarré et appel Java vérifié |
 | [TD-B004](#td-b004) | Contrôler les frontières | INT-04 | Terminée : règles de production et détection de violations vérifiées |
-| [TD-B005](#td-b005) | Valider le parcours REST | INT-06/07/08 | Appel Java branché ; métier absent (`503`), feu vert requis |
+| [TD-B005](#td-b005) | Valider le parcours REST | INT-06/07/08 | INT-06 terminée : acceptation mémoire `202` ; INT-07/08 à autoriser |
 | [TD-B006](#td-b006) | Vérifier les raccourcis dans l'interface Zed | INT-02 | Vérification manuelle non constatée |
 | [TD-B007](#td-b007) | Vérifier le Wrapper sous Windows | INT-02 | Optionnel ; environnement Windows requis |
 | [TD-B008](#td-b008) | Revoir `gh` ou SSH si nécessaire | INT-37 | Non prioritaire : Git HTTPS a fonctionné |
@@ -88,13 +88,13 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 
 | Champ | Valeur |
 |---|---|
-| **Créé dans** | [Note INT-06](sprint-02/INT-06-accepter-une-demande.md), ébauche non validée |
+| **Créé dans** | [Note INT-06](sprint-02/INT-06-accepter-une-demande.md), suivi initié dans l'ébauche puis actualisé après réalisation de l'acceptation |
 | **Stories liées** | INT-06, INT-07 et INT-08 ; chaque story conserve son feu vert individuel |
 | **Dépend de** | INT-05 et socle assemblé/vérifié, notamment [TD-B004](#td-b004) |
 | **Fichiers** | `experience-api/src/`, `capability-api/src/`, `contracts/src/` |
 | **Action** | Brancher une acceptation réelle en mémoire dans Capability, puis le GET et les refus, sans HTTP interne ni prétendre que la famille est créée |
 | **Validation** | Tests POST `202`, GET `200`/`404`, entrée invalide `400`, refus sans enregistrement et demandes distinctes ; état `PENDING` et limite de mémoire explicités |
-| **Statut** | ⏳ À autoriser story par story ; INT-03 a seulement branché l'API Java et vérifié POST/GET valides `503`, sans enregistrement ni suivi métier |
+| **Statut** | ◐ Partiellement réalisée : INT-06 terminée sur feu vert, 96 tests globaux et JAR réel vérifié, acceptation mémoire `202` ; INT-07 (GET encore `503`) et INT-08 restent à autoriser, sans clôture globale du parcours |
 
 ## TD-B006
 
@@ -194,7 +194,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `FamilyController.java`, [RequestAccepted.java](../contracts/src/main/java/dev/confluxlab/contracts/RequestAccepted.java), [RequestView.java](../contracts/src/main/java/dev/confluxlab/contracts/RequestView.java) et [contrat initial](../docs/dat/http-contracts.md) |
 | **À retenir** | `202` signifie demande acceptée, pas famille créée ni exécution durable garantie. `Location`/`statusUrl` indiquent où consulter. Le UUID corrèle les étapes ; il ne garantit pas l'idempotence, c'est-à-dire l'absence d'effet supplémentaire si l'on répète la demande |
 | **Vérification pédagogique** | Expliquer ce que le client doit consulter après le POST et pourquoi deux POST identiques peuvent encore produire deux demandes |
-| **Statut** | 📘 Référence de contrat — aucun parcours HTTP fonctionnel déduit de la seule lecture du contrôleur |
+| **Statut** | 📘 Référence illustrée dans INT-06 : POST `202` réel après conservation mémoire, GET encore indisponible, sans traitement ni durabilité ; compréhension de l'apprenant non évaluée |
 
 ## TD-R005
 
@@ -208,7 +208,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `FamilyController.java`, types `contracts` et tests réalisés dans [INT-05](sprint-02/INT-05-definir-les-contrats.md), `ApiExceptionHandler.java` |
 | **À retenir** | Le contrôleur reçoit des données et délègue ; `@Valid` déclenche les contraintes réellement déclarées, il ne les invente pas. Un DTO transporte des données ; ce n'est pas un document MongoDB. Une annotation et une branche `ResponseEntity` ne prouvent ni compilation, ni démarrage, ni réponse observée |
 | **Vérification pédagogique** | Distinguer lecture du code, test du contrat et requête réellement exécutée ; expliquer pourquoi Capability protège aussi ses invariants |
-| **Statut** | 📘 Référence documentée — DTO testés dans INT-05 ; délégation Java et indisponibilité `503` vérifiées dans INT-03, mais acceptation et suivi métier toujours non réalisés |
+| **Statut** | 📘 Référence documentée — DTO testés dans INT-05, acceptation et validation directe réalisées dans INT-06 ; suivi INT-07 et refus complets INT-08 non réalisés |
 
 ## TD-R006
 
@@ -275,9 +275,9 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Créé dans** | [Note INT-03](sprint-01/INT-03-assembler-les-modules.md) |
 | **Story liée** | INT-03 — Assembler les modules |
 | **Dépend de** | Lire l'assemblage et ses deux niveaux de tests ; aucune nouvelle exécution requise |
-| **Fichiers** | `application/pom.xml`, `ConfluxLabApplication.java`, `FamilyRequests.java`, `UnavailableFamilyRequests.java`, `FamilyControllerTest.java`, `ApplicationAssemblyTest.java` |
+| **Fichiers** | `application/pom.xml`, `ConfluxLabApplication.java`, `FamilyRequests.java`, ancien `UnavailableFamilyRequests.java` (historique INT-03, remplacé dans INT-06), `FamilyControllerTest.java`, `ApplicationAssemblyTest.java` |
 | **À retenir** | Une dépendance Maven fournit des types, pas automatiquement un bean. Le démarrage placé au-dessus des packages découvre l'implémentation, injectée via l'interface publique. Le test unitaire peut retourner un succès préparé ; le contexte réel et le JAR doivent refléter l'indisponibilité des opérations absentes (`503`), sans faux identifiant ni prise en charge |
-| **Vérification pédagogique** | Expliquer pourquoi le contrôleur obtient `202` avec un double mais le JAR répond `503`, et pourquoi un test MockMvc ne prouve pas à lui seul le démarrage du JAR |
+| **Vérification pédagogique** | Expliquer pourquoi, dans INT-03, le contrôleur obtenait `202` avec un double mais le JAR répondait `503`, et pourquoi un test MockMvc ne prouve pas à lui seul le démarrage du JAR ; distinguer cette histoire de l'acceptation réelle d'INT-06 |
 | **Statut** | 📘 Référence fondée sur les vérifications INT-03 (64 tests, inspection et démarrage du JAR) — compréhension de l'apprenant non évaluée |
 
 ## TD-R011
@@ -293,3 +293,17 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **À retenir** | ArchUnit lit les dépendances des classes compilées ; les règles ne vérifient pas les règles métier. Des fixtures fautives prouvent que les mêmes règles rejettent effectivement un cycle ou un accès interdit, avec source et cible attendues. Un graphe autorisé vérifie aussi l'absence de rejet abusif. Exclure les tests de l'analyse de production évite de confondre violations simulées et application réelle |
 | **Vérification pédagogique** | Expliquer pourquoi un test négatif qui réussit prouve un refus, pourquoi il faut aussi un cas autorisé et pourquoi le test de contexte ne remplace pas les tests de frontières |
 | **Statut** | 📘 Référence fondée sur 12 nouveaux tests réussis et 76 tests globaux dans INT-04 — [clôture technique et documentaire du sprint 01](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) demandée par l'utilisateur ; restitution orale de l'apprenant toujours non évaluée |
+
+## TD-R012
+
+**Conserver avant d'acquitter, sans promettre la durabilité**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-06](sprint-02/INT-06-accepter-une-demande.md) |
+| **Story liée** | INT-06 — Accepter une demande |
+| **Dépend de** | Contrats et frontières déjà réalisés ; aucune nouvelle exécution requise pour lire le repère |
+| **Fichiers** | `InMemoryFamilyRequests.java`, `InMemoryFamilyRequestStore.java`, `StoredFamilyRequest.java`, `FamilyRequestConfiguration.java`, tests Capability et tests HTTP d'acceptation |
+| **À retenir** | Capability valide un snapshot, génère l'UUID et conserve `PENDING` avant de retourner le reçu. `List.copyOf` protège la liste conservée ; `putIfAbsent` empêche l'écrasement d'une clé mais ne dédoublonne pas les demandes. `202` ne signifie ni famille créée ni durabilité ; la mémoire est perdue au redémarrage et reste non bornée. Le lien GET est préparé, pas encore fonctionnel |
+| **Vérification pédagogique** | Expliquer ce qui se passe si `save` échoue, si l'appelant modifie sa liste, si l'application redémarre ou si le client répète le POST ; distinguer le `Clock` d'horodatage de l'horloge de validation |
+| **Statut** | 📘 Référence fondée sur les 96 tests réussis et la démonstration du JAR INT-06 ; compréhension de l'apprenant non évaluée, INT-07/08 toujours sur feu vert distinct |

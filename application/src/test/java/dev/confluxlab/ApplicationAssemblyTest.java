@@ -13,9 +13,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -35,26 +35,6 @@ class ApplicationAssemblyTest {
         assertEquals(1, context.getBeansOfType(FamilyRequests.class).size());
     }
 
-    @Test
-    void doesNotAcknowledgeARequestBeforeAcceptanceIsImplemented() throws Exception {
-        mockMvc.perform(post("/api/v1/families")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "principal": {"firstName": "Alex", "lastName": "Exemple", "birthDate": "1990-04-12"},
-                                  "dependents": [
-                                    {"firstName": "Camille", "lastName": "Exemple", "birthDate": "2015-08-21"},
-                                    {"firstName": "Noa", "lastName": "Exemple", "birthDate": "2018-02-03"}
-                                  ]
-                                }
-                                """))
-                .andExpect(status().isServiceUnavailable())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(header().doesNotExist("Location"))
-                .andExpect(jsonPath("$.status").value(503))
-                .andExpect(jsonPath("$.detail").value("Family request operations are not available yet."))
-                .andExpect(jsonPath("$.requestId").doesNotExist());
-    }
 
     @Test
     void doesNotInventTrackingBeforeItIsImplemented() throws Exception {

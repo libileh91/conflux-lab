@@ -1,6 +1,6 @@
 # Sprint 02 — Contrat REST et BFF mince
 
-**Statut : préparation INT-05 terminée sur feu vert, avant l'assemblage du sprint 01.** INT-03 a depuis branché le BFF sur l'API Java de Capability, avec indisponibilité `503` vérifiée ; l'acceptation INT-06 reste non réalisée. Les autres stories attendent leur feu vert individuel.
+**Statut : en cours — INT-05 et INT-06 terminées sur feu vert individuel.** INT-06 accepte et conserve les demandes en mémoire ; le GET reste `503`. INT-07 et INT-08 attendent leur autorisation, sans clôture anticipée du sprint.
 
 ## Objectif
 
@@ -30,7 +30,7 @@ En tant que développeur, je veux connaître les données et les règles du cont
 - [x] Les cinq types correspondent aux exemples ; 59 cas de test passent et le `clean verify` global réussit, sans service métier ajouté.
 
 ### INT-06 — Accepter une demande
-**Statut : à faire — BFF branché en Java dans INT-03, acceptation non réalisée, feu vert requis.** [Note rétrospective](../../notes/sprint-02/INT-06-accepter-une-demande.md).
+**Statut : terminée sur demande explicite « ok go 06 ».** Socle INT-02/03/04 et contrats INT-05 disponibles. [Cours et preuves INT-06](../../notes/sprint-02/INT-06-accepter-une-demande.md).
 
 En tant que client de l'API, je veux recevoir un identifiant après l'acceptation de ma demande, afin de pouvoir la suivre sans attendre sa réalisation.
 
@@ -39,8 +39,10 @@ En tant que client de l'API, je veux recevoir un identifiant après l'acceptatio
 - Exposer `POST /api/v1/families` dans le BFF, qui appelle Capability en Java.
 
 **Terminé quand :**
-- [ ] Le test du POST valide retourne `202`, `requestId`, `status`, `statusUrl` et un en-tête `Location` cohérent, après enregistrement.
-- [ ] Deux demandes reçoivent des identifiants distincts ; aucune famille n'est annoncée créée ni aucun succès métier simulé.
+- [x] Le test du POST valide retourne `202`, `requestId`, `PENDING`, `statusUrl` et `Location` cohérents avec la vraie implémentation ; les tests Capability prouvent la conservation préalable du payload et l'absence d'acceptation si le store échoue.
+- [x] Deux demandes identiques reçoivent des UUID distincts et sont conservées séparément ; aucune famille n'est annoncée créée ni aucun traitement simulé.
+
+**Preuves :** `clean verify` global réussi (96 tests). Démarrage borné du JAR réel : deux POST valides `202` avec UUID distincts, GET de suivi encore `503` et corps invalide `400`, puis processus arrêté. Validation Java directe, copie immuable, collisions et erreurs d'enregistrement sont également testées, sans déclarer INT-08 complète.
 
 ### INT-07 — Consulter la demande
 **Statut : à faire — feu vert requis.** Prérequis : INT-06 terminée.
@@ -72,7 +74,7 @@ En tant que client de l'API, je veux comprendre pourquoi ma demande est refusée
 
 La mémoire est un stockage pédagogique **perdu au redémarrage**. Les demandes restent `PENDING` : pas encore d'événement, d'orchestration ou de partenaire. Le `202` ne prouve donc ni une conservation durable ni un traitement complet. Un UUID sert à retrouver la demande ; deux POST identiques peuvent encore créer deux demandes.
 
-Les annotations ne prouvent pas une acceptation. INT-03 vérifie seulement le branchement et le refus `503` tant que le métier est absent ; aucun critère de succès d'INT-06/07/08 n'en découle. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
+INT-06 vérifie désormais une acceptation réelle en mémoire, sans HTTP interne. Le GET reste explicitement indisponible, même pour un UUID accepté ; son lien est préparé pour INT-07. Les refus testés protègent l'acceptation mais ne constituent pas toute la couverture INT-08. La map n'est ni bornée ni nettoyée à ce stade : usage de labo uniquement, aucune promesse de durabilité. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
 
 ## Démo et clôture
 

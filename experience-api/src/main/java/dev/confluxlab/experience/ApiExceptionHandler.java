@@ -1,6 +1,7 @@
 package dev.confluxlab.experience;
 
 import dev.confluxlab.capability.api.CapabilityNotReadyException;
+import dev.confluxlab.capability.api.InvalidFamilyRequestException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -18,6 +19,11 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ProblemDetail> handleCapabilityNotReady(CapabilityNotReadyException exception) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(problem(HttpStatus.SERVICE_UNAVAILABLE));
+    }
+
+    @ExceptionHandler(InvalidFamilyRequestException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidFamilyRequest(InvalidFamilyRequestException exception) {
+        return ResponseEntity.badRequest().body(problem(HttpStatus.BAD_REQUEST));
     }
 
     @ExceptionHandler(Exception.class)

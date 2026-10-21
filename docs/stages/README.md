@@ -51,7 +51,7 @@ Les tests accompagnent chaque story : ils ne sont pas reportés au sprint 07. Le
 | Sprint | Ce que tu sauras faire à la fin | Stories | État actuel |
 |---|---|---|---|
 | [01 — Socle modulaire](sprint-01-socle.md) | Construire et démarrer une application aux modules séparés | INT-01 à INT-04 ; INT-37 | Clôturé techniquement et documenté sur demande utilisateur (2026-10-21) ; restitution orale non évaluée |
-| [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05 terminée ; BFF branché en Java, acceptation INT-06 non réalisée |
+| [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05/06 terminées ; acceptation mémoire `202`, INT-07/08 à autoriser |
 | [03 — MongoDB](sprint-03-mongodb.md) | Conserver une demande après redémarrage | INT-09 à INT-12 | Planifié |
 | [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | Planifié |
 | [05 — Orchestration](sprint-05-orchestration.md) | Faire avancer les six opérations selon leurs dépendances | INT-17 à INT-20 | Planifié |
@@ -68,14 +68,15 @@ Les identifiants ne changent pas ; ils ne sont pas un ordre de développement ob
 - **Réalisé ensuite sur feu vert INT-03 :** assemblage unique, appel Java et indisponibilité explicite (`503`) vérifiés, sans acceptation réelle.
 - **Réalisé ensuite sur feu vert INT-04 :** frontières et détection de violations vérifiées dans le build global (76 tests), sans modification du métier.
 - **Clôture demandée le 2026-10-21 :** [bilan technique et synthèse documentaire du sprint 01](sprint-01-socle.md#journal-de-clôture--2026-10-21), sans évaluation orale de l'apprenant.
-- **Suite, toujours sur feu vert individuel :** INT-06/07/08 ; la clôture et la publication Git n'autorisent pas leur développement.
+- **Réalisé ensuite sur feu vert INT-06 :** validation directe, UUID et conservation mémoire avant `202`, sans suivi ni traitement.
+- **Suite, toujours sur feu vert individuel :** INT-07/08 ; la clôture, la publication Git et l'accord INT-06 n'autorisent pas leur développement.
 - La préparation avancée d'INT-05 ne lance ni l'assemblage ni les autres stories du sprint 02.
 
 ## Architecture à conserver
 
 Une application Spring Boot et un seul JAR exécutable. BFF et Capability restent séparés : le BFF gère l'HTTP ; Capability protège le métier et possède son stockage. La communication interne est un appel Java via l'interface publique de Capability. Feign/Resilience4j servira uniquement au partenaire externe fictif.
 
-Aujourd'hui, le build global réussit avec 76 tests : 59 de données/JSON, 2 de délégation Java, 3 d'assemblage/disponibilité, 5 de frontières et 7 de détection des règles. INT-03 a remplacé l'HTTP interne et livré le seul JAR Boot, démarré sans base ni partenaire. POST valide et GET avec UUID valide retournent provisoirement `503`, sans prise en charge métier ; cela ne termine pas INT-06/07/08. Voir le [README du projet](../../README.md) pour les commandes et les limites.
+Aujourd'hui, le build global réussit avec 96 tests : 59 contrats, 16 Capability, 3 BFF et 18 assemblage/HTTP/architecture. INT-06 conserve le payload en mémoire avant de retourner `202 PENDING` ; les deux POST de la démonstration réelle ont des UUID distincts. Le GET reste `503`, même pour un UUID accepté ; aucun stockage durable ni traitement n'est lancé. INT-07/08 restent distinctes et à autoriser. Voir le [README du projet](../../README.md) pour les commandes et les limites.
 
 ## Notes de fin de tâche
 

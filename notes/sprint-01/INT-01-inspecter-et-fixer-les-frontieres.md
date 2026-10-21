@@ -1,14 +1,16 @@
 # INT-01 — Inspecter et fixer les frontières
 
+> **Actualisation INT-06 — 2026-10-21, après la clôture du sprint 01.** L'[acceptation INT-06](../sprint-02/INT-06-accepter-une-demande.md) est désormais réalisée : enregistrement en mémoire avant retour du `202`, avec UUID et statut `PENDING`. Le GET reste en `503` jusqu'à INT-07 ; pas de MongoDB, d'événement Spring ni d'asynchronisme. Les vérifications historiques ci-dessous ont été exécutées par l'agent ; aucun build n'est relancé pour cette actualisation.
+
 | Repère | Valeur |
 |---|---|
 | **Sprint** | [01 — Socle du monolithe](../../docs/stages/sprint-01-socle.md) |
-| **Statut** | Cadrage terminé ; état décrit avant INT-03. Assemblage INT-03 et contrôles de frontières INT-04 validés depuis ; acceptation INT-06 toujours non réalisée |
+| **Statut** | Cadrage terminé ; état décrit avant INT-03. Assemblage INT-03 et contrôles de frontières INT-04 validés ensuite ; acceptation INT-06 non réalisée à la clôture du sprint 01, le 2026-10-21, avant INT-06 |
 | **Objectif du tutoriel** | Comprendre l'organisation du code avant de commencer le métier |
 | **Source des preuves** | Cadrage initial et reprise Maven conservés ; actualisation du statut de compilation après les tests d'INT-05 |
 | **Suivi** | [Actions et repères centralisés](../todos.md) |
 
-**Repère temporel — avant INT-03.** Ce cours conserve les constats, extraits et preuves antérieurs à l'assemblage. Depuis [INT-03 — Assembler les modules](INT-03-assembler-les-modules.md), `application` porte le seul démarrage Boot et le BFF appelle l'interface publique Java `FamilyRequests`. L'ancien client HTTP, sa configuration et ses propriétés, `CapabilityException`, `ExperienceApplication` et le YAML d'Experience ont été supprimés. La validation a été exécutée dans la session INT-03 et consignée dans sa note ; aucun build supplémentaire n'est relancé pour cette mise à jour documentaire. Les contrôles de frontières ont depuis été réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](INT-04-verifier-les-frontieres.md). L'acceptation/suivi INT-06/07 restent non réalisés : les routes refusent explicitement par `503` tant que ces opérations ne sont pas implémentées.
+**Repère temporel — avant INT-03.** Ce cours conserve les constats, extraits et preuves antérieurs à l'assemblage. Depuis [INT-03 — Assembler les modules](INT-03-assembler-les-modules.md), `application` porte le seul démarrage Boot et le BFF appelle l'interface publique Java `FamilyRequests`. L'ancien client HTTP, sa configuration et ses propriétés, `CapabilityException`, `ExperienceApplication` et le YAML d'Experience ont été supprimés. La validation a été exécutée dans la session INT-03 et consignée dans sa note ; aucun build supplémentaire n'est relancé pour cette mise à jour documentaire. Les contrôles de frontières ont depuis été réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](INT-04-verifier-les-frontieres.md). Au terme d'INT-04, le 2026-10-21, avant INT-06, l'acceptation et le suivi INT-06/07 n'étaient pas réalisés : les deux routes répondaient explicitement `503`.
 
 ## 1. Objectif et vocabulaire
 
@@ -102,7 +104,7 @@ flowchart TD
 
 **Ce deuxième schéma était la cible du cadrage ; son assemblage a depuis été réalisé dans INT-03.** Le module `application` assemble désormais les bibliothèques et produit le seul JAR Boot exécutable. Une bibliothèque JAR ordinaire fournit du code ; elle n'a pas besoin d'être un serveur autonome.
 
-L'appel Java BFF → Capability prévu ici est désormais câblé dans INT-03, sans réaliser encore l'acceptation ni le suivi métier. Feign/Resilience4j reste réservé aux futurs partenaires externes fictifs, pas à créer un réseau artificiel à l'intérieur de la même application.
+Lors d'INT-03 (2026-10-21, avant INT-06), l'appel Java BFF → Capability prévu ici a été câblé sans réaliser l'acceptation ni le suivi métier. Feign/Resilience4j reste réservé aux futurs partenaires externes fictifs, pas à créer un réseau artificiel à l'intérieur de la même application.
 
 ### 3.4 Conserver ce qui a déjà été réparé
 
@@ -148,7 +150,7 @@ L'ancienne erreur « not a git repository » appartient au premier diagnostic. E
 
 ### 5.2 Ce qui n'est pas prouvé
 
-Un schéma correct ne prouve pas que le code le respecte. Aucun test de frontières, aucun appel Java BFF → Capability et aucun démarrage de l'assemblage n'avaient été démontrés dans INT-01. L'assemblage et la délégation ont été vérifiés ensuite dans [INT-03](INT-03-assembler-les-modules.md) ; les contrôles automatiques de frontières ont depuis été réalisés dans [INT-04](INT-04-verifier-les-frontieres.md), sans réaliser l'acceptation INT-06.
+Un schéma correct ne prouve pas que le code le respecte. Aucun test de frontières, aucun appel Java BFF → Capability et aucun démarrage de l'assemblage n'avaient été démontrés dans INT-01. L'assemblage et la délégation ont été vérifiés ensuite dans [INT-03](INT-03-assembler-les-modules.md) ; les contrôles automatiques de frontières ont été réalisés dans [INT-04](INT-04-verifier-les-frontieres.md), le 2026-10-21, sans réaliser l'acceptation INT-06 à cette étape.
 
 La tâche est terminée **pour son périmètre de cadrage**, pas pour tout le sprint. Le blocage des trois DTO a été levé à l'étape INT-05, avant INT-03/04, et son build global réussissait alors avec 59 cas de test de contrats ; ce résultat historique ne validait pas encore l'assemblage, les frontières ou un parcours HTTP. Les preuves historiques du dépannage JDTLS restent distinctes dans INT-02.
 

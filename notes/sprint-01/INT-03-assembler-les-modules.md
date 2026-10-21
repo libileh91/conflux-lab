@@ -1,9 +1,11 @@
 # INT-03 — Assembler les modules
 
+> **Actualisation INT-06 — 2026-10-21, après la clôture du sprint 01.** L'[acceptation INT-06](../sprint-02/INT-06-accepter-une-demande.md) est désormais réalisée : enregistrement en mémoire avant retour du `202`, avec UUID et statut `PENDING`. Le GET reste en `503` jusqu'à INT-07 ; pas de MongoDB, d'événement Spring ni d'asynchronisme. Les vérifications historiques ci-dessous ont été exécutées par l'agent ; aucun build n'est relancé pour cette actualisation.
+
 | Contexte | Description |
 |---|---|
 | **Sprint** | [01 — Socle du monolithe modulaire](../../docs/stages/sprint-01-socle.md) |
-| **Statut** | **Terminée sur feu vert explicite pour INT-03 uniquement** ; contrôles de frontières INT-04 réalisés depuis ; acceptation métier INT-06 toujours non réalisée |
+| **Statut** | **Terminée sur feu vert explicite pour INT-03 uniquement** ; contrôles de frontières INT-04 réalisés ensuite ; acceptation INT-06 non réalisée à la clôture du sprint 01, le 2026-10-21, avant INT-06 |
 | **Date des vérifications INT-03 (avant INT-04)** | 2026-10-21 |
 | **Objectif du tutoriel** | Comprendre comment plusieurs bibliothèques deviennent une seule application, puis démontrer un appel Java entre leurs modules |
 | **Origine des preuves** | Sources modifiées dans cette tâche, tests ciblés, nouveau `clean verify`, inspection des quatre JAR et démarrage borné du JAR réel |
@@ -12,7 +14,7 @@
 
 **[Simulation ConfluxLab]** Le découpage et le raccordement présentés ici sont ceux du laboratoire, pas une description certifiée du déploiement historique AXA.
 
-**Actualisation après INT-04.** Les contrôles de frontières ont été réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](INT-04-verifier-les-frontieres.md) : `clean verify` réussi, **76 tests** (64 existants + 5 contrôles de production + 7 tests de détection), diagnostics à zéro. Les 64 tests détaillés ci-dessous restent la preuve historique INT-03 du 2026-10-21, avant INT-04. Aucun build n'est relancé pour cette actualisation ; INT-06 reste non réalisée.
+**Actualisation historique après INT-04 — 2026-10-21, avant INT-06.** Les contrôles de frontières ont été réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](INT-04-verifier-les-frontieres.md) : `clean verify` réussi, **76 tests** (64 existants + 5 contrôles de production + 7 tests de détection), diagnostics à zéro. Les 64 tests détaillés ci-dessous restent la preuve historique INT-03 du 2026-10-21, avant INT-04. Aucun build n'avait été relancé pour cette actualisation ; INT-06 n'était pas réalisée à cette date.
 
 ## Sommaire
 
@@ -168,11 +170,11 @@ return ResponseEntity.ok(familyRequests.getRequest(requestId));
 
 Ce sont des **appels de méthodes Java sur un objet injecté**, pas de la sérialisation JSON vers un autre port. Le BFF conserve l'adaptation HTTP et la construction du lien de suivi public ; il n'acquiert aucun stockage ni règle métier. Les annotations HTTP du contrôleur continuent de décrire la façade publique, pas la communication interne.
 
-L'ancienne exception HTTP du client et les classes `CapabilityClient`, `CapabilityClientConfiguration`, `CapabilityProperties` ont été supprimées. Leurs explications historiques restent dans la note INT-06, clairement signalées comme telles.
+L'ancienne exception HTTP du client et les classes `CapabilityClient`, `CapabilityClientConfiguration`, `CapabilityProperties` ont été supprimées. Pour l'acceptation actuelle, voir la [note INT-06](../sprint-02/INT-06-accepter-une-demande.md).
 
 ### 3.4. Rendre l'indisponibilité honnête et observable
 
-Extrait partiel de [`UnavailableFamilyRequests.java`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/UnavailableFamilyRequests.java) :
+Extrait partiel **historique** de `UnavailableFamilyRequests.java` (INT-03, 2026-10-21, avant INT-06). Ce service provisoire a été supprimé dans [INT-06](../sprint-02/INT-06-accepter-une-demande.md) :
 
 ```java
 @Service
@@ -206,11 +208,11 @@ public ResponseEntity<ProblemDetail> handleCapabilityNotReady(CapabilityNotReady
 
 `ProblemDetail` représente une erreur structurée. Le détail choisi par le BFF est `Family request operations are not available yet.` Les anciens messages réseau de type « upstream » ne sont plus utilisés pour un appel interne Java.
 
-**Pourquoi `503` ?** Pour cet incrément, l'application démarre, mais les opérations ne sont pas encore disponibles. Cette réponse empêche un faux `202` de laisser croire qu'une demande perdue a été acceptée. Le GET ne fabrique pas non plus un suivi ou un `404` prétendument issu d'une recherche. Ce choix provisoire n'est ni une panne de MongoDB, ni une politique de retry, ni une promesse de délai de disponibilité. Aucun `Retry-After` n'est inventé.
+**Pourquoi `503` ?** Dans l'incrément INT-03 du 2026-10-21, avant INT-06, l'application démarrait, mais les opérations n'étaient pas encore disponibles. Cette réponse empêche un faux `202` de laisser croire qu'une demande perdue a été acceptée. Le GET ne fabrique pas non plus un suivi ou un `404` prétendument issu d'une recherche. Ce choix provisoire n'est ni une panne de MongoDB, ni une politique de retry, ni une promesse de délai de disponibilité. Aucun `Retry-After` n'est inventé.
 
 ### 3.5. Tester deux niveaux différents
 
-[`FamilyControllerTest`](../../experience-api/src/test/java/dev/confluxlab/experience/FamilyControllerTest.java) comporte **2 tests unitaires**, sans contexte Spring :
+À l'étape INT-03 (2026-10-21, avant INT-06), [`FamilyControllerTest`](../../experience-api/src/test/java/dev/confluxlab/experience/FamilyControllerTest.java) comportait **2 tests unitaires**, sans contexte Spring :
 
 - Mockito fournit un double de `FamilyRequests` ; le contrôleur reçoit ce double dans son constructeur.
 - Le POST vérifie la délégation et la reconstruction du lien public ; le GET vérifie la transmission de l'UUID et de la vue.
@@ -226,9 +228,9 @@ FamilyController controller = new FamilyController(familyRequests);
 ResponseEntity<RequestAccepted> response = controller.createFamily(request);
 ```
 
-Le `202` et le `PENDING` de ce test proviennent du **double préparé**, pas de l'implémentation livrée. Ils démontrent l'adaptation et la délégation, pas l'enregistrement d'une demande.
+Le `202` et le `PENDING` de ce test proviennent du **double préparé**, pas de l'implémentation livrée dans INT-03. Ils démontrent l'adaptation et la délégation, pas l'enregistrement d'une demande.
 
-[`ApplicationAssemblyTest`](../../application/src/test/java/dev/confluxlab/ApplicationAssemblyTest.java) comporte **3 tests avec le vrai contexte**, sans remplacer Capability par un mock :
+À cette même étape INT-03 (2026-10-21, avant INT-06), [`ApplicationAssemblyTest`](../../application/src/test/java/dev/confluxlab/ApplicationAssemblyTest.java) comportait **3 tests avec le vrai contexte**, sans remplacer Capability par un mock :
 
 ```java
 @SpringBootTest(classes = ConfluxLabApplication.class)
@@ -336,7 +338,7 @@ INT-03 packaged smoke check: PASS
 
 Le log est une sortie locale générée, ignorée par Git et supprimable par un prochain `clean`, pas une preuve versionnée durable. Les requêtes ont visé la façade publique depuis un client de test : **elles ne réintroduisent pas d'HTTP entre Experience et Capability**.
 
-Pour reproduire manuellement la démonstration, construire avec `clean verify`, lancer la commande Java ci-dessus, relever le nouveau port dans le log Tomcat, envoyer la fixture au POST et appeler le GET indiqué, puis arrêter avec `Ctrl+C`. L'outil utilisé pendant cette session était Python, pas `curl` ; aucune commande `curl` n'est présentée comme exécutée.
+Pour reproduire manuellement la démonstration, construire avec `clean verify`, lancer la commande Java ci-dessus, relever le nouveau port dans le log Tomcat, envoyer la fixture au POST et appeler le GET indiqué, puis arrêter avec `Ctrl+C`. L'outil utilisé pendant cette session était Python, pas `curl` ; aucune commande `curl` n'est présentée comme exécutée. Le POST `503` ci-dessus décrit l'artefact INT-03 du 2026-10-21, pas le résultat attendu des sources actuelles : voir la [note INT-06](../sprint-02/INT-06-accepter-une-demande.md).
 
 ## 5. Vérifications, compromis et limites
 
@@ -345,30 +347,30 @@ Pour reproduire manuellement la démonstration, construire avec `clean verify`, 
 - Un seul démarrage Spring Boot et un seul JAR exécutable assemblent les modules.
 - Experience et Capability sont dans le même contexte, reliés par l'API Java publique.
 - Lors d'INT-03 (2026-10-21, avant INT-04), le build global et les 64 tests ont réussi ; l'artefact réel a démarré sans base ni partenaire configurés.
-- Le comportement livré est une indisponibilité explicite, sans identifiant ni prise en charge inventés.
+- Le comportement livré dans INT-03 (2026-10-21, avant INT-06) était une indisponibilité explicite, sans identifiant ni prise en charge inventés.
 - Une revue indépendante en lecture seule du câblage, des dépendances et des tests n'a identifié aucun défaut bloquant ou important. Elle ne remplace pas les vérifications exécutées.
 
 ### Ce que cette tâche ne démontre pas
 
-- **INT-06/07/08 restent non réalisées** : aucune génération d'UUID, conservation en mémoire, acceptation réelle, consultation métier ou couverture complète des refus.
-- Les réponses `202`/`200` des tests unitaires proviennent du double. Les réponses réelles vérifiées sur les routes valides sont `503`.
+- **À l'issue d'INT-03 (2026-10-21, avant INT-06), INT-06/07/08 n'étaient pas réalisées** : aucune génération d'UUID, conservation en mémoire, acceptation réelle, consultation métier ou couverture complète des refus à cette étape.
+- Les réponses `202`/`200` des tests unitaires proviennent du double. Les réponses réelles vérifiées sur les routes valides dans INT-03 étaient `503`.
 - Aucun MongoDB, événement Spring, `@Async`, orchestration, Feign/Resilience4j, partenaire ou CI n'est ajouté.
 - Le contexte est testé pour prouver l'assemblage ; les contrôles automatiques contre cycles et imports interdits n'étaient pas inclus dans INT-03. Ils ont depuis été réalisés dans [INT-04](INT-04-verifier-les-frontieres.md).
 - Pas de nouvelle validation de la GUI Zed, de Windows, de clone vierge ni de mesure de performance. Le temps de démarrage des logs n'est pas un benchmark et ne décrit pas AXA.
 
 ### Compromis à comprendre
 
-La dépendance Maven Experience → Capability rend disponibles les classes publiques de l'artefact, pas seulement le package `api`. L'implémentation provisoire est package-private et aucun import interne n'est utilisé ; le garde-fou de dépendances pour les futurs types publics internes a depuis été ajouté dans [INT-04](INT-04-verifier-les-frontieres.md). Le découpage Maven seul n'est pas une garantie complète de frontière.
+La dépendance Maven Experience → Capability rend disponibles les classes publiques de l'artefact, pas seulement le package `api`. L'implémentation provisoire d'INT-03 était package-private et aucun import interne n'était utilisé ; le garde-fou de dépendances pour les futurs types publics internes a depuis été ajouté dans [INT-04](INT-04-verifier-les-frontieres.md). Le découpage Maven seul n'est pas une garantie complète de frontière.
 
-Le bean indisponible est un raccordement temporaire, pas un fallback métier ni une implémentation en mémoire déguisée. Lors d'INT-06 puis INT-07, les opérations pourront être réalisées derrière la même porte d'entrée ; il faudra éviter de conserver deux beans concurrents pour la même interface.
+Le bean indisponible était un raccordement temporaire d'INT-03 (2026-10-21), pas un fallback métier ni une implémentation en mémoire déguisée. Il a été supprimé dans [INT-06](../sprint-02/INT-06-accepter-une-demande.md), qui réalise désormais l'acceptation derrière la même porte d'entrée, sans conserver deux beans concurrents pour cette interface ; le GET reste indisponible jusqu'à INT-07.
 
 Les tests affichent un avertissement Mockito sur l'auto-attachement d'un agent Java et des avertissements JVM associés. Sous le JDK 21 vérifié, cela n'empêche pas les succès. Aucune correction de configuration pour un futur JDK ni compatibilité avec celui-ci n'est revendiquée.
 
 ## 6. Formulation d'entretien
 
-> « Dans ConfluxLab, j'ai assemblé un monolithe modulaire : Maven construit trois bibliothèques, puis un seul module `application` produit le JAR Spring Boot exécutable. Le contrôleur HTTP appelle une interface Java publique de Capability dans la même JVM ; il n'y a plus de client HTTP interne. J'ai vérifié la délégation avec un double, l'injection avec le vrai contexte Spring, puis le démarrage du JAR et ses réponses HTTP. Comme l'acceptation métier n'est pas encore développée, l'implémentation retourne explicitement une indisponibilité, adaptée en `503` par le BFF, plutôt qu'un faux `202`. C'est un incrément pédagogique du laboratoire, pas une affirmation sur le déploiement historique AXA. »
+> « Dans ConfluxLab, un monolithe modulaire a été assemblé : Maven construit trois bibliothèques, puis un seul module `application` produit le JAR Spring Boot exécutable. Le contrôleur HTTP appelle une interface Java publique de Capability dans la même JVM ; il n'y a plus de client HTTP interne. L'agent a vérifié la délégation avec un double, l'injection avec le vrai contexte Spring, puis le démarrage du JAR et ses réponses HTTP. À l'étape INT-03 (2026-10-21, avant INT-06), l'acceptation métier n'était pas encore développée : l'implémentation retournait explicitement une indisponibilité, adaptée en `503` par le BFF, plutôt qu'un faux `202`. C'est un incrément pédagogique du laboratoire, pas une affirmation sur le déploiement historique AXA. »
 
-**Relance :** « Un `202` dans le test unitaire prouve-t-il que la demande est conservée ? » **Non.** Ici, il vient d'un double ; seul un test avec une acceptation réelle et une lecture du stockage pourra prouver cette prise en charge.
+**Relance :** « Un `202` dans le test unitaire prouve-t-il que la demande est conservée ? » **Non.** Dans les tests d'INT-03 (2026-10-21, avant INT-06), il venait d'un double ; seul un test avec une acceptation réelle et une lecture du stockage peut prouver cette prise en charge.
 
 **Relance :** « Ajouter une dépendance Maven vers Capability suffit-il à injecter son service ? » **Non.** Il faut une implémentation enregistrée comme bean et une configuration qui la découvre ; le placement du démarrage et le test du contexte vérifient ce raccordement.
 
@@ -376,7 +378,7 @@ Les tests affichent un avertissement Mockito sur l'auto-attachement d'un agent J
 
 - [TD-B003 — Assemblage et remplacement de l'HTTP interne, terminé avec preuves](../todos.md#td-b003).
 - [TD-B004 — Contrôles automatiques des frontières, réalisés dans INT-04](../todos.md#td-b004).
-- [TD-B005 — Acceptation, suivi et refus réels, stories toujours à autoriser](../todos.md#td-b005).
+- [TD-B005 — Acceptation, suivi et refus : à autoriser à la clôture du sprint 01 (2026-10-21, avant INT-06)](../todos.md#td-b005).
 - [TD-R001 — Plusieurs modules, une seule application](../todos.md#td-r001).
 - [TD-R005 — Contrat et annotations ne suffisent pas à prouver le métier](../todos.md#td-r005).
 - [TD-R010 — Assemblage Spring, injection et distinction double/comportement livré](../todos.md#td-r010).
