@@ -1,5 +1,7 @@
 # INT-11 — Sécuriser les mises à jour
 
+> **Repère historique après INT-12.** INT-11 a été commitée localement (`af3f215`) avant l'incrément suivant. Les noms et commandes ci-dessous restent ceux de ses preuves : `MongoFamilyRequestTransitionTest` est désormais renommée `MongoFamilyRequestTransitionIT`, sans ajout de cas, et exécutée par Failsafe. Voir le [cours INT-12](INT-12-verifier-la-persistance.md) pour les commandes actuelles et la preuve de redémarrage avec la même base.
+
 | Contexte | Description |
 |---|---|
 | **Sprint** | [03 — Persistance MongoDB et cycle des états](../../docs/stages/sprint-03-mongodb.md) |
@@ -74,7 +76,7 @@ Un `synchronized` Java ne protégerait que les appelants partageant ce verrou da
 |---|---|
 | [`StoredFamilyRequest.java`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/StoredFamilyRequest.java) | Mutualiser la règle du graphe dans `requireTransition`, sans faire d'I/O |
 | [`MongoFamilyRequestStore.java`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/MongoFamilyRequestStore.java) | Ajouter `transition`, avec condition et modification dans la même commande MongoDB |
-| [`MongoFamilyRequestTransitionTest.java`](../../application/src/test/java/dev/confluxlab/capability/internal/MongoFamilyRequestTransitionTest.java) | Vérifier concurrence, refus, conservation et suivi avec la vraie base de test |
+| [`MongoFamilyRequestTransitionIT.java`, anciennement `MongoFamilyRequestTransitionTest`](../../application/src/test/java/dev/confluxlab/capability/internal/MongoFamilyRequestTransitionIT.java) | Vérifier concurrence, refus, conservation et suivi avec la vraie base de test |
 | [`StoredFamilyRequestTest.java`](../../capability-api/src/test/java/dev/confluxlab/capability/internal/StoredFamilyRequestTest.java) | Réutiliser les deux tests de graphe et de dates déjà présents |
 
 L'opération est **interne à Capability** et déclarée dans l'adaptateur MongoDB. `FamilyRequestStore`, utilisé actuellement par le service d'acceptation/consultation, n'est pas élargi. L'interface publique `FamilyRequests`, le BFF et les DTO restent inchangés. Aucun endpoint permettant au client HTTP de choisir un statut n'est créé.

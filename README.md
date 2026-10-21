@@ -4,15 +4,16 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 ## État actuel
 
-- **INT-01 à INT-11 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi, refus, stockage MongoDB et transitions atomiques. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
+- **INT-01 à INT-12 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi, refus, stockage MongoDB, transitions atomiques et relecture après redémarrage de l'application. La clôture pédagogique du sprint 03 reste à confirmer. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
-- Le dernier `clean verify` global observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré.
+- Le dernier `clean verify` **non filtré** observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré. INT-12 a depuis compilé et packagé tout le réacteur avec une sélection de **6 cas réussis**, sans rejouer toute la suite Surefire.
 - Depuis **INT-10**, un **POST valide retourne `202`, UUID, `PENDING` et des liens cohérents après insertion acquittée dans MongoDB**. Le GET relit cette base ; MongoDB doit donc être accessible pour réussir ces opérations. Aucun partenaire n'est nécessaire.
 - Le **GET retourne `200` pour une demande connue**, avec seulement `requestId`, `status` et `createdAt` ; UUID inconnu `404`, identifiant mal formé `400`. Le GET ne modifie ni statut ni date.
-- L'ancien stockage mémoire n'existe plus en production ; il reste une doublure de test. Un `_id` UUID unique interdit l'écrasement à l'insertion. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré. La conservation après redémarrage de l'application avec la même base reste à démontrer dans INT-12.
-- **INT-09** a défini les dates et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition à cette étape. **INT-10 : 2 nouveaux tests + 1 test POST/GET existant réussis** avec un MongoDB temporaire réel ; panne d'insertion simulée renvoyant `500`, sans faux reçu. Suite globale et JAR non relancés.
+- L'ancien stockage mémoire n'existe plus en production ; il reste une doublure de test. Un `_id` UUID unique interdit l'écrasement à l'insertion. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré. **INT-12 démontre la conservation après redémarrage du JAR avec la même base** ; MongoDB lui-même n'a pas été redémarré.
+- **INT-09** a défini les dates et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition à cette étape. **INT-10 : 2 nouveaux tests + 1 test POST/GET existant réussis** avec un MongoDB temporaire réel ; panne d'insertion simulée renvoyant `500`, sans faux reçu. À cette étape INT-10, suite globale et JAR non relancés.
 
 - **INT-11** ajoute une transition MongoDB conditionnelle et atomique, sans upsert : un seul appelant prend la demande en charge, les dates ne reculent pas et un état final ne peut être écrasé. **2 nouveaux tests + 2 tests du modèle passent** ; aucun appelant de production n'exécute encore ces transitions. Les POST restent normalement `PENDING` et le GET demeure en lecture seule.
+- **INT-12** branche trois classes `*IT` à Failsafe et ajoute **un seul scénario** : deux JVM successives exécutent le même JAR et retrouvent le même UUID, `PENDING` et `createdAt` sur le même MongoDB temporaire. Les quatre cas MongoDB préexistants sont réutilisés ; processus et conteneurs temporaires sont arrêtés à l'issue de la vérification.
 
 ## Prérequis
 
@@ -24,7 +25,7 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 ## Vérifications depuis la racine
 
-Sur Linux/macOS :
+Sur Linux/macOS, commandes de repérage exécutées dans les étapes précédentes :
 
 ```sh
 ./mvnw -v
@@ -32,31 +33,36 @@ Sur Linux/macOS :
 ./mvnw -B -ntp -pl contracts -am test
 ```
 
-Ces commandes ont réussi historiquement sous Linux avec Java 21. La sélection `-pl contracts` ne compile pas Experience. Pour INT-10, seule cette sélection ciblée a été exécutée avec succès après correction de la compatibilité Testcontainers :
+Ces commandes ont réussi historiquement sous Linux avec Java 21. La sélection `-pl contracts` ne compile pas Experience.
+
+### Vérification ciblée INT-12 — exécutée
+
+Depuis la racine, avec JDK 21 et Docker accessibles :
 
 ```sh
-./mvnw -B -ntp -pl application -am '-Dtest=MongoFamilyRequestStoreTest,FamilyRequestTrackingHttpTest#followsThePostLocationToPendingMetadataAndKeepsCreatedAtAcrossGets' -Dsurefire.failIfNoSpecifiedTests=false test
+./mvnw -B -ntp '-Dtest=ModuleArchitectureTest#experienceOnlyUsesThePublicCapabilityApi' -Dsurefire.failIfNoSpecifiedTests=false clean verify
 ```
 
-Résultat : **3 tests réussis**, dont 2 nouveaux. Le premier passage avec `clean test` avait échoué avant les tests métier, sur l'API Docker trop ancienne de Testcontainers 1.21.3 ; la 1.21.4 corrige ce problème. Le `clean` a supprimé les anciennes classes renommées et les sorties générées, pas les sources.
+**Résultat observé le 2026-10-22 : `BUILD SUCCESS`, 1 cas Surefire + 5 cas Failsafe réussis, aucun échec/erreur/ignoré.** Tout le réacteur est compilé et packagé, mais seules ces vérifications sont exécutées :
 
-Le contrôle global reste disponible pour une validation plus large, mais **n'a pas été relancé pour INT-10** :
+- 1 contrôle ArchUnit de frontière Experience/Capability ;
+- 2 cas d'insertion/échec de stockage dans `MongoFamilyRequestStoreIT` ;
+- 2 cas de transitions atomiques dans `MongoFamilyRequestTransitionIT` ;
+- 1 nouveau cas dans `FamilyRequestPersistenceIT`, avec POST/GET HTTP réels puis redémarrage du JAR sur la même base.
+
+`-B -ntp` rend la sortie non interactive et sans progression des téléchargements. `-Dtest` sélectionne Surefire, pas Failsafe ; l'option `surefire.failIfNoSpecifiedTests=false` accepte que les autres modules n'aient pas le test sélectionné. `clean` supprime les sorties `target/`, notamment les anciennes classes après renommage `*Test` → `*IT`, pas les sources. `verify` atteint le packaging Boot puis les goals Failsafe `integration-test` et `verify`.
+
+Rapports : `application/target/surefire-reports/` et `application/target/failsafe-reports/`. Le [cours INT-12](notes/sprint-03/INT-12-verifier-la-persistance.md) explique le cycle Maven, les deux JVM et les limites de la preuve. Les commandes INT-10/11 dans leurs notes restent historiques : leurs classes MongoDB portent désormais le suffixe `IT`.
+
+### Vérification plus large — non exécutée sans filtre dans INT-12
 
 ```sh
-./mvnw -B -ntp clean verify
+./mvnw -B -ntp verify
 ```
 
-**Résultat observé dans INT-08 : succès du réacteur complet, 181 tests, aucun échec/erreur/ignoré.** Le build produit les trois bibliothèques et le JAR Boot d'assemblage. `clean` supprime les sorties `target/`, pas les sources. Une résolution de dépendances ou un simple `validate` ne remplace pas ce contrôle. Les avertissements Mockito d'auto-attachement d'agent sous Java 21 n'ont pas fait échouer les tests ; la compatibilité avec un futur JDK n'est pas validée ici.
+Cette commande est configurée pour lancer les suites Surefire et les IT Failsafe ; **elle n'a pas été exécutée telle quelle dans INT-12**. Certains tests HTTP `*Test` utilisent eux aussi MongoDB : la phase Surefire n'est pas entièrement unitaire ou indépendante de Docker. Le dernier résultat non filtré reste celui d'INT-08, soit 181 cas à cette étape, avant MongoDB/Failsafe ; ce n'est pas le total courant validé.
 
 Sous Windows/PowerShell, utiliser `./mvnw.cmd` à la place de `./mvnw` ; le script Windows est fourni mais son exécution n'a pas été testée dans cet environnement Linux. `.gitattributes` fixe LF pour le script Unix et CRLF pour le script Windows.
-
-### Vérification ciblée INT-11
-
-```sh
-./mvnw -B -ntp -pl application -am -Dtest=StoredFamilyRequestTest,MongoFamilyRequestTransitionTest -Dsurefire.failIfNoSpecifiedTests=false test
-```
-
-**Résultat observé : 4 tests réussis**, dont 2 nouveaux tests MongoDB et 2 tests unitaires existants. Double prise en charge, transitions refusées, dates, états finaux et confidentialité du suivi sont vérifiés ; la suite globale et le JAR n'ont pas été relancés. Voir le [cours INT-11](notes/sprint-03/INT-11-securiser-les-mises-a-jour.md).
 
 ### Particularité réseau de cet environnement
 
@@ -64,7 +70,7 @@ Sous Windows/PowerShell, utiliser `./mvnw.cmd` à la place de `./mvnw` ; le scri
 
 ## Démarrage local
 
-**Exemple manuel, non exécuté pendant INT-10.** Depuis la racine, pour un MongoDB local standalone avec volume conservé :
+**Exemple manuel avec volume nommé, non exécuté dans INT-10/12.** Depuis la racine, pour un MongoDB local standalone avec volume conservé :
 
 ```sh
 docker run -d --name conflux-lab-mongo -p 127.0.0.1:27017:27017 -v conflux-lab-mongo-data:/data/db mongo:8.0.16 --wiredTigerCacheSizeGB 0.25
@@ -74,19 +80,19 @@ java -jar application/target/application-0.1.0-SNAPSHOT.jar --server.port=0 --se
 
 La première commande crée un conteneur local et un volume ; le port n'est exposé que sur loopback. Elle suppose le nom et le port libres. Le cache WiredTiger est réglé à 0,25 Gio : **ce n'est pas une limite de mémoire totale**. Le volume `/data/db` conserve les données indépendamment de l'arrêt de l'application ; ne pas le supprimer pour tester un redémarrage. Pas d'authentification dans cet exemple local, jamais à exposer sur Internet. Un conteneur déjà créé peut être relancé par `docker start conflux-lab-mongo`, sans refaire `docker run`.
 
-`-DskipTests package` produit le JAR sans relancer les tests ; ce n'est pas une preuve de validation. Le `clean test` ciblé de la session n'a pas produit de JAR. La commande `java -jar` correspond aux lancements historiques INT-03/06/07/08, mais n'a pas été rejouée avec MongoDB dans INT-10. `0` demande un port disponible, affiché par Tomcat ; arrêter l'application par `Ctrl+C`, puis éventuellement la base par `docker stop conflux-lab-mongo` (volume conservé). Aucun service sur 8081 ni propriété `CAPABILITY_BASE_URL` n'est requis.
+`-DskipTests package` produit le JAR sans relancer les tests ; ce n'est pas une preuve de validation. INT-10 n'avait pas produit ni lancé de JAR ; **INT-12 l'a depuis packagé et lancé deux fois automatiquement avec un MongoDB Testcontainers**, sans utiliser le volume nommé de cet exemple. `0` demande un port disponible, affiché par Tomcat ; pour ce démarrage manuel, arrêter l'application par `Ctrl+C`, puis éventuellement la base par `docker stop conflux-lab-mongo` (volume conservé). Aucun service sur 8081 ni propriété `CAPABILITY_BASE_URL` n'est requis.
 
 **À ce stade, `POST /api/v1/families` valide retourne `202 Accepted`**, avec `requestId`, `status: PENDING`, `statusUrl` et `Location`. Les données fictives de `contracts/src/test/resources/contracts/create-family.json` servent à la démonstration. Capability valide aussi les appels Java directs et insère un snapshot du payload dans MongoDB avant d'acquitter. Un échec d'enregistrement ne produit pas d'acceptation ; les détails internes restent masqués.
 
 Le lien `Location`/`statusUrl` est désormais **consultable par GET** : une demande connue retourne `200` et les trois métadonnées, sans payload personnel ni résultat métier. Un UUID inconnu reçoit `404 application/problem+json` avec `Request not found.` ; un identifiant manifestement mal formé reçoit `400` avec `Invalid request.`.
 
-Le `202` signifie désormais « demande insérée avec acquittement MongoDB », pas famille créée ni traitement lancé. L'écriture impose `majority` avec journalisation ; sur cette instance seule, cela ne fournit ni réplication ni sauvegarde. Une déconnexion peut laisser l'issue d'une écriture inconnue, même avec un `500` : ne pas rejouer aveuglément un POST. La démonstration de redémarrage avec la même base reste à faire dans INT-12. Voir le [cours INT-10](notes/sprint-03/INT-10-persister-avant-d-accepter.md) ; les cours INT-06/07 décrivent l'étape historique en mémoire.
+Le `202` signifie désormais « demande insérée avec acquittement MongoDB », pas famille créée ni traitement lancé. L'écriture impose `majority` avec journalisation ; sur cette instance seule, cela ne fournit ni réplication ni sauvegarde. Une déconnexion peut laisser l'issue d'une écriture inconnue, même avec un `500` : ne pas rejouer aveuglément un POST. La démonstration INT-12 retrouve les mêmes métadonnées après arrêt puis relance de l'application, avec la même base temporaire maintenue en fonctionnement ; elle ne teste ni redémarrage MongoDB ni perte du disque. Voir les cours [INT-10](notes/sprint-03/INT-10-persister-avant-d-accepter.md) et [INT-12](notes/sprint-03/INT-12-verifier-la-persistance.md) ; les cours INT-06/07 décrivent l'étape historique en mémoire.
 
 ### Refus et confidentialité
 
 INT-08 vérifie les contraintes existantes aux niveaux HTTP et Java, l'absence d'appel à l'acceptation ou au store en cas de refus, et l'isolation de deux demandes. Une régression réelle a été corrigée : Spring recopiait un chemin rejeté dans `ProblemDetail.instance`. Une référence URI vide non nulle empêche cet écho ; avec la sérialisation actuelle, `instance` est omis. Statuts et détails génériques restent inchangés.
 
-Les 181 cas sont le total du projet, pas 181 explications d'un même refus. Le [cours INT-08](notes/sprint-02/INT-08-tester-les-refus.md) distingue les scénarios essentiels de la matrice de non-régression, plus large que le minimum pédagogique.
+Les 181 cas étaient le total du projet à l'étape INT-08, pas 181 explications d'un même refus. Le [cours INT-08](notes/sprint-02/INT-08-tester-les-refus.md) distingue les scénarios essentiels de la matrice de non-régression, plus large que le minimum pédagogique.
 
 ## Architecture assemblée — un monolithe modulaire
 
@@ -114,6 +120,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-09 — Données, dates et transitions internes](notes/sprint-03/INT-09-definir-les-donnees-et-transitions.md).
 - [INT-10 — MongoDB avant acceptation](notes/sprint-03/INT-10-persister-avant-d-accepter.md).
 - [INT-11 — Transitions conditionnelles atomiques](notes/sprint-03/INT-11-securiser-les-mises-a-jour.md).
+- [INT-12 — Failsafe et persistance entre deux JVM](notes/sprint-03/INT-12-verifier-la-persistance.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 

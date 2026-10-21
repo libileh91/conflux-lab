@@ -25,7 +25,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B008](#td-b008) | Revoir `gh` ou SSH si nécessaire | INT-37 | Non prioritaire : Git HTTPS a fonctionné |
 | [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | Terminée : insertion/relecture et unicité réelles, erreur sans faux reçu |
 | [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | Terminée : transitions atomiques, un seul gagnant et états finaux protégés |
-| [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | À autoriser ; INT-09 à INT-11 disponibles |
+| [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | Terminée : JAR redémarré sur la même base, Failsafe exécuté dans `verify` |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
@@ -152,7 +152,7 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **Créé dans** | [Note INT-09](sprint-03/INT-09-definir-les-donnees-et-transitions.md) |
 | **Story liée** | [INT-10 — Persister avant d'accepter](../docs/stages/sprint-03-mongodb.md#int-10--persister-avant-daccepter) |
 | **Dépend de** | INT-09 terminée et commitée `185bdd7` ; feu vert INT-10 reçu, Docker disponible |
-| **Fichiers** | `FamilyRequestService.java`, `FamilyRequestStore.java`, `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `FamilyRequestConfiguration.java`, POM et `application.yml` ; `MongoTestSupport.java` et `MongoFamilyRequestStoreTest.java` sous les tests de l'assemblage |
+| **Fichiers** | `FamilyRequestService.java`, `FamilyRequestStore.java`, `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `FamilyRequestConfiguration.java`, POM et `application.yml` ; `MongoTestSupport.java` et `MongoFamilyRequestStoreIT.java` sous les tests de l'assemblage |
 | **Action** | Remplacer le stockage mémoire par MongoDB en conservant les frontières ; confirmer l'écriture avant le retour d'acceptation |
 | **Validation** | Enregistrement/relecture du même UUID et payload, unicité en base, échec d'écriture sans faux `202` selon les critères d'INT-10 ; ne pas confondre modèle Java et persistance réelle |
 | **Statut** | ✅ Terminée sur feu vert INT-10 ; [cours et preuves](sprint-03/INT-10-persister-avant-d-accepter.md), 2 nouveaux tests + 1 test existant réussis avec MongoDB réel temporaire. Panne d'écriture simulée ; ni redémarrage ni suite globale revendiqués |
@@ -166,7 +166,7 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **Créé dans** | [Note INT-10](sprint-03/INT-10-persister-avant-d-accepter.md) |
 | **Story liée** | [INT-11 — Sécuriser les mises à jour](../docs/stages/sprint-03-mongodb.md#int-11--sécuriser-les-mises-à-jour) |
 | **Dépend de** | INT-10 terminée ; feu vert INT-11 reçu après commit/push du complément `66e0ade` |
-| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionTest.java` ; `StoredFamilyRequestTest.java` réutilisé |
+| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionIT.java` ; `StoredFamilyRequestTest.java` réutilisé |
 | **Action** | Faire dépendre la mise à jour atomique du statut actuel autorisé, conserver les dates cohérentes et interdire l'écrasement d'un état final |
 | **Validation** | Une seule prise en charge gagne lors d'un double passage concurrent `PENDING → PROCESSING` ; transitions invalides et écrasement final refusés selon les critères de la story |
 | **Statut** | ✅ Terminée sur feu vert INT-11 ; [cours et preuves](sprint-03/INT-11-securiser-les-mises-a-jour.md), 2 nouveaux tests MongoDB + 2 tests du modèle réussis. Pas de traitement réel, redémarrage ou suite globale |
@@ -179,11 +179,11 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-11](sprint-03/INT-11-securiser-les-mises-a-jour.md) |
 | **Story liée** | [INT-12 — Vérifier la persistance](../docs/stages/sprint-03-mongodb.md#int-12--vérifier-la-persistance) |
-| **Dépend de** | INT-09/10/11 terminées ; nouveau feu vert individuel et Docker disponible |
-| **Fichiers** | POM racine et d'assemblage, `MongoTestSupport.java`, tests MongoDB existants ; démonstration de redémarrage et éventuelles classes `*IT` à définir selon la story |
+| **Dépend de** | INT-09/10/11 terminées ; commit local INT-11 `af3f215`, feu vert INT-12 reçu et Docker disponible |
+| **Fichiers** | POM racine et d'assemblage, `MongoTestSupport.java`, `MongoFamilyRequestStoreIT.java`, `MongoFamilyRequestTransitionIT.java`, nouveau `FamilyRequestPersistenceIT.java` ; logs/rapports générés sous `application/target/`, ignorés par Git |
 | **Action** | Relancer l'application avec la même base conservée et vérifier la relecture ; raccorder explicitement les tests `*IT` au cycle Maven Failsafe |
 | **Validation** | Même demande consultable après redémarrage ; exécution des tests d'intégration réellement observée dans `verify` et rapports exploitables, sans accès d'Experience au stockage |
-| **Statut** | ⏸ À autoriser — INT-12 non commencée ; ce suivi reprend la story existante et n'autorise pas son exécution |
+| **Statut** | ✅ Terminée sur feu vert INT-12 ; [cours et preuves](sprint-03/INT-12-verifier-la-persistance.md), `clean verify` réussi avec 1 cas Surefire sélectionné et 5 cas Failsafe. Un seul test nouveau ; JAR relancé sur la même base, deux JVM arrêtées et conteneurs temporaires supprimés. Suite Surefire complète et CI non exécutées |
 
 ## Repères de cours
 
@@ -406,7 +406,7 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **Créé dans** | [Note INT-10](sprint-03/INT-10-persister-avant-d-accepter.md) |
 | **Story liée** | INT-10 — Persister avant d'accepter |
 | **Dépend de** | Modèle INT-09, repository MongoDB et contrat HTTP existant |
-| **Fichiers** | `FamilyRequestService.java`, `MongoFamilyRequestStore.java`, `FamilyRequestConfiguration.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestStoreTest.java`, `MongoTestSupport.java` |
+| **Fichiers** | `FamilyRequestService.java`, `MongoFamilyRequestStore.java`, `FamilyRequestConfiguration.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestStoreIT.java`, `MongoTestSupport.java` |
 | **À retenir** | `insert` attend l'acquittement du journal avant le reçu, et l'index `_id` interdit une collision sans upsert. Sur un standalone, `majority` ne signifie pas réplication. Une panne réseau peut masquer une écriture réussie : `500` ne garantit pas l'absence en base. UUID unique ne signifie pas idempotence du POST. Le store mémoire ne sert plus qu'aux tests ; les deux nouveaux tests vérifient MongoDB réel et un échec simulé, sans matrice exhaustive |
 | **Vérification pédagogique** | Expliquer pourquoi remplacer `insert` par `save` pourrait écraser un document, pourquoi `202` n'est pas une famille créée et pourquoi rejouer un POST après timeout peut créer un doublon métier |
 | **Statut** | 📘 Référence fondée sur 3 tests ciblés réussis ; incompatibilité Docker initiale corrigée par Testcontainers 1.21.4. Suite globale et redémarrage non exécutés, compréhension de l'apprenant non évaluée |
@@ -434,7 +434,21 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **Créé dans** | [Note INT-11](sprint-03/INT-11-securiser-les-mises-a-jour.md) |
 | **Story liée** | INT-11 — Sécuriser les mises à jour |
 | **Dépend de** | Graphe d'état INT-09, persistance MongoDB INT-10 et opération interne INT-11 |
-| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionTest.java`, `StoredFamilyRequestTest.java` |
+| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionIT.java`, `StoredFamilyRequestTest.java` |
 | **À retenir** | `requireTransition` valide les flèches entre statuts, pas des dates ; `transitionTo` vérifie la chronologie de l'objet local puis retourne une copie, sans sauvegarder. Le store vérifie `_id + statut attendu + updatedAt <= date` avec l'Update dans un seul `findAndModify` : le second candidat perd sur le statut déjà changé, même avec une date plus récente. `transition(...)` n'a pour l'instant que des appelants de test, pas de production. Un résultat présent désigne la modification gagnante, un résultat vide une absence de correspondance ; une panne reste une exception. `returnNew` retourne le document modifié, aucun upsert ne crée de demande ; les champs non concernés sont préservés. Atomicité d'un document n'est ni exactly-once, ni bail/propriétaire de traitement, ni transaction avec un partenaire |
 | **Vérification pédagogique** | Distinguer graphe des statuts, chronologie et concurrence ; expliquer pourquoi un candidat avec une date plus récente peut perdre, pourquoi une mise à jour périmée ne peut pas écraser `FAILED` et pourquoi `Optional.empty()` ne doit pas masquer une panne MongoDB |
 | **Statut** | 📘 Référence fondée sur 2 nouveaux tests MongoDB et 2 tests du modèle réussis ; aucun traitement réel ni évaluation orale |
+
+## TD-R019
+
+**Distinguer `test`, `package` et `verify`, puis prouver la persistance entre deux JVM**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-12](sprint-03/INT-12-verifier-la-persistance.md) |
+| **Story liée** | INT-12 — Vérifier la persistance |
+| **Dépend de** | JAR Boot unique, MongoDB Testcontainers et plugin Failsafe activé dans le module d'assemblage |
+| **Fichiers** | POM racine/application, `MongoTestSupport.java`, `FamilyRequestPersistenceIT.java`, classes MongoDB `*IT`, `ModuleArchitectureTest.java` |
+| **À retenir** | Surefire exécute les `*Test` à la phase `test` ; les trois classes `*IT` sont découvertes par Failsafe après le packaging et contrôlées à `verify`. `pluginManagement` fixe la version mais ne remplace pas l'activation du plugin. Le nouveau test lance le même JAR dans deux JVM successives et conserve MongoDB entre les deux : même UUID/statut/date retrouvés. Ce n'est ni un redémarrage de MongoDB ni une preuve de récupération après perte du disque. Les tests HTTP existants `*Test` restent parfois eux aussi intégrés ; le nom ne suffit pas à déterminer leur nature |
+| **Vérification pédagogique** | Expliquer pourquoi une nouvelle instance de repository ou deux contextes dans une seule JVM constituent une preuve différente, pourquoi `-Dtest` n'est pas `-Dit.test` et pourquoi un `verify` ciblé ne valide pas toutes les suites |
+| **Statut** | 📘 Référence fondée sur 1 cas Surefire et 5 cas Failsafe réussis ; 1 scénario ajouté, 4 scénarios MongoDB réutilisés, restitution orale non évaluée |

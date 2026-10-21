@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(classes = ConfluxLabApplication.class)
 @AutoConfigureMockMvc
-class MongoFamilyRequestTransitionTest extends MongoTestSupport {
+class MongoFamilyRequestTransitionIT extends MongoTestSupport {
 
     private static final Instant CREATED_AT = Instant.parse("2026-10-21T12:00:00Z");
     private static final Instant STARTED_AT = CREATED_AT.plusSeconds(1);

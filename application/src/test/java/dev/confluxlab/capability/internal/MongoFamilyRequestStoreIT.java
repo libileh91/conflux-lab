@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(classes = ConfluxLabApplication.class)
 @AutoConfigureMockMvc
-class MongoFamilyRequestStoreTest extends MongoTestSupport {
+class MongoFamilyRequestStoreIT extends MongoTestSupport {
 
     private static final CreateFamilyRequest PAYLOAD = new CreateFamilyRequest(
             new PersonPayload("Alex", "Exemple", LocalDate.of(1990, 4, 12)),

@@ -1,5 +1,7 @@
 # INT-10 — Persister avant d'accepter
 
+> **Repère historique après INT-12.** Les noms de classes et commandes de preuve ci-dessous décrivent INT-10. `MongoFamilyRequestStoreTest` est désormais `MongoFamilyRequestStoreIT`, exécutée par Failsafe à `verify`. Le [cours INT-12](INT-12-verifier-la-persistance.md) donne les commandes actuelles et la démonstration de redémarrage du JAR avec la même base ; ces nouveautés ne modifient pas les preuves historiques ci-dessous.
+
 | Contexte | Description |
 |---|---|
 | **Sprint** | [03 — Persistance MongoDB et cycle des états](../../docs/stages/sprint-03-mongodb.md) |

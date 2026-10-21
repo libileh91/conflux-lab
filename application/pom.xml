@@ -48,6 +48,25 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <failIfNoTests>true</failIfNoTests>
+                    <forkedProcessTimeoutInSeconds>180</forkedProcessTimeoutInSeconds>
+                    <systemPropertyVariables>
+                        <application.jar>${project.build.directory}/${project.build.finalName}.jar</application.jar>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

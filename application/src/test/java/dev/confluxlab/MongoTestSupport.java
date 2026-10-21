@@ -21,8 +21,11 @@ public abstract class MongoTestSupport {
 
     @DynamicPropertySource
     static void mongoProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", () -> "mongodb://" + MONGO.getHost() + ":"
-                + MONGO.getMappedPort(27017) + "/conflux_lab_test"
-                + "?serverSelectionTimeoutMS=3000&connectTimeoutMS=3000&socketTimeoutMS=5000&retryWrites=false");
+        registry.add("spring.data.mongodb.uri", MongoTestSupport::mongoUri);
+    }
+
+    protected static String mongoUri() {
+        return "mongodb://" + MONGO.getHost() + ":" + MONGO.getMappedPort(27017) + "/conflux_lab_test"
+                + "?serverSelectionTimeoutMS=3000&connectTimeoutMS=3000&socketTimeoutMS=5000&retryWrites=false";
     }
 }
