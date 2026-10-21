@@ -10,6 +10,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import dev.confluxlab.capability.api.InvalidFamilyRequestException;
@@ -191,26 +196,130 @@ class InMemoryFamilyRequestsTest {
         verifyNoMoreInteractions(store);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "{0}")
     @MethodSource("invalidRequests")
-    void directJavaCallsCannotStoreInvalidContractData(CreateFamilyRequest request) {
+    void directJavaCallsCannotStoreInvalidContractData(String description, CreateFamilyRequest request) {
         InMemoryFamilyRequestStore store = mock(InMemoryFamilyRequestStore.class);
         InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
 
-        assertThrows(InvalidFamilyRequestException.class, () -> service.createFamily(request));
+        InvalidFamilyRequestException exception = assertThrows(InvalidFamilyRequestException.class,
+                () -> service.createFamily(request));
+        assertEquals("Invalid family request.", exception.getMessage());
         verifyNoInteractions(store);
     }
 
+    @Test
+    void acceptsNamesAtThe100CharacterBoundary() {
+        InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
+        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        PersonPayload person = new PersonPayload("A".repeat(100), "B".repeat(100), PRINCIPAL.birthDate());
+        CreateFamilyRequest request = new CreateFamilyRequest(person, List.of(person, person));
+
+        RequestAccepted accepted = service.createFamily(request);
+
+        assertEquals(request, store.findById(accepted.requestId()).orElseThrow().payload());
+        assertEquals(RequestStatus.PENDING, service.getRequest(accepted.requestId()).status());
+    }
+
+    @Test
+    void keepsTwoPayloadsAndTheirDatesSeparateAcrossAnInterveningRefusal() {
+        InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
+        InMemoryFamilyRequests firstService = new InMemoryFamilyRequests(store, validator, CLOCK);
+        Clock laterClock = Clock.offset(CLOCK, Duration.ofHours(1));
+        InMemoryFamilyRequests secondService = new InMemoryFamilyRequests(store, validator, laterClock);
+        CreateFamilyRequest firstRequest = new CreateFamilyRequest(PRINCIPAL, DEPENDENTS);
+        CreateFamilyRequest secondRequest = anotherValidRequest();
+
+        RequestAccepted first = firstService.createFamily(firstRequest);
+        assertThrows(InvalidFamilyRequestException.class,
+                () -> firstService.createFamily(new CreateFamilyRequest(null, DEPENDENTS)));
+        RequestAccepted second = secondService.createFamily(secondRequest);
+
+        assertNotEquals(first.requestId(), second.requestId());
+        assertEquals(firstRequest, store.findById(first.requestId()).orElseThrow().payload());
+        assertEquals(secondRequest, store.findById(second.requestId()).orElseThrow().payload());
+        assertEquals(new RequestView(first.requestId(), RequestStatus.PENDING, CLOCK.instant()),
+                secondService.getRequest(first.requestId()));
+        assertEquals(new RequestView(second.requestId(), RequestStatus.PENDING, laterClock.instant()),
+                firstService.getRequest(second.requestId()));
+    }
+
+    @Test
+    void concurrentCallersKeepDistinctRequestsAndTheirOwnPayloads() throws Exception {
+        InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
+        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        CreateFamilyRequest firstRequest = new CreateFamilyRequest(PRINCIPAL, DEPENDENTS);
+        CreateFamilyRequest secondRequest = anotherValidRequest();
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        try {
+            Future<RequestAccepted> firstFuture = executor.submit(() -> {
+                ready.countDown();
+                if (!start.await(5, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Timed out waiting for the test start signal.");
+                }
+                return service.createFamily(firstRequest);
+            });
+            Future<RequestAccepted> secondFuture = executor.submit(() -> {
+                ready.countDown();
+                if (!start.await(5, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Timed out waiting for the test start signal.");
+                }
+                return service.createFamily(secondRequest);
+            });
+            assertTrue(ready.await(5, TimeUnit.SECONDS), "Both test callers must be ready.");
+            start.countDown();
+            RequestAccepted first = firstFuture.get(5, TimeUnit.SECONDS);
+            RequestAccepted second = secondFuture.get(5, TimeUnit.SECONDS);
+
+            assertNotEquals(first.requestId(), second.requestId());
+            assertEquals(firstRequest, store.findById(first.requestId()).orElseThrow().payload());
+            assertEquals(secondRequest, store.findById(second.requestId()).orElseThrow().payload());
+            assertEquals(new RequestView(first.requestId(), RequestStatus.PENDING, CLOCK.instant()),
+                    service.getRequest(first.requestId()));
+            assertEquals(new RequestView(second.requestId(), RequestStatus.PENDING, CLOCK.instant()),
+                    service.getRequest(second.requestId()));
+        } finally {
+            start.countDown();
+            executor.shutdownNow();
+            assertTrue(executor.awaitTermination(5, TimeUnit.SECONDS), "Test workers must stop.");
+        }
+    }
+
+    private static CreateFamilyRequest anotherValidRequest() {
+        return new CreateFamilyRequest(
+                new PersonPayload("Robin", "Autre", LocalDate.of(1992, 3, 10)),
+                List.of(new PersonPayload("Lina", "Autre", LocalDate.of(2014, 5, 6)),
+                        new PersonPayload("Sam", "Autre", LocalDate.of(2019, 7, 8))));
+    }
+
     private static Stream<Arguments> invalidRequests() {
+        Stream<Arguments> structure = Stream.of(
+                Arguments.of("null request", null),
+                Arguments.of("null principal", new CreateFamilyRequest(null, DEPENDENTS)),
+                Arguments.of("null dependents", new CreateFamilyRequest(PRINCIPAL, null)),
+                Arguments.of("empty dependents", new CreateFamilyRequest(PRINCIPAL, List.of())),
+                Arguments.of("one dependent", new CreateFamilyRequest(PRINCIPAL, List.of(CAMILLE))),
+                Arguments.of("three dependents", new CreateFamilyRequest(PRINCIPAL, List.of(CAMILLE, NOA, CAMILLE))),
+                Arguments.of("null dependent element", new CreateFamilyRequest(PRINCIPAL, Arrays.asList(CAMILLE, null))));
+        Stream<Arguments> people = Stream.of(
+                invalidPerson("null firstName", new PersonPayload(null, "Exemple", PRINCIPAL.birthDate())),
+                invalidPerson("empty firstName", new PersonPayload("", "Exemple", PRINCIPAL.birthDate())),
+                invalidPerson("blank firstName", new PersonPayload(" \t\n ", "Exemple", PRINCIPAL.birthDate())),
+                invalidPerson("firstName too long", new PersonPayload("A".repeat(101), "Exemple", PRINCIPAL.birthDate())),
+                invalidPerson("null lastName", new PersonPayload("Alex", null, PRINCIPAL.birthDate())),
+                invalidPerson("blank lastName", new PersonPayload("Alex", " ", PRINCIPAL.birthDate())),
+                invalidPerson("lastName too long", new PersonPayload("Alex", "B".repeat(101), PRINCIPAL.birthDate())),
+                invalidPerson("null birthDate", new PersonPayload("Alex", "Exemple", null)),
+                invalidPerson("future birthDate", new PersonPayload("Alex", "Exemple", LocalDate.now(CLOCK).plusDays(1))))
+                .flatMap(stream -> stream);
+        return Stream.concat(structure, people);
+    }
+
+    private static Stream<Arguments> invalidPerson(String description, PersonPayload person) {
         return Stream.of(
-                Arguments.of((Object) null),
-                Arguments.of(new CreateFamilyRequest(null, DEPENDENTS)),
-                Arguments.of(new CreateFamilyRequest(PRINCIPAL, null)),
-                Arguments.of(new CreateFamilyRequest(PRINCIPAL, List.of(CAMILLE))),
-                Arguments.of(new CreateFamilyRequest(PRINCIPAL, Arrays.asList(CAMILLE, null))),
-                Arguments.of(new CreateFamilyRequest(
-                        new PersonPayload(" ", "Exemple", PRINCIPAL.birthDate()), DEPENDENTS)),
-                Arguments.of(new CreateFamilyRequest(
-                        new PersonPayload("Alex", "Exemple", LocalDate.now(CLOCK).plusDays(1)), DEPENDENTS)));
+                Arguments.of("principal: " + description, new CreateFamilyRequest(person, DEPENDENTS)),
+                Arguments.of("dependent: " + description, new CreateFamilyRequest(PRINCIPAL, List.of(person, NOA))));
     }
 }

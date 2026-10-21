@@ -1,5 +1,7 @@
 # INT-07 — Consulter la demande
 
+> **Repère historique après INT-08.** Ce cours et ses 108 tests décrivent l'étape antérieure. INT-08 a depuis complété les refus et corrigé l'écho d'un chemin rejeté dans `ProblemDetail.instance` ; voir le [cours INT-08](INT-08-tester-les-refus.md). Les anciens constats sur `instance` ne décrivent plus la réponse actuelle.
+
 | Contexte | Description |
 |---|---|
 | **Sprint** | [02 — Contrat REST et BFF mince](../../docs/stages/sprint-02-rest.md) |

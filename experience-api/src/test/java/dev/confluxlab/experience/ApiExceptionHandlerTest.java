@@ -1,5 +1,7 @@
 package dev.confluxlab.experience;
 
+import java.net.URI;
+
 import dev.confluxlab.capability.api.InvalidFamilyRequestException;
 import dev.confluxlab.capability.api.RequestNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,7 @@ class ApiExceptionHandlerTest {
         assertNotNull(problem);
         assertEquals(404, problem.getStatus());
         assertEquals("Request not found.", problem.getDetail());
+        assertEquals(URI.create(""), problem.getInstance());
     }
 
     @Test
@@ -34,5 +37,6 @@ class ApiExceptionHandlerTest {
         assertNotNull(problem);
         assertEquals(400, problem.getStatus());
         assertEquals("Invalid request.", problem.getDetail());
+        assertEquals(URI.create(""), problem.getInstance());
     }
 }

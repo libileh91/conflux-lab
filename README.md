@@ -4,12 +4,12 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 ## État actuel
 
-- **INT-01/02/03/04/05/06/07 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation et suivi en mémoire. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
+- **INT-01 à INT-08 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi mémoire et tests de refus. Les stories techniques du sprint 02 sont réalisées ; sa clôture reste à confirmer. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
-- Le `clean verify` global réussit : **108 tests** (59 contrats, 22 Capability, 4 BFF, 23 assemblage/HTTP/architecture), aucun échec/erreur/ignoré.
+- Le `clean verify` global réussit : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré.
 - Le JAR démarre sans MongoDB ni partenaire. Un **POST valide retourne `202`, UUID, `PENDING` et des liens cohérents après conservation en mémoire**. Deux POST identiques ont produit deux UUID distincts lors de la démonstration.
 - Le **GET retourne `200` pour une demande connue**, avec seulement `requestId`, `status` et `createdAt` ; UUID inconnu `404`, identifiant mal formé `400`. Le GET ne modifie ni statut ni date.
-- La mémoire est perdue au redémarrage et non bornée : une ancienne demande reçoit alors `404`. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré ; INT-08 reste à autoriser.
+- La mémoire est perdue au redémarrage et non bornée : une ancienne demande reçoit alors `404`. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré. INT-08 complète les refus et l'isolation, sans règle métier supplémentaire.
 
 ## Prérequis
 
@@ -34,7 +34,7 @@ Ces commandes ont réussi sous Linux avec Java 21. La sélection `-pl contracts`
 ./mvnw -B -ntp clean verify
 ```
 
-**Résultat observé dans INT-07 : succès du réacteur complet, 108 tests, aucun échec/erreur/ignoré.** Le build produit les trois bibliothèques et le JAR Boot d'assemblage. `clean` supprime les sorties `target/`, pas les sources. Une résolution de dépendances ou un simple `validate` ne remplace pas ce contrôle. Les avertissements Mockito d'auto-attachement d'agent sous Java 21 n'ont pas fait échouer les tests ; la compatibilité avec un futur JDK n'est pas validée ici.
+**Résultat observé dans INT-08 : succès du réacteur complet, 181 tests, aucun échec/erreur/ignoré.** Le build produit les trois bibliothèques et le JAR Boot d'assemblage. `clean` supprime les sorties `target/`, pas les sources. Une résolution de dépendances ou un simple `validate` ne remplace pas ce contrôle. Les avertissements Mockito d'auto-attachement d'agent sous Java 21 n'ont pas fait échouer les tests ; la compatibilité avec un futur JDK n'est pas validée ici.
 
 Sous Windows/PowerShell, utiliser `./mvnw.cmd` à la place de `./mvnw` ; le script Windows est fourni mais son exécution n'a pas été testée dans cet environnement Linux. `.gitattributes` fixe LF pour le script Unix et CRLF pour le script Windows.
 
@@ -50,13 +50,19 @@ Après le build global, depuis la racine :
 java -jar application/target/application-0.1.0-SNAPSHOT.jar --server.port=0 --server.address=127.0.0.1
 ```
 
-C'est la commande réellement lancée par les contrôles bornés d'INT-03, d'INT-06 et d'INT-07 : `0` demande un port disponible, affiché par Tomcat. Le superviseur de vérification a attendu le démarrage, vérifié POST/GET en HTTP local et arrêté le processus ; lancement manuel à arrêter avec `Ctrl+C`. Sans ces options, la configuration par défaut écoute sur le port 8080. Aucun service sur 8081 ni propriété `CAPABILITY_BASE_URL` n'est requis.
+C'est la commande réellement lancée par les contrôles bornés d'INT-03, d'INT-06, d'INT-07 et d'INT-08 : `0` demande un port disponible, affiché par Tomcat. Le superviseur de vérification a attendu le démarrage, vérifié POST/GET en HTTP local et arrêté le processus ; lancement manuel à arrêter avec `Ctrl+C`. Sans ces options, la configuration par défaut écoute sur le port 8080. Aucun service sur 8081 ni propriété `CAPABILITY_BASE_URL` n'est requis.
 
 **À ce stade, `POST /api/v1/families` valide retourne `202 Accepted`**, avec `requestId`, `status: PENDING`, `statusUrl` et `Location`. Les données fictives de `contracts/src/test/resources/contracts/create-family.json` servent à la démonstration. Capability valide aussi les appels Java directs et conserve un snapshot du payload avant d'acquitter. Un échec d'enregistrement ne produit pas d'acceptation ; les détails internes restent masqués.
 
 Le lien `Location`/`statusUrl` est désormais **consultable par GET** : une demande connue retourne `200` et les trois métadonnées, sans payload personnel ni résultat métier. Un UUID inconnu reçoit `404 application/problem+json` avec `Request not found.` ; un identifiant manifestement mal formé reçoit `400` avec `Invalid request.`.
 
 Le `202` signifie toujours seulement « demande conservée en mémoire », pas famille créée, traitement lancé ou conservation durable. Le redémarrage remet la map à vide, sans nettoyage ni borne de capacité ajoutés. Voir les tutoriels [INT-06 — acceptation](notes/sprint-02/INT-06-accepter-une-demande.md) et [INT-07 — consultation](notes/sprint-02/INT-07-consulter-la-demande.md).
+
+### Refus et confidentialité
+
+INT-08 vérifie les contraintes existantes aux niveaux HTTP et Java, l'absence d'appel à l'acceptation ou au store en cas de refus, et l'isolation de deux demandes. Une régression réelle a été corrigée : Spring recopiait un chemin rejeté dans `ProblemDetail.instance`. Une référence URI vide non nulle empêche cet écho ; avec la sérialisation actuelle, `instance` est omis. Statuts et détails génériques restent inchangés.
+
+Les 181 cas sont le total du projet, pas 181 explications d'un même refus. Le [cours INT-08](notes/sprint-02/INT-08-tester-les-refus.md) distingue les scénarios essentiels de la matrice de non-régression, plus large que le minimum pédagogique.
 
 ## Architecture assemblée — un monolithe modulaire
 
@@ -80,6 +86,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-05 — Contrats et tests](notes/sprint-02/INT-05-definir-les-contrats.md).
 - [INT-06 — Acceptation et stockage temporaire](notes/sprint-02/INT-06-accepter-une-demande.md).
 - [INT-07 — Suivi des métadonnées et erreurs de consultation](notes/sprint-02/INT-07-consulter-la-demande.md).
+- [INT-08 — Comprendre les refus et leurs preuves](notes/sprint-02/INT-08-tester-les-refus.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 

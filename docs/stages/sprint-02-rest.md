@@ -1,6 +1,6 @@
 # Sprint 02 — Contrat REST et BFF mince
 
-**Statut : en cours — INT-05, INT-06 et INT-07 terminées sur feu vert individuel.** Acceptation et suivi sont réalisés en mémoire ; INT-08 reste à autoriser. Le sprint n'est pas clôturé.
+**Statut : stories techniques INT-05 à INT-08 terminées sur feux verts individuels ; clôture à confirmer.** Acceptation, suivi mémoire et refus sont vérifiés. Le point avec l'apprenant n'est pas déclaré réalisé.
 
 ## Objectif
 
@@ -60,7 +60,7 @@ En tant que client de l'API, je veux consulter l'état de ma demande avec son id
 **Preuves :** `clean verify` global réussi (108 tests), dont tests de lecture sans écriture, date d'origine et projection du statut stocké. Le JAR réel vérifie deux POST/GET indépendants, `404`/`400`, puis `404` pour un UUID précédemment accepté après redémarrage ; les deux processus sont arrêtés. Les autres statuts n'apparaissent que dans des fixtures de projection, sans transition métier ajoutée.
 
 ### INT-08 — Tester les refus
-**Statut : à faire — feu vert requis.** Prérequis : contrats et routes INT-05/06/07 disponibles.
+**Statut : terminée sur demande explicite « commit 07 & go 08 ».** Prérequis INT-05/06/07 remplis ; commit préalable INT-07 `5859b57`, sans push. [Cours et preuves INT-08](../../notes/sprint-02/INT-08-tester-les-refus.md).
 
 En tant que client de l'API, je veux comprendre pourquoi ma demande est refusée, afin de pouvoir la corriger sans voir de détails techniques internes.
 
@@ -69,18 +69,20 @@ En tant que client de l'API, je veux comprendre pourquoi ma demande est refusée
 - Vérifier les contrôles métier de Capability directement, sans passer uniquement par le BFF.
 
 **Terminé quand :**
-- [ ] Les demandes invalides sont refusées sans enregistrement ; Capability protège aussi ses invariants lorsqu'elle est appelée directement.
-- [ ] Les erreurs sont lisibles sans recopier les données personnelles, les traces ou les détails internes ; les suivis de deux demandes ne se mélangent pas.
+- [x] Les refus HTTP n'appellent pas l'acceptation et les 25 entrées Java invalides ne touchent pas le store ; les contraintes existantes sont protégées sans dépendre du BFF et sans inventer de règle métier.
+- [x] Les erreurs testées restent génériques et sans données rejetées, traces, causes ou champs de succès ; l'écho d'un chemin sensible via `instance` a été reproduit puis corrigé. L'isolation de deux demandes est vérifiée, avec refus intercalé et deux appelants concurrents bornés.
+
+**Preuves :** passage ciblé final de 93 cas réussi puis `clean verify` global de 181 tests, sans échec/erreur/ignoré. JAR réel : refus `400`/`415`/`404` sans marqueur ni `instance`, et deux POST/GET valides inchangés autour des refus. Le processus est arrêté. Les pannes `500` sont simulées par des doublures, pas par une infrastructure réelle.
 
 ## Limites et hors périmètre
 
 La mémoire est un stockage pédagogique **perdu au redémarrage**. Les demandes restent `PENDING` : pas encore d'événement, d'orchestration ou de partenaire. Le `202` ne prouve donc ni une conservation durable ni un traitement complet. Un UUID sert à retrouver la demande ; deux POST identiques peuvent encore créer deux demandes.
 
-INT-06 vérifie l'acceptation réelle en mémoire et INT-07 sa consultation via l'API publique, sans HTTP interne. Le GET est une lecture seule, pas un déclencheur métier ; après redémarrage, la map vide ne retrouve pas les anciens UUID. Les refus déjà testés ne constituent pas toute la couverture INT-08. La map n'est ni bornée ni nettoyée à ce stade : usage de labo uniquement, aucune promesse de durabilité. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
+INT-06 vérifie l'acceptation réelle en mémoire et INT-07 sa consultation via l'API publique, sans HTTP interne. Le GET est une lecture seule, pas un déclencheur métier ; après redémarrage, la map vide ne retrouve pas les anciens UUID. INT-08 complète la matrice choisie des refus, les bornes positives et l'isolation ; elle ne prétend pas couvrir toute combinaison possible, les coercitions non spécifiées ou un audit de sécurité complet. La map n'est ni bornée ni nettoyée à ce stade : usage de labo uniquement, aucune promesse de durabilité. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
 
 ## Démo et clôture
 
-- [x] Montrer un POST valide, son GET de suivi et un refus de données invalides : démonstrations INT-06/07 et tests associés ; cela ne clôt pas INT-08 ni le sprint.
+- [x] Montrer un POST valide, son GET de suivi et un refus de données invalides : démonstrations INT-06/07 et tests associés ; preuves complétées dans INT-08 ; la clôture du sprint et la restitution de l'apprenant restent distinctes.
 - [ ] Expliquer la différence entre « demande acceptée » et « famille créée » ainsi que le partage des validations BFF/Capability.
 
 Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les exemples fictifs et résultats réellement observés.

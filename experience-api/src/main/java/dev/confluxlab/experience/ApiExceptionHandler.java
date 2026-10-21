@@ -1,5 +1,7 @@
 package dev.confluxlab.experience;
 
+import java.net.URI;
+
 import dev.confluxlab.capability.api.InvalidFamilyRequestException;
 import dev.confluxlab.capability.api.RequestNotFoundException;
 import org.springframework.http.HttpHeaders;
@@ -44,6 +46,9 @@ public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
             default -> status.is5xxServerError() ? "An unexpected error occurred." : "Request rejected.";
         };
-        return ProblemDetail.forStatusAndDetail(status, detail);
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+        // A non-null empty URI-reference prevents MVC from echoing the rejected request path.
+        problem.setInstance(URI.create(""));
+        return problem;
     }
 }

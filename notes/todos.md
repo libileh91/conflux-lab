@@ -19,7 +19,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B002](#td-b002) | Réévaluer `verify` global | INT-02 | Terminée : `clean verify` global réussi après INT-05 |
 | [TD-B003](#td-b003) | Assembler l'application et retirer l'HTTP interne | INT-03 | Terminée : seul JAR Boot démarré et appel Java vérifié |
 | [TD-B004](#td-b004) | Contrôler les frontières | INT-04 | Terminée : règles de production et détection de violations vérifiées |
-| [TD-B005](#td-b005) | Valider le parcours REST | INT-06/07/08 | INT-06/07 terminées : acceptation et suivi mémoire ; INT-08 à autoriser |
+| [TD-B005](#td-b005) | Valider le parcours REST | INT-06/07/08 | Terminée : acceptation, suivi et refus mémoire vérifiés dans INT-06/07/08 |
 | [TD-B006](#td-b006) | Vérifier les raccourcis dans l'interface Zed | INT-02 | Vérification manuelle non constatée |
 | [TD-B007](#td-b007) | Vérifier le Wrapper sous Windows | INT-02 | Optionnel ; environnement Windows requis |
 | [TD-B008](#td-b008) | Revoir `gh` ou SSH si nécessaire | INT-37 | Non prioritaire : Git HTTPS a fonctionné |
@@ -94,7 +94,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `experience-api/src/`, `capability-api/src/`, `contracts/src/` |
 | **Action** | Brancher une acceptation réelle en mémoire dans Capability, puis le GET et les refus, sans HTTP interne ni prétendre que la famille est créée |
 | **Validation** | Tests POST `202`, GET `200`/`404`, entrée invalide `400`, refus sans enregistrement et demandes distinctes ; état `PENDING` et limite de mémoire explicités |
-| **Statut** | ◐ Partiellement réalisée : INT-06/07 terminées sur feux verts distincts ; [preuves INT-07](sprint-02/INT-07-consulter-la-demande.md), 108 tests et JAR réel vérifiés, POST `202`, GET `200`/`404`/`400`. INT-08 reste à autoriser, sans clôture globale du parcours |
+| **Statut** | ✅ Terminée dans le périmètre REST mémoire INT-06/07/08 ; [preuves INT-08](sprint-02/INT-08-tester-les-refus.md), 181 tests et JAR réel vérifiés, refus sans enregistrement, erreurs génériques et isolation. Ni persistance durable, ni traitement, ni clôture pédagogique automatique ne sont déduits de ce résultat |
 
 ## TD-B006
 
@@ -208,7 +208,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `FamilyController.java`, types `contracts` et tests réalisés dans [INT-05](sprint-02/INT-05-definir-les-contrats.md), `ApiExceptionHandler.java` |
 | **À retenir** | Le contrôleur reçoit des données et délègue ; `@Valid` déclenche les contraintes réellement déclarées, il ne les invente pas. Un DTO transporte des données ; ce n'est pas un document MongoDB. Une annotation et une branche `ResponseEntity` ne prouvent ni compilation, ni démarrage, ni réponse observée |
 | **Vérification pédagogique** | Distinguer lecture du code, test du contrat et requête réellement exécutée ; expliquer pourquoi Capability protège aussi ses invariants |
-| **Statut** | 📘 Référence documentée — DTO testés dans INT-05, acceptation et validation directe réalisées dans INT-06 ; suivi réalisé dans INT-07, refus complets INT-08 non réalisés |
+| **Statut** | 📘 Référence documentée — DTO testés dans INT-05, acceptation et validation directe réalisées dans INT-06 ; suivi réalisé dans INT-07, matrice de refus INT-08 réalisée, sans prétendre couvrir tous les comportements non spécifiés |
 
 ## TD-R006
 
@@ -306,7 +306,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `InMemoryFamilyRequests.java`, `InMemoryFamilyRequestStore.java`, `StoredFamilyRequest.java`, `FamilyRequestConfiguration.java`, tests Capability et tests HTTP d'acceptation |
 | **À retenir** | Capability valide un snapshot, génère l'UUID et conserve `PENDING` avant de retourner le reçu. `List.copyOf` protège la liste conservée ; `putIfAbsent` empêche l'écrasement d'une clé mais ne dédoublonne pas les demandes. `202` ne signifie ni famille créée ni durabilité ; la mémoire est perdue au redémarrage et reste non bornée. À l'étape INT-06, le lien GET était préparé mais pas encore fonctionnel ; la consultation est réalisée depuis INT-07 |
 | **Vérification pédagogique** | Expliquer ce qui se passe si `save` échoue, si l'appelant modifie sa liste, si l'application redémarre ou si le client répète le POST ; distinguer le `Clock` d'horodatage de l'horloge de validation |
-| **Statut** | 📘 Référence fondée sur les 96 tests réussis et la démonstration du JAR INT-06 ; compréhension de l'apprenant non évaluée ; INT-07 a depuis été réalisée sur feu vert distinct, INT-08 reste à autoriser |
+| **Statut** | 📘 Référence fondée sur les 96 tests réussis et la démonstration du JAR INT-06 ; compréhension de l'apprenant non évaluée ; INT-07 a depuis été réalisée sur feu vert distinct, INT-08 a depuis été réalisée sur son propre feu vert |
 
 ## TD-R013
 
@@ -320,4 +320,18 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Fichiers** | `InMemoryFamilyRequests.java`, `RequestNotFoundException.java`, `ApiExceptionHandler.java`, `InMemoryFamilyRequestsTest.java`, `FamilyRequestTrackingHttpTest.java` |
 | **À retenir** | Le GET projette l'identifiant, le statut stocké et la date d'origine, sans `save`, nouvel horodatage ou traitement. Capability signale l'absence sans statut HTTP ; le BFF l'adapte en `404`. Le format HTTP invalide est refusé en `400` avant l'appel Java. La vue ne divulgue pas le payload. Après redémarrage, une ancienne demande peut devenir absente car la mémoire n'est pas durable |
 | **Vérification pédagogique** | Expliquer pourquoi `400`, `404` et un statut métier `FAILED` ne veulent pas dire la même chose ; pourquoi `createdAt` ne change pas au polling et pourquoi un `404` après redémarrage n'invalide pas le `202` précédemment observé |
-| **Statut** | 📘 Référence fondée sur 108 tests réussis et la démonstration du JAR INT-07, redémarrage compris ; compréhension de l'apprenant non évaluée, INT-08 non démarrée |
+| **Statut** | 📘 Référence fondée sur 108 tests réussis et la démonstration du JAR INT-07, redémarrage compris ; compréhension de l'apprenant non évaluée ; INT-08 a depuis complété les refus et la confidentialité |
+
+## TD-R014
+
+**Comprendre un refus, puis prouver ses effets et sa confidentialité**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-08](sprint-02/INT-08-tester-les-refus.md) |
+| **Story liée** | INT-08 — Tester les refus |
+| **Dépend de** | Contrats et parcours mémoire existants ; aucune nouvelle exécution pour lire ce repère |
+| **Fichiers** | `FamilyRequestRefusalHttpTest.java`, `FamilyRequestAcceptanceFailureHttpTest.java`, `InMemoryFamilyRequestsTest.java`, `ApiExceptionHandler.java`, `ApiExceptionHandlerTest.java` |
+| **À retenir** | Quelques scénarios suffisent pour comprendre le principe ; une matrice paramétrée teste davantage de variantes et de frontières. Un `400` ne prouve pas seul l'absence d'écriture : spy et mock permettent de vérifier les appels. Un détail générique ne suffit pas si `instance` recopie une saisie rejetée ; le correctif et la représentation JSON doivent aussi être testés. Le nombre de cas n'est ni une mesure de compréhension ni une preuve de sécurité exhaustive |
+| **Vérification pédagogique** | Expliquer pourquoi on teste aussi un cas valide, ce que prouvent respectivement MVC, appel Java direct et doublure de panne, et comment la fuite via `instance` a été reproduite puis corrigée |
+| **Statut** | 📘 Référence fondée sur 93 cas ciblés finaux et 181 tests globaux réussis ; 73 cas nets ajoutés à la suite existante, compréhension de l'apprenant non évaluée et clôture du sprint à confirmer |
