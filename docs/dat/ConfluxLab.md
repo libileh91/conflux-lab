@@ -21,7 +21,7 @@
 Une requête HTTP demande la création d'une famille fictive de **trois personnes** : un assuré principal et deux ayants droit.
 
 1. Le module Experience/BFF reçoit la demande HTTP, valide son format et appelle l'interface Java publique du module Capability, dans la même application Spring Boot.
-2. Dans la cible finale, Capability API génère un UUID et sauvegarde la demande `PENDING` dans MongoDB. À l'étape INT-06, cette acceptation est réalisée dans un stockage temporaire en mémoire, sans MongoDB.
+2. Depuis INT-10, Capability génère un UUID et insère la demande `PENDING` dans MongoDB avant l'acceptation. À l'étape historique INT-06, ce stockage était temporairement réalisé en mémoire.
 3. Capability publie un **événement Spring local** contenant l'UUID ; un listener `@Async` est planifié.
 4. Capability renvoie l'acceptation et Experience retourne **HTTP `202 Accepted`** avec un `requestId` et une `statusUrl`, sans attendre les appels partenaires.
 5. Le listener lit la demande, la fait évoluer en `PROCESSING` et exécute l'orchestration métier.
@@ -154,11 +154,11 @@ Le [contrat initial INT-05](http-contracts.md) précise les champs, contraintes,
 
 Collection cible : **`family_requests`**, non créée à l'étape INT-09.
 
-**[Simulation ConfluxLab — INT-09 réalisée sur demande de passage à cette tâche]** : le modèle interne `StoredFamilyRequest` reste un record Java sans annotation MongoDB, non exposé au BFF. Son contrat de données est le suivant :
+**[Simulation ConfluxLab — INT-09 réalisée sur demande de passage à cette tâche]** : à cette étape, le modèle interne `StoredFamilyRequest` était un record Java sans annotation MongoDB, non exposé au BFF. INT-10 lui ajoute ensuite le mapping décrit en section 6.1. Son contrat de données est le suivant :
 
 | Champ | Rôle et règle de mise à jour |
 |---|---|
-| `requestId` | UUID de corrélation fixé à la création ; unicité en base à réaliser dans INT-10 |
+| `requestId` | UUID de corrélation fixé à la création ; depuis INT-10, clé MongoDB `_id` unique |
 | `status` | `PENDING` à la création, puis transitions autorisées ci-dessous |
 | `payload` | Copie des données reçues, liste des ayants droit non modifiable ; inchangée pendant le cycle |
 | `createdAt` | `Instant` de création fourni par l'horloge de Capability ; ne change jamais |
@@ -182,6 +182,20 @@ stateDiagram-v2
 **Preuves INT-09 :** deux nouveaux tests de cycle/refus et un test existant d'acceptation exécutés avec succès ; pas de nouveau build global ni de test MongoDB. Le POST utilise désormais `pending(...)` mais reste en mémoire ; aucun traitement de production n'appelle les transitions. Le suivi HTTP reste limité à `requestId`, `status`, `createdAt`. Voir le [cours INT-09](../../notes/sprint-03/INT-09-definir-les-donnees-et-transitions.md).
 
 L'UUID **corrèle** la demande HTTP, le futur document persisté, l'événement et le traitement ; il n'assure ni idempotence, ni verrouillage, ni unicité de la création côté partenaire.
+
+### 6.1. Persister avant d'accepter — INT-10
+
+**[Simulation ConfluxLab — réalisée sur feu vert « commit la 9 & go INT-10 »]** : `FamilyRequestService` remplace le nom devenu trompeur `InMemoryFamilyRequests`. Validation, génération de l'UUID et projection du suivi restent dans ce service. Il dépend de l'interface interne `FamilyRequestStore`, dont l'unique implémentation de production est `MongoFamilyRequestStore`, avec `MongoTemplate`. L'ancien store mémoire est déplacé sous `src/test` pour préserver les tests unitaires ; aucun fallback mémoire ni profil de repli n'est livré.
+
+`StoredFamilyRequest` est mappé par `@Document("family_requests")` et `@Id` sur l'UUID : son `requestId` Java devient `_id` en BSON UUID standard, protégé par l'index unique natif de MongoDB. L'adaptateur utilise **`insert`**, pas un upsert : une collision échoue sans remplacer le document existant. Les dates sont stockées à la précision milliseconde de BSON Date ; la création est normalisée à cette précision avant insertion. Le document et le repository restent internes, le contrat HTTP est inchangé.
+
+Le `MongoTemplate` de Capability impose **`w=majority`, journalisation `j=true`, `wtimeout` configuré à 5 s**. Ce dernier concerne la satisfaction du write concern lorsqu'il s'applique ; il ne borne pas universellement un flush du journal ni toute la requête HTTP, en particulier sur le standalone. Les délais réseau restent distincts. Le service attend le retour synchrone de l'insertion avant de construire son reçu ; le BFF retourne alors `202`. Sur l'instance standalone du labo, « majority » ne crée aucune réplication : la majorité est cette instance unique, avec acquittement du journal. Ce n'est ni une sauvegarde ni une garantie contre la perte du disque.
+
+Une erreur d'écriture remonte vers l'advice existant en **`500` générique**, sans `Location` ou reçu d'acceptation. Un timeout ou une déconnexion peut néanmoins survenir après une écriture réussie : erreur HTTP ne signifie pas certitude d'absence en base. Aucun retry applicatif ni idempotence n'est ajouté ; les écritures rejouables du driver sont désactivées dans l'URI par défaut.
+
+La configuration de l'assemblage utilise `MONGODB_URI`, avec une valeur locale par défaut vers `conflux_lab`, des délais de connexion/sélection/lecture et la représentation UUID standard. Un MongoDB accessible est désormais nécessaire pour réussir POST/GET ; démarrer le contexte seul ne constitue pas un contrôle de disponibilité. Le choix utilisateur retient l'image officielle `mongo:8.0.16`, une instance standalone, pas une image Alpine personnalisée ni un cluster.
+
+**Preuves :** deux nouveaux tests avec MongoDB Testcontainers et un test POST/GET existant réutilisé réussissent : relecture de l'UUID/payload/dates, collision refusée sans écrasement, panne d'insertion simulée renvoyant `500` au lieu de `202`, suivi limité aux métadonnées. Les tests Spring d'assemblage partagent désormais ce MongoDB temporaire ; le cache WiredTiger de test est limité à 0,25 Gio, pas la mémoire totale du conteneur. Testcontainers 1.21.4 corrige l'incompatibilité Docker reproduite avec la 1.21.3 gérée par Boot. Les conteneurs de test ont été supprimés après la JVM ; aucune base utilisateur n'a été utilisée. Pas de nouveau build global, JAR démarré ou preuve de redémarrage : ces travaux et les mises à jour atomiques restent distincts (INT-11/12). Voir le [cours INT-10](../../notes/sprint-03/INT-10-persister-avant-d-accepter.md).
 
 ## 7. Sujets techniques prioritaires
 

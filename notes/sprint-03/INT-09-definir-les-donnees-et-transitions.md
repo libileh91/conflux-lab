@@ -1,5 +1,7 @@
 # INT-09 — Définir les données et transitions
 
+> **Repère historique après INT-10.** Les extraits, noms et commandes ci-dessous décrivent INT-09. Cette tâche a ensuite été commitée localement (`185bdd7`) avant INT-10. Le service actuel s'appelle `FamilyRequestService`, le record est maintenant mappé MongoDB et le store mémoire reste uniquement une doublure de test ; voir le [cours INT-10](INT-10-persister-avant-d-accepter.md).
+
 | Contexte | Description |
 |---|---|
 | **Sprint** | [03 — MongoDB et cycle des états](../../docs/stages/sprint-03-mongodb.md) |
@@ -77,7 +79,7 @@ static StoredFamilyRequest pending(UUID requestId, CreateFamilyRequest payload, 
 
 Une **factory** est simplement une méthode nommée qui construit l'objet. Ici, son nom rend explicites le statut initial et les dates initiales.
 
-[`InMemoryFamilyRequests`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/InMemoryFamilyRequests.java) utilise désormais cette méthode avec l'instant fourni par son `Clock`, puis appelle toujours le store mémoire avant de renvoyer l'acceptation. Le contrat HTTP ne change pas : le GET projette encore uniquement `requestId`, `status`, `createdAt`.
+`InMemoryFamilyRequests` (renommé depuis en [`FamilyRequestService`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java)) utilisait à cette étape cette méthode avec l'instant fourni par son `Clock`, puis appelle toujours le store mémoire avant de renvoyer l'acceptation. Le contrat HTTP ne change pas : le GET projette encore uniquement `requestId`, `status`, `createdAt`.
 
 ### 3.3. Encadrer les transitions
 

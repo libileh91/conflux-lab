@@ -23,7 +23,10 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B006](#td-b006) | Vérifier les raccourcis dans l'interface Zed | INT-02 | Vérification manuelle non constatée |
 | [TD-B007](#td-b007) | Vérifier le Wrapper sous Windows | INT-02 | Optionnel ; environnement Windows requis |
 | [TD-B008](#td-b008) | Revoir `gh` ou SSH si nécessaire | INT-37 | Non prioritaire : Git HTTPS a fonctionné |
-| [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | À autoriser ; modèle INT-09 disponible |
+| [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | Terminée : insertion/relecture et unicité réelles, erreur sans faux reçu |
+| [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | À autoriser ; MongoDB INT-10 disponible |
+
+Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
 ## Actions restantes
 
@@ -147,11 +150,25 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 |---|---|
 | **Créé dans** | [Note INT-09](sprint-03/INT-09-definir-les-donnees-et-transitions.md) |
 | **Story liée** | [INT-10 — Persister avant d'accepter](../docs/stages/sprint-03-mongodb.md#int-10--persister-avant-daccepter) |
-| **Dépend de** | INT-09 terminée ; nouveau feu vert individuel et MongoDB disponible pour la validation réelle |
-| **Fichiers** | `capability-api/pom.xml`, `StoredFamilyRequest.java`, stockage et service sous `capability-api/src/` ; repository et configuration MongoDB à créer, pas encore présents |
+| **Dépend de** | INT-09 terminée et commitée `185bdd7` ; feu vert INT-10 reçu, Docker disponible |
+| **Fichiers** | `FamilyRequestService.java`, `FamilyRequestStore.java`, `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `FamilyRequestConfiguration.java`, POM et `application.yml` ; `MongoTestSupport.java` et `MongoFamilyRequestStoreTest.java` sous les tests de l'assemblage |
 | **Action** | Remplacer le stockage mémoire par MongoDB en conservant les frontières ; confirmer l'écriture avant le retour d'acceptation |
 | **Validation** | Enregistrement/relecture du même UUID et payload, unicité en base, échec d'écriture sans faux `202` selon les critères d'INT-10 ; ne pas confondre modèle Java et persistance réelle |
-| **Statut** | ⏸ À autoriser — INT-10 non commencée ; ce suivi reprend la story existante, sans nouvelle tâche de développement |
+| **Statut** | ✅ Terminée sur feu vert INT-10 ; [cours et preuves](sprint-03/INT-10-persister-avant-d-accepter.md), 2 nouveaux tests + 1 test existant réussis avec MongoDB réel temporaire. Panne d'écriture simulée ; ni redémarrage ni suite globale revendiqués |
+
+## TD-B010
+
+**Sécuriser les mises à jour de statut en base**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-10](sprint-03/INT-10-persister-avant-d-accepter.md) |
+| **Story liée** | [INT-11 — Sécuriser les mises à jour](../docs/stages/sprint-03-mongodb.md#int-11--sécuriser-les-mises-à-jour) |
+| **Dépend de** | INT-10 terminée ; nouveau feu vert individuel |
+| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java` et leurs tests à étendre ; pas de méthode de prise en charge ajoutée dans INT-10 |
+| **Action** | Faire dépendre la mise à jour atomique du statut actuel autorisé, conserver les dates cohérentes et interdire l'écrasement d'un état final |
+| **Validation** | Une seule prise en charge gagne lors d'un double passage concurrent `PENDING → PROCESSING` ; transitions invalides et écrasement final refusés selon les critères de la story |
+| **Statut** | ⏸ À autoriser — INT-11 non commencée ; cette entrée suit la story existante, sans autoriser son développement |
 
 ## Repères de cours
 
@@ -362,5 +379,19 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **Dépend de** | États de `RequestStatus` et modèle interne de Capability ; aucune nouvelle exécution pour lire ce repère |
 | **Fichiers** | `StoredFamilyRequest.java`, `StoredFamilyRequestTest.java`, `InMemoryFamilyRequests.java`, [DAT — données](../docs/dat/ConfluxLab.md#6-données-mongodb) |
 | **À retenir** | `pending(...)` initialise `createdAt == updatedAt`, sans `completedAt`. `transitionTo(...)` retourne une nouvelle valeur selon le graphe autorisé ; `createdAt` reste fixe, `updatedAt` ne recule pas, `completedAt` apparaît à la fin. Un état final ne se rouvre pas. Cela ne modifie pas le store et ne protège pas deux appelants concurrents ; l'écriture atomique sera traitée dans INT-11. `result?`/`error?` sont documentés pour la cible mais non implémentés |
-| **Vérification pédagogique** | Expliquer pourquoi deux threads pourraient chacun produire `PROCESSING` à partir du même objet `PENDING`, et pourquoi un POST actuel ne prouve toujours pas une persistance durable |
-| **Statut** | 📘 Référence fondée sur 2 nouveaux tests unitaires et 1 test existant d'acceptation réussis ; pas de nouveau build global, MongoDB ou évaluation orale |
+| **Vérification pédagogique** | Expliquer pourquoi deux threads pourraient chacun produire `PROCESSING` à partir du même objet `PENDING`, et distinguer cette validation locale de l'insertion durable réalisée ensuite dans INT-10 |
+| **Statut** | 📘 Référence fondée sur les 3 tests ciblés INT-09, sans MongoDB à cette étape ; INT-10 réalise ensuite la persistance. Pas de nouveau build global ni d'évaluation orale |
+
+## TD-R016
+
+**Insérer puis acquitter, sans promettre une issue toujours connue**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-10](sprint-03/INT-10-persister-avant-d-accepter.md) |
+| **Story liée** | INT-10 — Persister avant d'accepter |
+| **Dépend de** | Modèle INT-09, repository MongoDB et contrat HTTP existant |
+| **Fichiers** | `FamilyRequestService.java`, `MongoFamilyRequestStore.java`, `FamilyRequestConfiguration.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestStoreTest.java`, `MongoTestSupport.java` |
+| **À retenir** | `insert` attend l'acquittement du journal avant le reçu, et l'index `_id` interdit une collision sans upsert. Sur un standalone, `majority` ne signifie pas réplication. Une panne réseau peut masquer une écriture réussie : `500` ne garantit pas l'absence en base. UUID unique ne signifie pas idempotence du POST. Le store mémoire ne sert plus qu'aux tests ; les deux nouveaux tests vérifient MongoDB réel et un échec simulé, sans matrice exhaustive |
+| **Vérification pédagogique** | Expliquer pourquoi remplacer `insert` par `save` pourrait écraser un document, pourquoi `202` n'est pas une famille créée et pourquoi rejouer un POST après timeout peut créer un doublon métier |
+| **Statut** | 📘 Référence fondée sur 3 tests ciblés réussis ; incompatibilité Docker initiale corrigée par Testcontainers 1.21.4. Suite globale et redémarrage non exécutés, compréhension de l'apprenant non évaluée |

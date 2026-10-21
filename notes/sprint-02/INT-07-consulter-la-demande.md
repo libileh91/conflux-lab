@@ -1,5 +1,7 @@
 # INT-07 — Consulter la demande
 
+> **Depuis INT-10 :** les preuves et extraits mémoire ci-dessous restent historiques ; le service a été renommé `FamilyRequestService` et le suivi lit maintenant MongoDB. Voir le [cours INT-10](../sprint-03/INT-10-persister-avant-d-accepter.md). La perte après redémarrage décrite ici concernait seulement l'ancien stockage mémoire.
+
 > **Repère historique après INT-08.** Ce cours et ses 108 tests décrivent l'étape antérieure. INT-08 a depuis complété les refus et corrigé l'écho d'un chemin rejeté dans `ProblemDetail.instance` ; voir le [cours INT-08](INT-08-tester-les-refus.md). Les anciens constats sur `instance` ne décrivent plus la réponse actuelle.
 
 | Contexte | Description |
@@ -85,7 +87,7 @@ Un texte non convertible est refusé avant l'appel à Capability. Ce schéma rep
 
 ### 3.1. Lire et projeter dans Capability
 
-Contenu exact de `getRequest` dans [`InMemoryFamilyRequests.java`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/InMemoryFamilyRequests.java) :
+Contenu exact de `getRequest` dans `InMemoryFamilyRequests.java` (service désormais nommé [`FamilyRequestService.java`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java)) :
 
 ```java
 @Override
@@ -153,7 +155,7 @@ Aucun MongoDB, mécanisme de récupération, expiration ou bornage mémoire n'es
 
 ### 4.1. Tests unitaires de lecture
 
-Dans [`InMemoryFamilyRequestsTest`](../../capability-api/src/test/java/dev/confluxlab/capability/internal/InMemoryFamilyRequestsTest.java), l'ancien cas « suivi indisponible » est remplacé par une vérification de la vue d'une demande réellement acceptée : UUID, `PENDING`, date fixe et GET répété avec une horloge décalée.
+Dans `InMemoryFamilyRequestsTest` (désormais [`FamilyRequestServiceTest`](../../capability-api/src/test/java/dev/confluxlab/capability/internal/FamilyRequestServiceTest.java)), l'ancien cas « suivi indisponible » est remplacé par une vérification de la vue d'une demande réellement acceptée : UUID, `PENDING`, date fixe et GET répété avec une horloge décalée.
 
 Les nouveaux cas vérifient également :
 

@@ -99,7 +99,7 @@ Les dates futures HTTP sont calculées à partir du jour UTC plus un an : elles 
 
 ### 3.2. Java direct : le BFF n'est pas le seul gardien
 
-Dans [`InMemoryFamilyRequestsTest`](../../capability-api/src/test/java/dev/confluxlab/capability/internal/InMemoryFamilyRequestsTest.java), **25 cas invalides** sont transmis directement au service : 7 cas structurels et 9 variantes de personne testées comme principal puis comme premier ayant droit. Cela ne prétend pas parcourir toute permutation possible des personnes.
+Dans `InMemoryFamilyRequestsTest` (désormais [`FamilyRequestServiceTest`](../../capability-api/src/test/java/dev/confluxlab/capability/internal/FamilyRequestServiceTest.java)), **25 cas invalides** sont transmis directement au service : 7 cas structurels et 9 variantes de personne testées comme principal puis comme premier ayant droit. Cela ne prétend pas parcourir toute permutation possible des personnes.
 
 Extrait partiel du contrôle :
 

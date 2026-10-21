@@ -1,5 +1,7 @@
 # INT-06 — Accepter une demande
 
+> **Depuis INT-10 :** ce cours conserve les extraits et preuves historiques de l'acceptation mémoire. Le service actuel est `FamilyRequestService` et le store mémoire a été déplacé dans les tests ; le [cours INT-10](../sprint-03/INT-10-persister-avant-d-accepter.md) explique la persistance MongoDB désormais utilisée en production.
+
 > **Repère temporel — depuis INT-07.** Le GET d'une demande conservée retourne `200` avec les seules métadonnées `requestId`, `status` et `createdAt` ; UUID inconnu : `404`, UUID malformé : `400`. Les constats, extraits et preuves chiffrées ci-dessous, notamment les anciens GET `503`, restent historiques et propres aux étapes décrites. Voir le [cours INT-07](INT-07-consulter-la-demande.md).
 
 | Contexte | Description |
@@ -76,7 +78,7 @@ Si le store échoue, la branche de succès s'arrête : l'exception remonte et le
 
 L'interface [`FamilyRequests`](../../capability-api/src/main/java/dev/confluxlab/capability/api/FamilyRequests.java) et le [`FamilyController`](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java) gardent leurs signatures. Le contrôleur continue de recevoir le JSON, déléguer, construire l'URL publique et produire la réponse HTTP.
 
-Dans Capability, `UnavailableFamilyRequests` a été remplacé par [`InMemoryFamilyRequests`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/InMemoryFamilyRequests.java). Service, store, représentation stockée et configuration restent package-private sous `capability.internal` ; Experience ne les importe pas.
+Dans Capability, `UnavailableFamilyRequests` a été remplacé par `InMemoryFamilyRequests` (aujourd'hui [`FamilyRequestService`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java)). Service, store, représentation stockée et configuration restent package-private sous `capability.internal` ; Experience ne les importe pas.
 
 Le [POM de Capability](../../capability-api/pom.xml) déclare désormais le starter validation et le starter test, déjà utilisés par la stack du projet. La dépendance directe de validation rend explicite le besoin de Capability, sans compter sur un consommateur pour l'apporter.
 
@@ -143,7 +145,7 @@ Cette représentation interne n'est pas un document MongoDB et n'est jamais sér
 
 ### 3.5. Insérer sans écraser et reconnaître la limite mémoire
 
-Extrait partiel exact de [`InMemoryFamilyRequestStore`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/InMemoryFamilyRequestStore.java) :
+Extrait partiel exact de [`InMemoryFamilyRequestStore`, aujourd'hui doublure de test](../../capability-api/src/test/java/dev/confluxlab/capability/internal/InMemoryFamilyRequestStore.java) :
 
 ```java
 private final ConcurrentMap<UUID, StoredFamilyRequest> requests = new ConcurrentHashMap<>();
@@ -165,7 +167,7 @@ La map est liée au bean et au processus. Un nouveau store est vide ; un arrêt 
 
 ### 4.1. Capability : vérifier réellement la conservation
 
-[`InMemoryFamilyRequestsTest`](../../capability-api/src/test/java/dev/confluxlab/capability/internal/InMemoryFamilyRequestsTest.java) exécute **13 cas** :
+`InMemoryFamilyRequestsTest` (désormais [`FamilyRequestServiceTest`](../../capability-api/src/test/java/dev/confluxlab/capability/internal/FamilyRequestServiceTest.java)) exécute **13 cas** :
 
 - acceptation `PENDING`, UUID, payload et date exacte présents dans le vrai store au retour ;
 - deux demandes identiques conservées sous deux UUID distincts ;

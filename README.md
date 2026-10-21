@@ -4,20 +4,21 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 ## État actuel
 
-- **INT-01 à INT-09 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi mémoire, refus et modèle des transitions. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
+- **INT-01 à INT-10 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi, refus, modèle des transitions et stockage MongoDB. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
 - Le dernier `clean verify` global observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré.
-- Le JAR démarre sans MongoDB ni partenaire. Un **POST valide retourne `202`, UUID, `PENDING` et des liens cohérents après conservation en mémoire**. Deux POST identiques ont produit deux UUID distincts lors de la démonstration.
+- Depuis **INT-10**, un **POST valide retourne `202`, UUID, `PENDING` et des liens cohérents après insertion acquittée dans MongoDB**. Le GET relit cette base ; MongoDB doit donc être accessible pour réussir ces opérations. Aucun partenaire n'est nécessaire.
 - Le **GET retourne `200` pour une demande connue**, avec seulement `requestId`, `status` et `createdAt` ; UUID inconnu `404`, identifiant mal formé `400`. Le GET ne modifie ni statut ni date.
-- La mémoire est perdue au redémarrage et non bornée : une ancienne demande reçoit alors `404`. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré. INT-08 complète les refus et l'isolation, sans règle métier supplémentaire.
-- **INT-09** ajoute les dates internes et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition ni appel en production. Deux tests ajoutés et un test existant d'acceptation passent ; la suite globale n'a pas été relancée.
+- L'ancien stockage mémoire n'existe plus en production ; il reste une doublure de test. Un `_id` UUID unique interdit l'écrasement à l'insertion. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré. La conservation après redémarrage de l'application avec la même base reste à démontrer dans INT-12.
+- **INT-09** définit les dates et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition ni appel en production. **INT-10 : 2 nouveaux tests + 1 test POST/GET existant réussis** avec un MongoDB temporaire réel ; panne d'insertion simulée renvoyant `500`, sans faux reçu. Suite globale et JAR non relancés.
 
 ## Prérequis
 
 - JDK **21**, avec `java` et `javac` accessibles ; `JAVA_HOME` peut désigner son installation.
 - Pas besoin de Maven préinstallé : utiliser les scripts du dépôt. Le Wrapper 3.3.4 télécharge Maven **3.9.16**, avec empreinte SHA-256 épinglée, lors du premier lancement.
 - Accès réseau à Maven Central au premier lancement et pour les dépendances non mises en cache.
-- Docker sera nécessaire pour les tests Testcontainers des sprints suivants ; il n'est nécessaire ni aux tests actuels ni au démarrage de l'assemblage INT-03.
+- **Docker disponible pour les tests Spring de l'assemblage** : Testcontainers démarre un MongoDB standalone `mongo:8.0.16`, supprimé en fin de JVM. Les tests unitaires des autres modules n'en ont pas besoin. Testcontainers est épinglé en 1.21.4 pour la compatibilité Docker récente.
+- Pour l'usage local de l'application : MongoDB accessible, configuré via `MONGODB_URI`. Par défaut : `mongodb://localhost:27017/conflux_lab?serverSelectionTimeoutMS=3000&connectTimeoutMS=3000&socketTimeoutMS=5000&retryWrites=false`. Aucun secret réel dans les exemples.
 
 ## Vérifications depuis la racine
 
@@ -29,7 +30,15 @@ Sur Linux/macOS :
 ./mvnw -B -ntp -pl contracts -am test
 ```
 
-Ces commandes ont réussi sous Linux avec Java 21. La sélection `-pl contracts` vérifie les 59 cas de données/JSON, mais ne compile pas Experience ; le contrôle global reste donc nécessaire :
+Ces commandes ont réussi historiquement sous Linux avec Java 21. La sélection `-pl contracts` ne compile pas Experience. Pour INT-10, seule cette sélection ciblée a été exécutée avec succès après correction de la compatibilité Testcontainers :
+
+```sh
+./mvnw -B -ntp -pl application -am '-Dtest=MongoFamilyRequestStoreTest,FamilyRequestTrackingHttpTest#followsThePostLocationToPendingMetadataAndKeepsCreatedAtAcrossGets' -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
+Résultat : **3 tests réussis**, dont 2 nouveaux. Le premier passage avec `clean test` avait échoué avant les tests métier, sur l'API Docker trop ancienne de Testcontainers 1.21.3 ; la 1.21.4 corrige ce problème. Le `clean` a supprimé les anciennes classes renommées et les sorties générées, pas les sources.
+
+Le contrôle global reste disponible pour une validation plus large, mais **n'a pas été relancé pour INT-10** :
 
 ```sh
 ./mvnw -B -ntp clean verify
@@ -45,19 +54,23 @@ Sous Windows/PowerShell, utiliser `./mvnw.cmd` à la place de `./mvnw` ; le scri
 
 ## Démarrage local
 
-Après le build global, depuis la racine :
+**Exemple manuel, non exécuté pendant INT-10.** Depuis la racine, pour un MongoDB local standalone avec volume conservé :
 
 ```sh
+docker run -d --name conflux-lab-mongo -p 127.0.0.1:27017:27017 -v conflux-lab-mongo-data:/data/db mongo:8.0.16 --wiredTigerCacheSizeGB 0.25
+./mvnw -B -ntp -DskipTests package
 java -jar application/target/application-0.1.0-SNAPSHOT.jar --server.port=0 --server.address=127.0.0.1
 ```
 
-C'est la commande réellement lancée par les contrôles bornés d'INT-03, d'INT-06, d'INT-07 et d'INT-08 : `0` demande un port disponible, affiché par Tomcat. Le superviseur de vérification a attendu le démarrage, vérifié POST/GET en HTTP local et arrêté le processus ; lancement manuel à arrêter avec `Ctrl+C`. Sans ces options, la configuration par défaut écoute sur le port 8080. Aucun service sur 8081 ni propriété `CAPABILITY_BASE_URL` n'est requis.
+La première commande crée un conteneur local et un volume ; le port n'est exposé que sur loopback. Elle suppose le nom et le port libres. Le cache WiredTiger est réglé à 0,25 Gio : **ce n'est pas une limite de mémoire totale**. Le volume `/data/db` conserve les données indépendamment de l'arrêt de l'application ; ne pas le supprimer pour tester un redémarrage. Pas d'authentification dans cet exemple local, jamais à exposer sur Internet. Un conteneur déjà créé peut être relancé par `docker start conflux-lab-mongo`, sans refaire `docker run`.
 
-**À ce stade, `POST /api/v1/families` valide retourne `202 Accepted`**, avec `requestId`, `status: PENDING`, `statusUrl` et `Location`. Les données fictives de `contracts/src/test/resources/contracts/create-family.json` servent à la démonstration. Capability valide aussi les appels Java directs et conserve un snapshot du payload avant d'acquitter. Un échec d'enregistrement ne produit pas d'acceptation ; les détails internes restent masqués.
+`-DskipTests package` produit le JAR sans relancer les tests ; ce n'est pas une preuve de validation. Le `clean test` ciblé de la session n'a pas produit de JAR. La commande `java -jar` correspond aux lancements historiques INT-03/06/07/08, mais n'a pas été rejouée avec MongoDB dans INT-10. `0` demande un port disponible, affiché par Tomcat ; arrêter l'application par `Ctrl+C`, puis éventuellement la base par `docker stop conflux-lab-mongo` (volume conservé). Aucun service sur 8081 ni propriété `CAPABILITY_BASE_URL` n'est requis.
+
+**À ce stade, `POST /api/v1/families` valide retourne `202 Accepted`**, avec `requestId`, `status: PENDING`, `statusUrl` et `Location`. Les données fictives de `contracts/src/test/resources/contracts/create-family.json` servent à la démonstration. Capability valide aussi les appels Java directs et insère un snapshot du payload dans MongoDB avant d'acquitter. Un échec d'enregistrement ne produit pas d'acceptation ; les détails internes restent masqués.
 
 Le lien `Location`/`statusUrl` est désormais **consultable par GET** : une demande connue retourne `200` et les trois métadonnées, sans payload personnel ni résultat métier. Un UUID inconnu reçoit `404 application/problem+json` avec `Request not found.` ; un identifiant manifestement mal formé reçoit `400` avec `Invalid request.`.
 
-Le `202` signifie toujours seulement « demande conservée en mémoire », pas famille créée, traitement lancé ou conservation durable. Le redémarrage remet la map à vide, sans nettoyage ni borne de capacité ajoutés. Voir les tutoriels [INT-06 — acceptation](notes/sprint-02/INT-06-accepter-une-demande.md) et [INT-07 — consultation](notes/sprint-02/INT-07-consulter-la-demande.md).
+Le `202` signifie désormais « demande insérée avec acquittement MongoDB », pas famille créée ni traitement lancé. L'écriture impose `majority` avec journalisation ; sur cette instance seule, cela ne fournit ni réplication ni sauvegarde. Une déconnexion peut laisser l'issue d'une écriture inconnue, même avec un `500` : ne pas rejouer aveuglément un POST. La démonstration de redémarrage avec la même base reste à faire dans INT-12. Voir le [cours INT-10](notes/sprint-03/INT-10-persister-avant-d-accepter.md) ; les cours INT-06/07 décrivent l'étape historique en mémoire.
 
 ### Refus et confidentialité
 
@@ -70,7 +83,7 @@ Les 181 cas sont le total du projet, pas 181 explications d'un même refus. Le [
 | Module | Responsabilité | État |
 |---|---|---|
 | `contracts` | Types Java échangés entre modules ; ni métier, ni contrôleur, ni persistance | Cinq types et 59 cas de test dans INT-05 |
-| `capability-api` | API Java publique, puis règles métier, statuts, stockage et orchestration ; le suffixe `-api` ne signifie pas un serveur autonome | Acceptation `PENDING`, validation et consultation du stockage mémoire internes ; traitement non réalisé |
+| `capability-api` | API Java publique, puis règles métier, statuts, stockage et orchestration ; le suffixe `-api` ne signifie pas un serveur autonome | Acceptation `PENDING`, validation, insertion et consultation MongoDB internes ; traitement non réalisé |
 | `experience-api` | BFF mince : contrat HTTP, validation de forme et adaptation des réponses | POST `202`, GET `200` des métadonnées ; erreurs génériques `400`/`404`/`500` |
 | `application` | Assemblage, seul démarrage Spring Boot et seul JAR Boot exécutable | Créé et démarré dans INT-03 |
 
@@ -89,6 +102,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-07 — Suivi des métadonnées et erreurs de consultation](notes/sprint-02/INT-07-consulter-la-demande.md).
 - [INT-08 — Comprendre les refus et leurs preuves](notes/sprint-02/INT-08-tester-les-refus.md).
 - [INT-09 — Données, dates et transitions internes](notes/sprint-03/INT-09-definir-les-donnees-et-transitions.md).
+- [INT-10 — MongoDB avant acceptation](notes/sprint-03/INT-10-persister-avant-d-accepter.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 

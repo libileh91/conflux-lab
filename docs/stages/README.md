@@ -52,7 +52,7 @@ Les tests accompagnent chaque story : ils ne sont pas reportés au sprint 07. **
 |---|---|---|---|
 | [01 — Socle modulaire](sprint-01-socle.md) | Construire et démarrer une application aux modules séparés | INT-01 à INT-04 ; INT-37 | Clôturé techniquement et documenté sur demande utilisateur (2026-10-21) ; restitution orale non évaluée |
 | [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05 à INT-08 terminées techniquement ; passage à INT-09 demandé, restitution orale non évaluée |
-| [03 — MongoDB](sprint-03-mongodb.md) | Conserver une demande après redémarrage | INT-09 à INT-12 | INT-09 terminée ; persistance INT-10 à autoriser |
+| [03 — MongoDB](sprint-03-mongodb.md) | Conserver une demande après redémarrage | INT-09 à INT-12 | INT-09/10 terminées ; mises à jour atomiques INT-11 à autoriser |
 | [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | Planifié |
 | [05 — Orchestration](sprint-05-orchestration.md) | Faire avancer les six opérations selon leurs dépendances | INT-17 à INT-20 | Planifié |
 | [06 — Partenaire et résilience](sprint-06-partenaire.md) | Appeler un partenaire simulé et traiter ses pannes sans retry aveugle | INT-21 à INT-24 | Planifié |
@@ -72,14 +72,15 @@ Les identifiants ne changent pas ; ils ne sont pas un ordre de développement ob
 - **Réalisé ensuite sur feu vert INT-07 :** suivi des métadonnées en lecture seule, UUID inconnu `404`, identifiant mal formé `400` ; perte au redémarrage démontrée.
 - **Réalisé ensuite sur feu vert INT-08 :** refus sans enregistrement, confidentialité des réponses et isolation vérifiés ; 181 tests globaux, correctif d'écho du chemin dans `instance`.
 - **Passage demandé ensuite :** commit local INT-08 `fedb8b7`, puis INT-09 réalisée sur demande « commit la 08 & passer 09 » ; modèle/dates et transitions locales, 2 tests ajoutés et 3 tests ciblés réussis. La restitution pédagogique du sprint 02 reste non évaluée.
-- **Suite :** INT-10 nécessite un nouveau feu vert individuel ; aucun MongoDB n'est encore branché.
+- **Réalisé ensuite sur feu vert INT-10 :** commit INT-09 `185bdd7`, remplacement de la mémoire de production par MongoDB, insertion acquittée avant `202`, UUID unique et refus sans faux reçu ; 2 nouveaux tests et 1 test POST/GET réutilisé réussis.
+- **Suite :** INT-11 nécessite un nouveau feu vert individuel ; aucun traitement asynchrone ni mécanisme de prise en charge atomique n'est ajouté.
 - La préparation avancée d'INT-05 ne lance ni l'assemblage ni les autres stories du sprint 02.
 
 ## Architecture à conserver
 
 Une application Spring Boot et un seul JAR exécutable. BFF et Capability restent séparés : le BFF gère l'HTTP ; Capability protège le métier et possède son stockage. La communication interne est un appel Java via l'interface publique de Capability. Feign/Resilience4j servira uniquement au partenaire externe fictif.
 
-Le dernier build global observé, lors d'INT-08, réussit avec 181 tests : 59 contrats, 43 Capability, 4 BFF et 75 assemblage/HTTP/architecture. INT-06 conserve le payload avant `202` ; INT-07 consulte les seules métadonnées en `200`, avec `404` pour l'absence et `400` pour les formats invalides testés. Deux POST/GET indépendants et la perte après redémarrage sont démontrés sur le JAR réel ; aucun stockage durable ni traitement n'est ajouté. INT-08 a complété les refus et corrigé l'écho de données rejetées dans les erreurs ; le passage à INT-09 a ensuite été demandé sans évaluer la restitution orale. INT-09 ajoute le modèle de dates et les transitions internes, vérifiés par 3 tests ciblés ; aucun nouveau résultat global n'est revendiqué. Voir le [README du projet](../../README.md) pour les commandes et les limites.
+Le dernier build global observé, lors d'INT-08, réussit avec 181 tests : 59 contrats, 43 Capability, 4 BFF et 75 assemblage/HTTP/architecture. INT-06 conserve le payload avant `202` ; INT-07 consulte les seules métadonnées en `200`, avec `404` pour l'absence et `400` pour les formats invalides testés. À cette étape historique, deux POST/GET indépendants et la perte après redémarrage ont été démontrés sur le JAR réel, sans stockage durable ni traitement. INT-08 a complété les refus et corrigé l'écho de données rejetées dans les erreurs ; le passage à INT-09 a ensuite été demandé sans évaluer la restitution orale. INT-09 ajoute le modèle de dates et les transitions internes, vérifiés par 3 tests ciblés. INT-10 branche ensuite MongoDB et vérifie l'insertion avant acceptation, l'unicité et le suivi avec 3 tests ciblés ; aucun nouveau résultat global ou de redémarrage n'est revendiqué. Voir le [README du projet](../../README.md) pour les commandes et les limites.
 
 ## Notes de fin de tâche
 
