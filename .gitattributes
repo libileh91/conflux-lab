@@ -1,0 +1,3 @@
+# Keep the Maven Wrapper executable by the expected shell after checkout.
+mvnw text eol=lf
+mvnw.cmd text eol=crlf

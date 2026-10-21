@@ -6,6 +6,10 @@ target/
 .idea/
 *.iml
 .vscode/
+.project
+.classpath
+.settings/
+.factorypath
 
 # Local environment and credentials
 .env
