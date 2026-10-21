@@ -4,9 +4,9 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 ## État actuel
 
-- **INT-01/02/03/05 sont terminées dans leur périmètre** : cadrage, build, contrats et assemblage unique. Les contrôles automatiques de frontières restent dans INT-04, sur feu vert distinct.
+- **INT-01/02/03/04/05 sont terminées dans leur périmètre** : cadrage, build, contrats, assemblage unique et contrôles automatiques de frontières. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
-- Le `clean verify` global réussit : **64 tests** (59 de contrats, 2 de délégation Java, 3 d'assemblage/disponibilité), aucun échec/erreur/ignoré.
+- Le `clean verify` global réussit : **76 tests** (59 de contrats, 2 de délégation Java, 3 d'assemblage/disponibilité, 5 de frontières et 7 de détection des règles), aucun échec/erreur/ignoré.
 - Le JAR a réellement démarré sans MongoDB ni partenaire. **L'acceptation et le suivi métier ne sont pas implémentés** : un POST valide et un GET avec UUID valide retournent provisoirement `503`, pas un faux `202`/`200`. Aucun stockage, traitement métier ni workflow CI n'est livré.
 
 ## Prérequis
@@ -32,7 +32,7 @@ Ces commandes ont réussi sous Linux avec Java 21. La sélection `-pl contracts`
 ./mvnw -B -ntp clean verify
 ```
 
-**Résultat observé dans INT-03 : succès du réacteur complet, 64 tests, aucun échec/erreur/ignoré.** Le build produit les trois bibliothèques et le JAR Boot d'assemblage. `clean` supprime les sorties `target/`, pas les sources. Une résolution de dépendances ou un simple `validate` ne remplace pas ce contrôle. Les avertissements Mockito d'auto-attachement d'agent sous Java 21 n'ont pas fait échouer les tests ; la compatibilité avec un futur JDK n'est pas validée ici.
+**Résultat observé dans INT-04 : succès du réacteur complet, 76 tests, aucun échec/erreur/ignoré.** Le build produit les trois bibliothèques et le JAR Boot d'assemblage. `clean` supprime les sorties `target/`, pas les sources. Une résolution de dépendances ou un simple `validate` ne remplace pas ce contrôle. Les avertissements Mockito d'auto-attachement d'agent sous Java 21 n'ont pas fait échouer les tests ; la compatibilité avec un futur JDK n'est pas validée ici.
 
 Sous Windows/PowerShell, utiliser `./mvnw.cmd` à la place de `./mvnw` ; le script Windows est fourni mais son exécution n'a pas été testée dans cet environnement Linux. `.gitattributes` fixe LF pour le script Unix et CRLF pour le script Windows.
 
@@ -61,7 +61,7 @@ C'est la commande réellement lancée par le contrôle borné d'INT-03 : `0` dem
 | `experience-api` | BFF mince : contrat HTTP, validation de forme et adaptation des réponses | Appels Java vers Capability ; traduction de l'indisponibilité en `503` vérifiée |
 | `application` | Assemblage, seul démarrage Spring Boot et seul JAR Boot exécutable | Créé et démarré dans INT-03 |
 
-Experience appelle l'API publique Java de Capability ; aucune dépendance inverse ni aucun accès à ses classes internes. Les garde-fous automatisés restent à réaliser dans INT-04. Feign/Resilience4j sera réservé au partenaire externe. Voir le [DAT](docs/dat/ConfluxLab.md) pour le graphe et les limites.
+Experience appelle l'API publique Java de Capability ; aucune dépendance inverse ni aucun accès à ses classes internes. INT-04 protège ces frontières avec ArchUnit 1.4.1 en scope `test` : cycles, sens des dépendances, API publique de Capability, indépendance de `contracts` et absence de retour vers l'assemblage. Des exemples fautifs et un exemple autorisé vérifient les mêmes règles ; ni ArchUnit ni ces fixtures ne sont livrés dans le JAR. Feign/Resilience4j sera réservé au partenaire externe. Voir le [DAT](docs/dat/ConfluxLab.md) pour le graphe et les limites.
 
 ## Travail et comptes rendus
 
@@ -70,6 +70,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-01 — Frontières](notes/sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md).
 - [INT-02 — Build reproductible et diagnostic JDTLS](notes/sprint-01/INT-02-rendre-le-build-reproductible.md).
 - [INT-03 — Assemblage unique et appel Java](notes/sprint-01/INT-03-assembler-les-modules.md).
+- [INT-04 — Frontières testées et vérification des règles](notes/sprint-01/INT-04-verifier-les-frontieres.md).
 - [INT-05 — Contrats et tests](notes/sprint-02/INT-05-definir-les-contrats.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).

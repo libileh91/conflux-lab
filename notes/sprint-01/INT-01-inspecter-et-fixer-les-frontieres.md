@@ -3,12 +3,12 @@
 | Repère | Valeur |
 |---|---|
 | **Sprint** | [01 — Socle du monolithe](../../docs/stages/sprint-01-socle.md) |
-| **Statut** | Cadrage terminé ; état décrit avant INT-03. Assemblage validé depuis ; contrôles de frontières INT-04 non réalisés |
+| **Statut** | Cadrage terminé ; état décrit avant INT-03. Assemblage INT-03 et contrôles de frontières INT-04 validés depuis ; acceptation INT-06 toujours non réalisée |
 | **Objectif du tutoriel** | Comprendre l'organisation du code avant de commencer le métier |
 | **Source des preuves** | Cadrage initial et reprise Maven conservés ; actualisation du statut de compilation après les tests d'INT-05 |
 | **Suivi** | [Actions et repères centralisés](../todos.md) |
 
-**Repère temporel — avant INT-03.** Ce cours conserve les constats, extraits et preuves antérieurs à l'assemblage. Depuis [INT-03 — Assembler les modules](INT-03-assembler-les-modules.md), `application` porte le seul démarrage Boot et le BFF appelle l'interface publique Java `FamilyRequests`. L'ancien client HTTP, sa configuration et ses propriétés, `CapabilityException`, `ExperienceApplication` et le YAML d'Experience ont été supprimés. La validation a été exécutée dans la session INT-03 et consignée dans sa note ; aucun build supplémentaire n'est relancé pour cette mise à jour documentaire. Elle ne réalise ni INT-04 ni l'acceptation/suivi INT-06/07 : les routes refusent explicitement par `503` tant que ces opérations ne sont pas implémentées.
+**Repère temporel — avant INT-03.** Ce cours conserve les constats, extraits et preuves antérieurs à l'assemblage. Depuis [INT-03 — Assembler les modules](INT-03-assembler-les-modules.md), `application` porte le seul démarrage Boot et le BFF appelle l'interface publique Java `FamilyRequests`. L'ancien client HTTP, sa configuration et ses propriétés, `CapabilityException`, `ExperienceApplication` et le YAML d'Experience ont été supprimés. La validation a été exécutée dans la session INT-03 et consignée dans sa note ; aucun build supplémentaire n'est relancé pour cette mise à jour documentaire. Les contrôles de frontières ont depuis été réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](INT-04-verifier-les-frontieres.md). L'acceptation/suivi INT-06/07 restent non réalisés : les routes refusent explicitement par `503` tant que ces opérations ne sont pas implémentées.
 
 ## 1. Objectif et vocabulaire
 
@@ -142,15 +142,15 @@ docker version --format '{{.Client.Version}} / {{.Server.Version}}'
 | Après l'initialisation Git et la reprise Maven | Git lié à GitHub, parent/POM/Wrapper présents ; Maven et daemon Docker répondent |
 | Pendant le cadrage INT-01 | Rôles et graphe cible documentés ; code de frontière non implémenté/testé |
 | Pendant la réécriture pédagogique antérieure | Réorganisation du cours et du suivi, sans nouvelle commande Maven, application ou conteneur |
-| Vérifications exécutées dans INT-03 | Assemblage unique, délégation Java et refus HTTP `503` vérifiés ; pas d'acceptation/suivi métier ni de contrôles de frontières INT-04 |
+| Vérifications exécutées dans INT-03 (2026-10-21, avant INT-04) | Assemblage unique, délégation Java et refus HTTP `503` vérifiés ; pas encore de contrôles de frontières à cette étape, ni d'acceptation/suivi métier |
 
 L'ancienne erreur « not a git repository » appartient au premier diagnostic. Elle n'est pas l'état actuel du dépôt. De même, « pas de POM parent » décrit l'amorce, pas le socle Maven réparé.
 
 ### 5.2 Ce qui n'est pas prouvé
 
-Un schéma correct ne prouve pas que le code le respecte. Aucun test de frontières, aucun appel Java BFF → Capability et aucun démarrage de l'assemblage n'avaient été démontrés dans INT-01. L'assemblage et la délégation ont été vérifiés ensuite dans [INT-03](INT-03-assembler-les-modules.md) ; les contrôles automatiques de frontières restent du périmètre distinct d'INT-04.
+Un schéma correct ne prouve pas que le code le respecte. Aucun test de frontières, aucun appel Java BFF → Capability et aucun démarrage de l'assemblage n'avaient été démontrés dans INT-01. L'assemblage et la délégation ont été vérifiés ensuite dans [INT-03](INT-03-assembler-les-modules.md) ; les contrôles automatiques de frontières ont depuis été réalisés dans [INT-04](INT-04-verifier-les-frontieres.md), sans réaliser l'acceptation INT-06.
 
-La tâche est terminée **pour son périmètre de cadrage**, pas pour tout le sprint. Le blocage des trois DTO a été levé par INT-05 et son build global réussissait avec 59 cas de test de contrats ; ce résultat historique ne validait pas encore l'assemblage, les frontières ou un parcours HTTP. Les preuves historiques du dépannage JDTLS restent distinctes dans INT-02.
+La tâche est terminée **pour son périmètre de cadrage**, pas pour tout le sprint. Le blocage des trois DTO a été levé à l'étape INT-05, avant INT-03/04, et son build global réussissait alors avec 59 cas de test de contrats ; ce résultat historique ne validait pas encore l'assemblage, les frontières ou un parcours HTTP. Les preuves historiques du dépannage JDTLS restent distinctes dans INT-02.
 
 ## 6. Suivi centralisé
 

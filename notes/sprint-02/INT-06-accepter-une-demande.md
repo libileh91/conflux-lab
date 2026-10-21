@@ -3,12 +3,13 @@
 | Contexte | Description |
 |---|---|
 | Sprint | [02 — Contrat REST et BFF mince](../../docs/stages/sprint-02-rest.md) |
-| Statut | **INT-06 NON réalisée** : ébauche historique pré-INT-03 ; seuls la délégation Java et le refus `503` sont validés dans INT-03, pas l'acceptation |
+| Statut | **INT-06 NON réalisée** : ébauche historique pré-INT-03 ; délégation Java et refus `503` validés dans INT-03, frontières vérifiées depuis dans INT-04, mais aucune acceptation métier |
 | Portée | Lecture historique pré-INT-03 du contrôleur, du client HTTP initial, de sa configuration et des erreurs ; éléments liés à INT-07/08, sans les déclarer réalisés |
 | Sources des preuves | Note rétrospective antérieure, fichiers Experience de l'époque (certains supprimés depuis), inventaire historique des sources `contracts`/`capability-api`, [note INT-02](../sprint-01/INT-02-rendre-le-build-reproductible.md) et [DAT](../../docs/dat/ConfluxLab.md) |
 | Rédaction initiale du cours | Documentation seulement ; les preuves ci-dessous concernaient une ébauche aux types manquants |
 | Mise à jour INT-05 | DTO et 59 cas de test de données ajoutés ; build global réussi. À cette date, contrôleur/client inchangés, aucun test HTTP ni serveur exécuté |
 | Mise à jour après INT-03 | Vérifications exécutées dans la session INT-03 : assemblage et délégation Java vérifiés, refus `503` sur le JAR réel ; aucune acceptation ni consultation métier réalisée |
+| Mise à jour après INT-04 | Contrôles de frontières réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](../sprint-01/INT-04-verifier-les-frontieres.md) ; cela ne réalise ni l'acceptation INT-06 ni le suivi INT-07 |
 
 **[Simulation ConfluxLab]** Ces routes sont pédagogiques, pas des endpoints historiques GFP/Open. Le code est expliqué comme une ébauche historique, jamais comme une démonstration d'acceptation fonctionnelle.
 
@@ -197,7 +198,7 @@ Avec `cat` disponible et depuis cette racine, la première affiche le contrôleu
 
 La lecture documentaire initiale avait couvert le contrôleur, le client HTTP, sa configuration, ses propriétés, l'exception dédiée, le gestionnaire d'erreurs et le YAML, ainsi que les notes sources et le cadrage. L'inventaire initial ne montrait pas de DTO ; INT-05 a ajouté cinq types et deux classes de tests dans `contracts`. À cette date pré-INT-03, aucun service métier Capability ni test HTTP n'avait été ajouté. INT-03 a depuis ajouté l'implémentation indisponible et les tests de délégation/assemblage ; cela ne constitue pas un service d'acceptation ou de suivi métier.
 
-L'ancienne note indiquait un parent Maven absent : ce constat était historique. Les POM et le Wrapper ont été réparés dans INT-02, puis INT-05 a défini les types. **Le `clean verify` d'INT-05 avait réussi** avec 59 cas de test de données et compilation d'Experience, avant l'assemblage. Dans la session INT-03, les vérifications exécutées ont ensuite montré 5 tests ciblés réussis, un `clean verify` à 64 tests (59 contrats, 2 contrôleur, 3 assemblage) et le démarrage du JAR réel ; POST valide et GET avec UUID ont répondu `503 application/problem+json`, sans `Location` ni `requestId`, puis le processus a été arrêté. **Le runtime d'assemblage est donc validé, mais INT-06 reste NON réalisée** : ni acceptation métier ni stockage ne sont implémentés.
+L'ancienne note indiquait un parent Maven absent : ce constat était historique. Les POM et le Wrapper ont été réparés dans INT-02, puis INT-05 a défini les types. **Le `clean verify` d'INT-05 avait réussi** avec 59 cas de test de données et compilation d'Experience, avant l'assemblage. Dans la session INT-03 (2026-10-21, avant INT-04), les vérifications exécutées ont ensuite montré 5 tests ciblés réussis, un `clean verify` à 64 tests (59 contrats, 2 contrôleur, 3 assemblage) et le démarrage du JAR réel ; POST valide et GET avec UUID ont répondu `503 application/problem+json`, sans `Location` ni `requestId`, puis le processus a été arrêté. **Le runtime d'assemblage est donc validé, mais INT-06 reste NON réalisée** : ni acceptation métier ni stockage ne sont implémentés.
 
 Aucun enregistrement, UUID généré par Capability, suivi effectif en `PENDING`, MongoDB, événement ou traitement partenaire n'est démontré. Les anciens extraits et leurs branches ne prouvaient aucun `202`, `200`, `400` ou `404` sur un serveur. La validation INT-03 porte sur la délégation Java et le refus explicite `503`, **pas sur un succès `202`/`200` d'acceptation ou de suivi**. Cette mise à jour ne termine ni INT-06 ni INT-07/08 et n'autorise aucun développement.
 

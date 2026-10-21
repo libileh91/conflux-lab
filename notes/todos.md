@@ -18,7 +18,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B001](#td-b001) | Définir les types d'échange | INT-05 | Terminée dans INT-05 : types et tests disponibles |
 | [TD-B002](#td-b002) | Réévaluer `verify` global | INT-02 | Terminée : `clean verify` global réussi après INT-05 |
 | [TD-B003](#td-b003) | Assembler l'application et retirer l'HTTP interne | INT-03 | Terminée : seul JAR Boot démarré et appel Java vérifié |
-| [TD-B004](#td-b004) | Contrôler les frontières | INT-04 | Feu vert requis ; assemblage INT-03 terminé |
+| [TD-B004](#td-b004) | Contrôler les frontières | INT-04 | Terminée : règles de production et détection de violations vérifiées |
 | [TD-B005](#td-b005) | Valider le parcours REST | INT-06/07/08 | Appel Java branché ; métier absent (`503`), feu vert requis |
 | [TD-B006](#td-b006) | Vérifier les raccourcis dans l'interface Zed | INT-02 | Vérification manuelle non constatée |
 | [TD-B007](#td-b007) | Vérifier le Wrapper sous Windows | INT-02 | Optionnel ; environnement Windows requis |
@@ -76,11 +76,11 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 |---|---|
 | **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) |
 | **Story liée** | [INT-04 — Vérifier les frontières](../docs/stages/sprint-01-socle.md#int-04--vérifier-les-frontières) |
-| **Dépend de** | [TD-B003](#td-b003) et feu vert pour INT-04 |
-| **Fichiers** | Tests sous `experience-api/src/test/`, `capability-api/src/test/` et `application/src/test/`, selon le mécanisme retenu ; test d'assemblage déjà présent dans INT-03 |
+| **Dépend de** | [TD-B003](#td-b003), terminée ; feu vert INT-04 reçu et exécuté |
+| **Fichiers** | `application/pom.xml`, `ModuleArchitectureRules.java`, `ModuleArchitectureTest.java`, `ArchitectureRuleDetectionTest.java` et fixtures sous `application/src/test/java/dev/confluxlab/` ; `ApplicationAssemblyTest.java` existant conservé |
 | **Action** | S'appuyer sur le test de contexte ajouté dans INT-03 et ajouter des contrôles simples contre les cycles, la dépendance Capability → BFF et les accès aux internals/repositories |
 | **Validation** | Les contrôles passent dans `verify` et détectent une violation introduite dans un test contrôlé ; aucune infrastructure imposée sans nécessité |
-| **Statut** | ⏳ À autoriser ; assemblage et contexte vérifiés dans INT-03, mais aucun contrôle automatique de frontières encore ajouté |
+| **Statut** | ✅ Terminée sur feu vert INT-04 ; [tutoriel et preuves](sprint-01/INT-04-verifier-les-frontieres.md), 5 tests de production + 7 tests de détection ; `clean verify` global réussi, 76 tests dont le contexte existant |
 
 ## TD-B005
 
@@ -148,7 +148,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 |---|---|
 | **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md), illustré par l'[assemblage INT-03](sprint-01/INT-03-assembler-les-modules.md) |
 | **Stories liées** | INT-01, INT-03 et INT-04 |
-| **Dépend de** | Aucune exécution requise pour lire le repère ; assemblage réalisé dans INT-03, contrôles de frontières distincts dans INT-04 |
+| **Dépend de** | Aucune exécution requise pour lire le repère ; assemblage réalisé dans INT-03 et contrôles de frontières réalisés séparément dans INT-04 |
 | **Fichiers** | `docs/dat/ConfluxLab.md`, POM des modules |
 | **À retenir** | Un module organise le code ; un processus exécute l'application. BFF = HTTP ; Capability = métier/stockage ; `contracts` = types. INT-03 assemble trois bibliothèques dans le seul JAR Boot d'application, avec appels Java internes ; cela ne réalise pas encore le métier |
 | **Vérification pédagogique** | Expliquer pourquoi une flèche de dépendance Maven n'est pas un appel HTTP et pourquoi le BFF n'accède pas au repository |
@@ -279,3 +279,17 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | **À retenir** | Une dépendance Maven fournit des types, pas automatiquement un bean. Le démarrage placé au-dessus des packages découvre l'implémentation, injectée via l'interface publique. Le test unitaire peut retourner un succès préparé ; le contexte réel et le JAR doivent refléter l'indisponibilité des opérations absentes (`503`), sans faux identifiant ni prise en charge |
 | **Vérification pédagogique** | Expliquer pourquoi le contrôleur obtient `202` avec un double mais le JAR répond `503`, et pourquoi un test MockMvc ne prouve pas à lui seul le démarrage du JAR |
 | **Statut** | 📘 Référence fondée sur les vérifications INT-03 (64 tests, inspection et démarrage du JAR) — compréhension de l'apprenant non évaluée |
+
+## TD-R011
+
+**Tester une frontière et vérifier que son détecteur fonctionne**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-04](sprint-01/INT-04-verifier-les-frontieres.md) |
+| **Story liée** | INT-04 — Vérifier les frontières |
+| **Dépend de** | Packages et API publique définis dans le DAT ; aucune nouvelle exécution requise pour lire le repère |
+| **Fichiers** | `ModuleArchitectureRules.java`, `ModuleArchitectureTest.java`, `ArchitectureRuleDetectionTest.java`, fixtures sous `application/src/test/java/` et `ApplicationAssemblyTest.java` |
+| **À retenir** | ArchUnit lit les dépendances des classes compilées ; les règles ne vérifient pas les règles métier. Des fixtures fautives prouvent que les mêmes règles rejettent effectivement un cycle ou un accès interdit, avec source et cible attendues. Un graphe autorisé vérifie aussi l'absence de rejet abusif. Exclure les tests de l'analyse de production évite de confondre violations simulées et application réelle |
+| **Vérification pédagogique** | Expliquer pourquoi un test négatif qui réussit prouve un refus, pourquoi il faut aussi un cas autorisé et pourquoi le test de contexte ne remplace pas les tests de frontières |
+| **Statut** | 📘 Référence fondée sur 12 nouveaux tests réussis et 76 tests globaux dans INT-04 — [clôture technique et documentaire du sprint 01](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) demandée par l'utilisateur ; restitution orale de l'apprenant toujours non évaluée |

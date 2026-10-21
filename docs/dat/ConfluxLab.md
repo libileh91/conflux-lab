@@ -2,7 +2,8 @@
 
 **Type :** pseudo-projet technique et pédagogique Java/Spring.  
 **Objectif :** comprendre, illustrer et défendre à l'oral une architecture inspirée du parcours AXA.  
-**État :** progression organisée dans `docs/stages/` à la demande de l'utilisateur ; travail par petits incréments, sans implémentation globale en une seule fois. Aucun sprint n'est déclaré terminé.  
+**État :** progression organisée dans `docs/stages/` à la demande de l'utilisateur ; travail par petits incréments, sans implémentation globale en une seule fois. Le sprint 01 est clôturé techniquement et documenté sur demande explicite de l'utilisateur le 2026-10-21 ; sa restitution orale n'a pas été évaluée. Cette clôture n'autorise aucune story suivante.
+
 **Dans le périmètre :** backend, tests automatisés et **CI opérationnelle lors de la phase de code**.  
 **Hors périmètre pratique :** CD, déploiement, cloud, serveur distant, infrastructure de production.
 
@@ -86,7 +87,7 @@ Aucun frontend, Kafka, Kubernetes, authentification avancée ou plateforme cloud
 
 **[Simulation ConfluxLab — cadrage réalisé sur feu vert pour INT-01]** : conserver les noms des modules existants. `capability-api` porte le métier complet, pas un second serveur HTTP ; son API publique Java sera distinguée de ses classes internes. Le module `contracts` est conservé comme bibliothèque de types Java d'échange, sans contrôleur, repository, document MongoDB ou dépendance vers Experience/Capability. Le schéma initial et ses contraintes sont définis et testés dans INT-05, sans service métier ajouté ; voir le [contrat HTTP initial](http-contracts.md).
 
-Graphe de dépendances **assemblé dans INT-03**, à protéger par les contrôles automatiques d'INT-04 :
+Graphe de dépendances **assemblé dans INT-03 et protégé par les contrôles automatiques d'INT-04** :
 
 ```mermaid
 flowchart TD
@@ -101,7 +102,11 @@ Aucun cycle, aucune dépendance Capability → Experience, aucun HTTP interne ni
 
 Le BFF injecte `dev.confluxlab.capability.api.FamilyRequests` ; son implémentation reste dans `capability.internal`, sans import de ce package par Experience. L'exception publique `CapabilityNotReadyException` ne porte aucun statut HTTP : l'adaptation en `503` appartient au BFF. L'implémentation provisoire lève cette exception pour les deux opérations, **sans générer d'UUID ni conserver de demande**. Ce choix rend l'assemblage démarrable sans inventer une acceptation ; il sera remplacé par les réalisations INT-06/07, pas par un service réseau.
 
-Le `clean verify` global d'INT-03 réussit avec 64 tests et le JAR réel démarre sans base ni partenaire. Les deux routes valides répondent `503` ; les réponses de succès des tests de délégation proviennent uniquement d'un double. Voir les [preuves INT-03](../../notes/sprint-01/INT-03-assembler-les-modules.md). Les modèles d'échange sont définis dans INT-05 ; l'acceptation et le suivi effectifs restent à implémenter et tester dans les autres tâches du sprint 02. Les contrôles automatiques de frontières restent distincts dans INT-04.
+Le `clean verify` global d'INT-03 réussit avec 64 tests et le JAR réel démarre sans base ni partenaire. Les deux routes valides répondent `503` ; les réponses de succès des tests de délégation proviennent uniquement d'un double. Voir les [preuves INT-03](../../notes/sprint-01/INT-03-assembler-les-modules.md). Les modèles d'échange sont définis dans INT-05 ; l'acceptation et le suivi effectifs restent à implémenter et tester dans les autres tâches du sprint 02. Les contrôles automatiques de frontières ont ensuite été réalisés dans INT-04, sans modification du métier.
+
+**INT-04 — garde-fous retenus :** ArchUnit 1.4.1, en dépendance `test` du module d'assemblage, analyse les classes de production sous `dev.confluxlab`, en excluant les sorties de test. Les règles interdisent les cycles entre sous-packages racine, Capability → Experience, Experience → Capability hors `capability.api..`, toute dépendance de `contracts` vers les autres modules, et le retour des bibliothèques vers l'assemblage. Le package racine `dev.confluxlab`, qui contient le démarrage Boot, est réservé à l'assemblage et protégé séparément, car il n'appartient pas aux slices des sous-packages. Les dépendances vers un éventuel `dev.confluxlab.application..` sont protégées de la même manière.
+
+Les mêmes règles sont exercées avec des fixtures de test délibérément fautives et un graphe autorisé ; les diagnostics vérifient les classes source et cible des violations. Le `clean verify` global d'INT-04 réussit avec **76 tests** (dont 5 de frontières, 7 de détection et les 3 tests d'assemblage existants). ArchUnit et les fixtures sont absents de l'artefact livré. Ces contrôles de dépendances de bytecode ne remplacent ni les tests métier, ni une revue des appels indirects par réflexion/configuration ; ils supposent que les packages respectent les responsabilités convenues. Voir le [tutoriel INT-04](../../notes/sprint-01/INT-04-verifier-les-frontieres.md).
 
 ## 5. Contrats HTTP
 

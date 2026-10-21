@@ -3,14 +3,16 @@
 | Contexte | Description |
 |---|---|
 | **Sprint** | [01 — Socle du monolithe modulaire](../../docs/stages/sprint-01-socle.md) |
-| **Statut** | **Terminée sur feu vert explicite pour INT-03 uniquement** ; INT-04 et l'acceptation métier ne sont pas réalisées |
-| **Date des vérifications** | 2026-10-21 |
+| **Statut** | **Terminée sur feu vert explicite pour INT-03 uniquement** ; contrôles de frontières INT-04 réalisés depuis ; acceptation métier INT-06 toujours non réalisée |
+| **Date des vérifications INT-03 (avant INT-04)** | 2026-10-21 |
 | **Objectif du tutoriel** | Comprendre comment plusieurs bibliothèques deviennent une seule application, puis démontrer un appel Java entre leurs modules |
 | **Origine des preuves** | Sources modifiées dans cette tâche, tests ciblés, nouveau `clean verify`, inspection des quatre JAR et démarrage borné du JAR réel |
 | **Historique distinct** | Les 59 tests de contrats viennent d'INT-05 ; ils ont été réexécutés dans le build global de cette tâche. Les diagnostics JDTLS restent ceux d'INT-02 |
 | **Suivi** | [Registre central](../todos.md) ; cette note ne donne aucun feu vert pour la tâche suivante |
 
 **[Simulation ConfluxLab]** Le découpage et le raccordement présentés ici sont ceux du laboratoire, pas une description certifiée du déploiement historique AXA.
+
+**Actualisation après INT-04.** Les contrôles de frontières ont été réalisés et vérifiés par l'agent dans la session [INT-04 — Vérifier les frontières](INT-04-verifier-les-frontieres.md) : `clean verify` réussi, **76 tests** (64 existants + 5 contrôles de production + 7 tests de détection), diagnostics à zéro. Les 64 tests détaillés ci-dessous restent la preuve historique INT-03 du 2026-10-21, avant INT-04. Aucun build n'est relancé pour cette actualisation ; INT-06 reste non réalisée.
 
 ## Sommaire
 
@@ -188,7 +190,7 @@ class UnavailableFamilyRequests implements FamilyRequests {
 }
 ```
 
-`@Service` permet à Spring de détecter et de créer ce bean. La classe est **package-private** : l'absence de `public` empêche le BFF de la référencer directement depuis son package. Spring peut toutefois la découvrir et la fournir via l'interface publique. Le package `internal` signale aussi l'intention ; les contrôles automatisés de frontières restent le sujet d'INT-04.
+`@Service` permet à Spring de détecter et de créer ce bean. La classe est **package-private** : l'absence de `public` empêche le BFF de la référencer directement depuis son package. Spring peut toutefois la découvrir et la fournir via l'interface publique. Le package `internal` signale aussi l'intention ; les contrôles automatisés de frontières ont depuis été réalisés dans [INT-04](INT-04-verifier-les-frontieres.md).
 
 L'exception [`CapabilityNotReadyException`](../../capability-api/src/main/java/dev/confluxlab/capability/api/CapabilityNotReadyException.java) appartient à l'API publique, mais ne contient **aucun `HttpStatus`**. Capability signale son indisponibilité ; Experience décide de la représentation HTTP.
 
@@ -342,7 +344,7 @@ Pour reproduire manuellement la démonstration, construire avec `clean verify`, 
 
 - Un seul démarrage Spring Boot et un seul JAR exécutable assemblent les modules.
 - Experience et Capability sont dans le même contexte, reliés par l'API Java publique.
-- Le build global et les 64 tests passent ; l'artefact réel démarre sans base ni partenaire configurés.
+- Lors d'INT-03 (2026-10-21, avant INT-04), le build global et les 64 tests ont réussi ; l'artefact réel a démarré sans base ni partenaire configurés.
 - Le comportement livré est une indisponibilité explicite, sans identifiant ni prise en charge inventés.
 - Une revue indépendante en lecture seule du câblage, des dépendances et des tests n'a identifié aucun défaut bloquant ou important. Elle ne remplace pas les vérifications exécutées.
 
@@ -351,12 +353,12 @@ Pour reproduire manuellement la démonstration, construire avec `clean verify`, 
 - **INT-06/07/08 restent non réalisées** : aucune génération d'UUID, conservation en mémoire, acceptation réelle, consultation métier ou couverture complète des refus.
 - Les réponses `202`/`200` des tests unitaires proviennent du double. Les réponses réelles vérifiées sur les routes valides sont `503`.
 - Aucun MongoDB, événement Spring, `@Async`, orchestration, Feign/Resilience4j, partenaire ou CI n'est ajouté.
-- Le contexte est testé pour prouver l'assemblage ; les contrôles automatiques contre cycles et imports interdits restent dans **INT-04**, sans démarrage implicite de cette tâche.
+- Le contexte est testé pour prouver l'assemblage ; les contrôles automatiques contre cycles et imports interdits n'étaient pas inclus dans INT-03. Ils ont depuis été réalisés dans [INT-04](INT-04-verifier-les-frontieres.md).
 - Pas de nouvelle validation de la GUI Zed, de Windows, de clone vierge ni de mesure de performance. Le temps de démarrage des logs n'est pas un benchmark et ne décrit pas AXA.
 
 ### Compromis à comprendre
 
-La dépendance Maven Experience → Capability rend disponibles les classes publiques de l'artefact, pas seulement le package `api`. L'implémentation provisoire est package-private et aucun import interne n'est utilisé ; il faudra néanmoins un garde-fou de dépendances pour les futurs types publics internes. Le découpage Maven seul n'est pas une garantie complète de frontière.
+La dépendance Maven Experience → Capability rend disponibles les classes publiques de l'artefact, pas seulement le package `api`. L'implémentation provisoire est package-private et aucun import interne n'est utilisé ; le garde-fou de dépendances pour les futurs types publics internes a depuis été ajouté dans [INT-04](INT-04-verifier-les-frontieres.md). Le découpage Maven seul n'est pas une garantie complète de frontière.
 
 Le bean indisponible est un raccordement temporaire, pas un fallback métier ni une implémentation en mémoire déguisée. Lors d'INT-06 puis INT-07, les opérations pourront être réalisées derrière la même porte d'entrée ; il faudra éviter de conserver deux beans concurrents pour la même interface.
 
@@ -373,7 +375,7 @@ Les tests affichent un avertissement Mockito sur l'auto-attachement d'un agent J
 ## 7. Suivi centralisé
 
 - [TD-B003 — Assemblage et remplacement de l'HTTP interne, terminé avec preuves](../todos.md#td-b003).
-- [TD-B004 — Contrôles automatiques des frontières, feu vert distinct requis](../todos.md#td-b004).
+- [TD-B004 — Contrôles automatiques des frontières, réalisés dans INT-04](../todos.md#td-b004).
 - [TD-B005 — Acceptation, suivi et refus réels, stories toujours à autoriser](../todos.md#td-b005).
 - [TD-R001 — Plusieurs modules, une seule application](../todos.md#td-r001).
 - [TD-R005 — Contrat et annotations ne suffisent pas à prouver le métier](../todos.md#td-r005).
