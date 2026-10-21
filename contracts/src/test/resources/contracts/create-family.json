@@ -1,0 +1,19 @@
+{
+  "principal": {
+    "firstName": "Alex",
+    "lastName": "Exemple",
+    "birthDate": "1990-04-12"
+  },
+  "dependents": [
+    {
+      "firstName": "Camille",
+      "lastName": "Exemple",
+      "birthDate": "2015-08-21"
+    },
+    {
+      "firstName": "Noa",
+      "lastName": "Exemple",
+      "birthDate": "2018-02-03"
+    }
+  ]
+}
