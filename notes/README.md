@@ -1,15 +1,39 @@
 # Notes de travail — ConfluxLab
 
-Les fiches de sprint et les tâches à réaliser sont dans [docs/stages](../docs/stages/README.md). Le [DAT](../docs/dat/ConfluxLab.md) porte les décisions d'architecture. Ce dossier rassemble les comptes rendus, sous un répertoire par sprint.
+Les fiches de sprint et les tâches à réaliser sont dans [docs/stages](../docs/stages/README.md). Le [DAT](../docs/dat/ConfluxLab.md) porte les décisions d'architecture. Ce dossier rassemble les cours/tutoriels issus du travail réalisé, sous un répertoire par sprint. Le registre [todos.md](todos.md) centralise leurs points à retenir et leurs actions restantes.
 
 ## Convention
 
 - Identifiant de tâche : **`INT-XX`**, unique à l'échelle du projet et conservé après attribution. La séquence continue entre les sprints ; ne pas réutiliser un identifiant.
 - Chemin : `notes/sprint-XX/INT-YY-<nom-de-la-tache-en-kebab-case>.md`.
 - Titre : `# INT-YY — <Nom de la tâche>`.
-- Une note terminée précise objectif, réalisation, explications, décisions, fichiers, commandes/résultats réellement observés et limites.
+- Une note est un **tutoriel pour junior**, pas seulement un journal de commandes : elle explique le vocabulaire, le problème, les décisions, les étapes et le code réellement présent.
+- Les extraits importants indiquent le fichier source et leur caractère partiel ; chaque commande précise sa racine de lancement, ses options, ses effets et son résultat observé. Une commande documentée n'est pas exécutée automatiquement.
+- Les preuves historiques, les vérifications de la session et les exercices non exécutés sont présentés séparément. L'état propre d'un ancien commit ne décrit pas le travail courant.
+- Les points à retenir et prochains travaux sont enregistrés dans [todos.md](todos.md) ; la dernière section de chaque cours pointe vers les entrées concernées, sans deuxième liste de TODO.
 - Une note partielle ou rétrospective ne prouve pas que la tâche est terminée. Elle ne déclenche pas de développement : **le feu vert reste requis pour chaque tâche**.
 - Les notes sont liées depuis cet index et la fiche du sprint concerné. Les tâches restent décochées tant que leurs critères ne sont pas vérifiés.
+
+## Plan d'un tutoriel
+
+| Section | Ce que le lecteur doit comprendre |
+|---|---|
+| **Contexte** | Story, statut réel, périmètre et origine des preuves |
+| **1. Objectif et vocabulaire** | Ce que le cours explique et le sens des mots nouveaux |
+| **2. Comprendre le problème** | Ce qui ne fonctionnait pas et pourquoi |
+| **3. Travail réalisé pas à pas** | Décisions, fichiers et extraits de code/config commentés ; cible future clairement distinguée |
+| **4. Commandes expliquées** | Où les lancer, ce qu'elles font, leurs options, effets et résultats réels |
+| **5. Vérifications et limites** | Ce qui est prouvé, historique ou non testé ; pas de succès inventé |
+| **6. Suivi centralisé** | Liens vers les actions et repères de `todos.md` |
+
+Un cours peut avoir des sous-sections et un sommaire. Il ne doit pas devenir une copie intégrale des sources : expliquer les extraits utiles est plus important que multiplier les blocs de code.
+
+## Lire le registre central
+
+- **`TD-Bxxx`** : action restante ou vérification à effectuer, avec dépendances et statut ; elle ne crée pas un nouveau feu vert.
+- **`TD-Rxxx`** : notion à retenir, avec sa source et une question de vérification pédagogique ; sa présence ne signifie pas que l'apprenant la maîtrise déjà.
+- Chaque entrée a un tableau descriptif : source, story liée, dépendances, fichiers, action/notion, validation et statut. Une action déjà liée à une story n'est pas recréée en doublon.
+- Les IDs sont stables ; les ancres `#td-b001`, etc., restent utilisables lorsque le libellé descriptif évolue.
 
 ## Répertoires par sprint
 
@@ -31,11 +55,13 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 
 | Tâche | Note | État constaté |
 |---|---|---|
-| INT-01 | [Inspecter et fixer les frontières](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) | Rétrospective du socle initial ; incomplet, build non exécuté |
-| INT-06 | [Accepter une demande](sprint-02/INT-06-accepter-une-demande.md) | Rétrospective de l'ébauche Experience ; partielle, non testée, HTTP interne à remplacer |
+| INT-01 | [Inspecter et fixer les frontières](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) | Cadrage terminé : frontières, rôle de contracts, graphe cible et prérequis vérifiés ; historique initial conservé |
+| INT-02 | [Rendre le build reproductible](sprint-01/INT-02-rendre-le-build-reproductible.md) | Terminée pour le build : blocage levé dans INT-05, `clean verify` global réussi ; historique Maven/JDTLS conservé |
+| INT-05 | [Définir les contrats](sprint-02/INT-05-definir-les-contrats.md) | Terminée : cinq types, exemples JSON et 59 cas de test ; pas de service ni de test HTTP |
+| INT-06 | [Accepter une demande](sprint-02/INT-06-accepter-une-demande.md) | Rétrospective de l'ébauche Experience ; compilable après INT-05, mais routes non testées et HTTP interne à remplacer |
 | INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
 
-Les notes INT-01 et INT-06 documentent le travail amorcé **avant** l'organisation actuelle par sprints et le cadrage final du monolithe modulaire. Leur rattachement est rétrospectif : ni INT-01 ni INT-06 n'est déclarée terminée. Les autres dossiers sont préparés sans compte rendu anticipé.
+Les notes INT-01 et INT-06 conservent le constat du travail amorcé **avant** la planification finale. INT-01 a ensuite été complétée sur feu vert et son cadrage est terminé ; INT-06 reste une rétrospective partielle, non terminée. Les autres dossiers sont préparés sans compte rendu anticipé.
 
 ## Documentation déjà produite
 
@@ -43,6 +69,6 @@ Les notes INT-01 et INT-06 documentent le travail amorcé **avant** l'organisati
 - Neuf fiches de sprint définissent incréments, exclusions, tests et critères de fin.
 - Les règles du skill imposent le BFF mince, le métier dans Capability, les appels Java internes et le feu vert avant chaque tâche.
 - Le plan a été déplacé dans `docs/stages/` ; ses liens locaux ont été vérifiés lors du déplacement.
-- La présente demande organise les notes et les identifiants ; elle ne modifie pas les sources Java, le POM existant ou la configuration applicative.
+- La demande initiale d'organisation des notes et des identifiants n'a modifié ni les sources Java, ni le POM existant, ni la configuration applicative. La réparation Maven autorisée ultérieurement est décrite dans la note INT-02.
 
-Aucune compilation, exécution du parcours métier, CI verte ou mesure de performance n'a été démontrée à ce stade.
+Après INT-05, le `clean verify` global réussit : 59 cas de test de validation/JSON et compilation d'Experience. La résolution des dépendances et la navigation Java/Spring côté JDTLS restent des preuves historiques d'INT-02, pas une nouvelle validation GUI. Aucun parcours HTTP/métier, test d'intégration, CI verte ou mesure de performance n'est revendiqué.
