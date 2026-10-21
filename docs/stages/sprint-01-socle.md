@@ -1,43 +1,95 @@
 # Sprint 01 — Socle du monolithe modulaire
 
-**Statut : à ouvrir.** Prérequis : accord sur cette fiche avant de reprendre le code.
+**Statut : en cours.** INT-01, INT-02 et INT-37 sont terminées dans leur périmètre ; les contrats d'INT-05 ont levé le blocage du build. INT-03 et INT-04 attendent leur feu vert.
 
 ## Objectif
 
-Obtenir un build Java 21 reproductible et une seule application Spring Boot assemblant deux modules distincts : Experience/BFF et Capability. Ce sprint ne livre pas encore le parcours de création d'une famille.
+Pouvoir construire une seule application Java, avec deux parties bien séparées : le BFF reçoit les requêtes et Capability porte le métier. Ce sprint ne crée pas encore de famille.
 
-## Incréments, un par échange
+## Repères
 
-- [ ] **INT-01 — Inspecter et fixer les frontières.** Relire le squelette existant et vérifier JDK, accès réseau et disponibilité de Maven/Docker. Écrire le graphe des dépendances. Conserver les noms `experience-api` et `capability-api` si cela évite des renommages inutiles ; préciser le rôle de `contracts` avant de le remplir.
-- [ ] **INT-02 — Rendre le build reproductible.** Créer le POM racine et le Maven Wrapper avec des versions stables compatibles. Les bibliothèques ne produisent pas de JAR Boot exécutable ; seul le module d'assemblage `application` le fait.
-- [ ] **INT-03 — Assembler les modules.** Placer le démarrage Boot dans `application`. Exposer une interface publique minimale de Capability, appelée en Java depuis Experience. Remplacer le client HTTP interne et sa configuration après revue, sans perdre les éléments réutilisables.
-- [ ] **INT-04 — Vérifier les frontières.** Ajouter un test de contexte et un contrôle automatisé des dépendances : pas de cycle, pas d'import d'internals Capability depuis Experience. Choisir le mécanisme le plus simple adapté au découpage ; ne pas imposer Spring Modulith.
+- Un **module** est une partie du code avec une responsabilité précise ; plusieurs modules peuvent fonctionner dans une seule application.
+- Le **Maven Wrapper** (`mvnw`) utilise la version de Maven prévue par le projet, même sans Maven préinstallé.
+- Un **JAR** est une archive Java ; seul le futur module `application` produira le JAR Spring Boot exécutable.
 
-## Tâche d'initialisation ajoutée sur demande explicite
+**Dépendance résolue :** INT-05 a défini les types Java manquants et le `clean verify` global réussit avec 59 cas de test. INT-02 est donc clôturée pour le build ; l'assemblage INT-03 et les tests de frontières INT-04 restent distincts et à autoriser.
 
-- [x] **INT-37 — Initialiser le dépôt Git.** Dépôt local sur `main`, `.gitignore`, maintien des dossiers vides, commit initial et push vers `https://github.com/libileh91/conflux-lab` réalisés. Voir la [note INT-37](../../notes/sprint-01/INT-37-initialiser-le-depot-git.md). Ce travail d'outillage n'ouvre ni ne valide les tâches de développement INT-01 à INT-04.
+## Stories — un feu vert par tâche
 
-## Critères de fin et tests
+### INT-01 — Inspecter et fixer les frontières
+**Statut : terminée pour le cadrage.** [Note INT-01](../../notes/sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md).
 
-- [ ] `./mvnw -B -ntp verify` réussit depuis la racine avec Java 21.
-- [ ] Un seul JAR Boot est produit et son démarrage est vérifié par un test borné ou une démonstration locale documentée.
-- [ ] Experience dépend de l'API publique de Capability ; Capability ne dépend pas d'Experience.
-- [ ] Aucun client HTTP interne, deuxième serveur ou deuxième point de démarrage autonome ne reste nécessaire.
-- [ ] Le démarrage ne demande ni MongoDB ni partenaire à cette étape.
+En tant que développeur débutant, je veux savoir où placer chaque responsabilité, afin de ne pas mélanger le traitement HTTP, le métier et le stockage.
 
-## Hors périmètre
+**À faire :**
+- Examiner l'existant et vérifier Java, Maven, le réseau et Docker.
+- Décrire les rôles des modules et leurs dépendances autorisées dans le DAT.
 
-Endpoints métier complets, persistance, événements, Feign, résilience, workflow CI et déploiement. Ne pas réécrire tout le code existant sous prétexte de créer le socle.
+**Terminé quand :**
+- [x] Les rôles du BFF, de Capability et de `contracts` ainsi que le graphe cible sont documentés.
+- [x] Les prérequis disponibles et les limites constatées figurent dans la note ; aucun fonctionnement métier n'est prétendu.
 
-## Explication à maîtriser
+### INT-02 — Rendre le build reproductible
+**Statut : terminée pour le socle et la compilation.** Déblocage constaté pendant les vérifications d'INT-05, pas un assemblage applicatif. [Note INT-02](../../notes/sprint-01/INT-02-rendre-le-build-reproductible.md).
 
-Pourquoi plusieurs modules Maven ne signifient-ils pas plusieurs applications ? Où est la frontière qui empêche le BFF d'accéder au stockage de Capability ?
+En tant que développeur, je veux construire le projet avec une commande documentée, afin d'utiliser les mêmes versions d'outils et de détecter les erreurs de compilation.
 
-## Notes existantes
+**À faire :**
+- Configurer le parent Maven, les modules, Java 21 et le Wrapper avec une version épinglée.
+- Documenter la commande globale et son résultat, sans exclure les sources qui échouent.
 
-- [INT-01 — Inspecter et fixer les frontières](../../notes/sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) : constat rétrospectif du socle amorcé ; incomplet, non validé. Cette note ne clôt ni la tâche ni le sprint et ne donne pas de feu vert pour continuer.
-- [INT-37 — Initialiser le dépôt Git](../../notes/sprint-01/INT-37-initialiser-le-depot-git.md) : initialisation et premier push HTTPS vérifiés ; aucun build applicatif exécuté.
+**Terminé quand :**
+- [x] Le Wrapper démarre depuis un cache de distribution neuf et les versions sont documentées.
+- [x] `./mvnw -B -ntp clean verify` réussit pour tous les modules après INT-05 : 59 cas de test, aucun échec/erreur/ignoré.
 
-## Preuves de clôture
+### INT-03 — Assembler les modules
+**Statut : à faire — feu vert requis.** Prérequis : INT-02 et INT-05 terminées.
 
-À compléter avec le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint), les commandes et les résultats observés. Aucun test n'est déclaré exécuté par cette fiche.
+En tant que développeur, je veux démarrer les modules ensemble, afin d'obtenir un monolithe plutôt que deux applications séparées.
+
+**À faire :**
+- Créer `application`, y placer le seul démarrage Boot et y assembler les bibliothèques.
+- Remplacer l'appel HTTP BFF → Capability par un appel à son interface publique Java.
+
+**Terminé quand :**
+- [ ] Un seul JAR Boot démarre, sans MongoDB ni partenaire requis à ce stade.
+- [ ] Un test vérifie l'appel Java entre modules ; aucun client HTTP interne ou second démarrage autonome n'est nécessaire.
+
+### INT-04 — Vérifier les frontières
+**Statut : à faire — feu vert requis.** Prérequis : INT-03 terminée.
+
+En tant que développeur, je veux détecter automatiquement les mauvaises dépendances, afin de conserver la séparation des modules lorsque le code évolue.
+
+**À faire :**
+- Vérifier que le contexte Spring assemble correctement les modules.
+- Ajouter le contrôle de dépendances le plus simple adapté au projet, sans imposer Spring Modulith.
+
+**Terminé quand :**
+- [ ] Les tests refusent les cycles, une dépendance Capability → BFF et les accès du BFF aux classes internes ou repositories de Capability.
+- [ ] Ces tests et le test de contexte passent dans `./mvnw -B -ntp verify`.
+
+### INT-37 — Initialiser le dépôt Git
+**Statut : terminée — ajoutée sur demande explicite.** [Note INT-37](../../notes/sprint-01/INT-37-initialiser-le-depot-git.md).
+
+En tant que développeur, je veux versionner le projet sur GitHub, afin de conserver son historique et de partager une version identifiable.
+
+**À faire :**
+- Initialiser Git, ignorer les fichiers locaux/générés et conserver les dossiers encore vides.
+- Configurer le dépôt distant, créer le premier commit et le publier sans écraser d'historique.
+
+**Terminé quand :**
+- [x] Le dépôt Git local contient les fichiers prévus et un `.gitignore` adapté.
+- [x] Le premier push de `main` vers `libileh91/conflux-lab` est confirmé dans la note.
+
+## Limites et hors périmètre
+
+Le cadrage terminé d'INT-01 ne signifie pas que les frontières sont déjà implémentées. Les POM, le Wrapper et les contrats permettent désormais un build global réussi, sans prouver un démarrage ni un parcours métier. Les preuves JDTLS du dépannage précédent sont conservées dans la note INT-02.
+
+Pas de parcours métier complet, stockage, événement, appel partenaire, CI ou déploiement. Les types ajoutés dans INT-05 sont de vrais contrats testés, pas des classes vides de dépannage.
+
+## Démo et clôture
+
+- [ ] Depuis la racine, montrer un build global réussi, puis le démarrage du seul JAR Boot et un appel Java entre modules.
+- [ ] Expliquer pourquoi plusieurs modules ne signifient pas plusieurs applications ; le BFF ne porte ni métier ni persistance.
+
+Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les résultats réellement observés. Cette réécriture ne valide aucune nouvelle réalisation.

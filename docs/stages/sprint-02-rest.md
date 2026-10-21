@@ -1,44 +1,82 @@
 # Sprint 02 — Contrat REST et BFF mince
 
-**Statut : planifié.** Prérequis : sprint 01 clos et accord pour ouvrir ce sprint.
+**Statut : préparation INT-05 terminée sur feu vert, avant l'assemblage du sprint 01.** INT-06 reste une ébauche partielle, non validée. Les autres stories attendent leur feu vert individuel.
 
 ## Objectif
 
-Accepter une demande fictive de trois personnes et permettre sa consultation, sans laisser croire que la famille est déjà créée.
+Permettre au client de demander une création de famille puis de consulter son état, sans annoncer que la famille est déjà créée.
 
-## Incréments, un par échange
+## Repères
 
-- [ ] **INT-05 — Définir les contrats.** Choisir les champs et règles minimales du principal et des deux ayants droit. Documenter les JSON du POST, du suivi et des erreurs. Distinguer validation de forme côté Experience et invariants métier côté Capability.
-- [ ] **INT-06 — Accepter une demande.** Capability génère un UUID et conserve la demande dans un stockage temporaire en mémoire. Experience expose `POST /api/v1/families` et retourne `202`, `requestId`, `statusUrl`, `status` et un en-tête `Location` cohérent.
-- [ ] **INT-07 — Consulter la demande.** Exposer `GET /api/v1/requests/{requestId}` : `200` avec état courant, `404` si inconnu, `400` si UUID invalide. Le BFF appelle Capability en Java et ne lit pas son stockage.
-- [ ] **INT-08 — Tester les refus.** Payload invalide, champs absents, mauvaise cardinalité, demande inconnue et deux demandes distinctes. Donner des erreurs lisibles sans recopier les données personnelles ni les traces internes.
+- Un **contrat d'API** décrit les données envoyées, les réponses et les erreurs attendues.
+- Un **DTO** est un objet Java qui transporte des données entre composants ; ce n'est ni un service métier ni un document MongoDB.
+- `202 Accepted` signifie « demande acceptée », pas « traitement terminé » ; `PENDING` signifie « en attente ».
 
-## Critères de fin et tests
+**Prérequis :** INT-05 peut être préparée après INT-01, sur feu vert, pour débloquer INT-02. Les autres stories attendent le socle assemblé et vérifié d'INT-02/03/04. Cette proposition d'ordre ne démarre aucune tâche.
 
-- [ ] Les tests HTTP vérifient POST `202`, corps de réponse, `Location`, GET `200`, `400` et `404`.
-- [ ] Un payload invalide n'est pas accepté ni enregistré.
-- [ ] Les tests de Capability protègent ses invariants même sans passer par le contrôleur BFF.
-- [ ] Deux demandes donnent deux UUID et deux suivis distincts.
-- [ ] Une démonstration documentée montre le POST puis le GET sur la même application.
+## Stories — un feu vert par tâche
 
-## Limites temporaires obligatoires
+### INT-05 — Définir les contrats
+**Statut : terminée.** Préparation avancée sur feu vert pour lever le blocage d'INT-02. [Tutoriel INT-05](../../notes/sprint-02/INT-05-definir-les-contrats.md) et [contrat HTTP](../dat/http-contracts.md).
 
-Le stockage en mémoire est **une simulation pédagogique**, perdu au redémarrage. Les demandes restent `PENDING` : aucun événement ni appel partenaire n'est encore exécuté. Pas de faux `SUCCEEDED`. Le `202` de cette étape ne démontre pas une prise en charge durable ni un traitement complet. Ce stockage sera remplacé au sprint 03.
+En tant que développeur, je veux connaître les données et les règles du contrat, afin d'écrire le BFF et Capability sans deviner ce qu'ils doivent échanger.
 
-L'UUID est un identifiant de corrélation, pas une clé d'idempotence. Deux POST identiques peuvent donner deux demandes.
+**À faire :**
+- Décrire des exemples JSON : un principal, deux ayants droit, acceptation, suivi et erreurs.
+- Définir les types Java correspondants, dont les trois DTO absents, et distinguer validation de forme et invariants métier.
 
-## Hors périmètre
+**Terminé quand :**
+- [x] Les champs, règles minimales et exemples de réponses/refus sont documentés, sans données réelles.
+- [x] Les cinq types correspondent aux exemples ; 59 cas de test passent et le `clean verify` global réussit, sans service métier ajouté.
 
-MongoDB, traitement asynchrone, orchestration, résilience et authentification entreprise.
+### INT-06 — Accepter une demande
+**Statut : à faire — ébauche existante non validée, feu vert requis.** [Note rétrospective](../../notes/sprint-02/INT-06-accepter-une-demande.md).
 
-## Explication à maîtriser
+En tant que client de l'API, je veux recevoir un identifiant après l'acceptation de ma demande, afin de pouvoir la suivre sans attendre sa réalisation.
 
-Pourquoi `202 Accepted` plutôt que « famille créée » ? Qu'est-ce qui appartient au BFF et qu'est-ce qui doit être vérifié par Capability ?
+**À faire :**
+- Dans Capability, générer un UUID et conserver la demande dans un stockage temporaire en mémoire.
+- Exposer `POST /api/v1/families` dans le BFF, qui appelle Capability en Java.
 
-## Notes existantes
+**Terminé quand :**
+- [ ] Le test du POST valide retourne `202`, `requestId`, `status`, `statusUrl` et un en-tête `Location` cohérent, après enregistrement.
+- [ ] Deux demandes reçoivent des identifiants distincts ; aucune famille n'est annoncée créée ni aucun succès métier simulé.
 
-- [INT-06 — Accepter une demande](../../notes/sprint-02/INT-06-accepter-une-demande.md) : ébauche REST antérieure, incluant des éléments de suivi et de gestion des erreurs liés à INT-07/INT-08. Capability et les DTO sont absents ; aucun parcours ni test n'est validé. Ce rattachement rétrospectif n'ouvre pas le sprint.
+### INT-07 — Consulter la demande
+**Statut : à faire — feu vert requis.** Prérequis : INT-06 terminée.
 
-## Preuves de clôture
+En tant que client de l'API, je veux consulter l'état de ma demande avec son identifiant, afin de savoir où elle en est.
 
-À compléter selon le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint), avec exemples fictifs, commandes et résultats. Rien n'est validé par anticipation.
+**À faire :**
+- Exposer `GET /api/v1/requests/{requestId}` en passant par l'API Java de Capability.
+- Traiter les identifiants inconnus ou mal formés sans accès direct du BFF au stockage.
+
+**Terminé quand :**
+- [ ] Un test POST puis GET retrouve la même demande en `PENDING` avec une réponse `200`.
+- [ ] Les tests vérifient `404` pour un UUID inconnu et `400` pour un identifiant invalide.
+
+### INT-08 — Tester les refus
+**Statut : à faire — feu vert requis.** Prérequis : contrats et routes INT-05/06/07 disponibles.
+
+En tant que client de l'API, je veux comprendre pourquoi ma demande est refusée, afin de pouvoir la corriger sans voir de détails techniques internes.
+
+**À faire :**
+- Tester les données invalides : champs obligatoires absents et nombre d'ayants droit incorrect.
+- Vérifier les contrôles métier de Capability directement, sans passer uniquement par le BFF.
+
+**Terminé quand :**
+- [ ] Les demandes invalides sont refusées sans enregistrement ; Capability protège aussi ses invariants lorsqu'elle est appelée directement.
+- [ ] Les erreurs sont lisibles sans recopier les données personnelles, les traces ou les détails internes ; les suivis de deux demandes ne se mélangent pas.
+
+## Limites et hors périmètre
+
+La mémoire est un stockage pédagogique **perdu au redémarrage**. Les demandes restent `PENDING` : pas encore d'événement, d'orchestration ou de partenaire. Le `202` ne prouve donc ni une conservation durable ni un traitement complet. Un UUID sert à retrouver la demande ; deux POST identiques peuvent encore créer deux demandes.
+
+Les annotations présentes dans l'ébauche REST ne prouvent pas qu'elle fonctionne. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
+
+## Démo et clôture
+
+- [ ] Montrer un POST valide, son GET de suivi et un refus de données invalides, avec leurs tests.
+- [ ] Expliquer la différence entre « demande acceptée » et « famille créée » ainsi que le partage des validations BFF/Capability.
+
+Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les exemples fictifs et résultats réellement observés.

@@ -4,32 +4,78 @@
 
 ## Objectif
 
-Brancher l'orchestration sur six opérations HTTP fictives via Feign, puis ajouter uniquement les mécanismes Resilience4j justifiés par des scénarios testés.
+Appeler un partenaire fictif pour les six opérations, puis gérer ses pannes sans répéter les créations à l’aveugle ni masquer les échecs.
+Ce sprint est un objectif pédagogique : chaque tâche attend son feu vert individuel ; le plan ne lance rien et les tests accompagnent chaque tâche.
 
-## Incréments, un par échange
+## Repères
 
-- [ ] **INT-21 — Définir le partenaire.** Écrire les contrats WireMock A–F, identifiants retournés et erreurs. Ils ne représentent pas les endpoints GFP/Open historiques. Maintenir l'adaptateur HTTP hors du BFF et derrière les contrats utilisés par l'orchestrateur.
-- [ ] **INT-22 — Brancher Feign sans retry.** Vérifier un appel, puis le parcours nominal des six opérations. Fixer explicitement les timeouts de connexion/lecture et neutraliser les retries implicites avant d'ajouter une politique volontaire.
-- [ ] **INT-23 — Écrire la matrice d'erreurs.** Distinguer refus métier, `4xx`, `5xx`, connexion refusée et timeout avec résultat partenaire inconnu. Pour chaque opération, documenter si et pourquoi sa répétition est sûre.
-- [ ] **INT-24 — Ajouter la résilience ciblée.** Configurer un retry borné seulement si erreur transitoire et opération répétable. Pour une création, exiger un mécanisme partenaire d'idempotence explicitement simulé et testé, ou ne pas réessayer. Étudier le circuit breaker sur un cas concret avant de l'ajouter. Ne créer aucun fallback de réussite artificielle.
+- **WireMock** simule une API HTTP avec des réponses et des erreurs choisies pour les tests.
+- **Feign** est le client HTTP qui appelle ce partenaire ; ses appels restent bloquants, même dans une future.
+- Un **retry** est une nouvelle tentative, permise seulement si l'erreur est transitoire et si répéter l'opération est sûr.
 
-## Critères de fin et tests
+## Tâches — un feu vert par tâche
 
-- [ ] WireMock démontre le parcours complet jusqu'à `SUCCEEDED`, avec les bons identifiants propagés entre opérations.
-- [ ] Les tests vérifient le nombre exact de tentatives, y compris l'absence de retry sur une création non sûre.
-- [ ] `4xx`, timeout et erreurs persistantes donnent un suivi d'échec explicite après le `202`.
-- [ ] Un timeout de création est présenté comme résultat partenaire potentiellement inconnu, pas comme preuve d'absence de création.
-- [ ] Un test d'échec partiel constate les appels déjà réussis et l'absence de rollback global.
-- [ ] Les appels vont uniquement de l'intégration au partenaire ; aucun HTTP Experience → Capability n'est réintroduit.
+### INT-21 — Définir le partenaire
+**Statut : à faire — feu vert requis.**
+
+En tant que développeur, je veux un partenaire fictif au comportement connu, afin de tester les six opérations sans dépendre d'un service réel.
+
+**À faire :**
+- Décrire les requêtes, réponses, identifiants et erreurs A–F dans WireMock, sans prétendre reproduire les endpoints GFP/Open historiques.
+- Garder l'adaptateur HTTP derrière les contrats de l'orchestrateur, hors du BFF.
+
+**Terminé quand :**
+- [ ] Les tests WireMock vérifient les échanges A–F et leurs identifiants attendus.
+- [ ] Feign/Resilience4j restent réservés au partenaire WireMock ; Experience appelle Capability en Java, jamais en HTTP.
+
+### INT-22 — Brancher Feign sans retry
+**Statut : à faire — feu vert requis.**
+
+En tant que développeur, je veux vérifier les appels HTTP sans répétition automatique, afin de comprendre le comportement de départ avant d'ajouter la résilience.
+
+**À faire :**
+- Brancher Feign sur WireMock : vérifier un appel, puis le parcours complet.
+- Fixer les délais maximaux de connexion et de lecture, puis neutraliser les retries implicites.
+
+**Terminé quand :**
+- [ ] Un test atteint `SUCCEEDED` avec les bons identifiants transmis entre les six opérations.
+- [ ] Les tests vérifient les délais configurés et l'absence de tentatives automatiques supplémentaires.
+
+### INT-23 — Écrire la matrice d'erreurs
+**Statut : à faire — feu vert requis.**
+
+En tant que développeur, je veux distinguer les pannes et les risques de répétition, afin de choisir une réponse adaptée à chaque opération.
+
+**À faire :**
+- Lister refus métier, `4xx`, `5xx`, connexion refusée et dépassement de délai (timeout).
+- Préciser pour chaque opération si sa répétition est sûre et pourquoi ; après un timeout de création, le résultat partenaire peut rester inconnu.
+
+**Terminé quand :**
+- [ ] Le tableau distingue ces erreurs et justifie la possibilité ou l'interdiction de répéter chaque opération.
+- [ ] Les tests de `4xx`, timeout et erreur persistante exposent un échec explicite dans le suivi après le `202`, sans présenter un timeout comme une preuve d'absence de création.
+
+### INT-24 — Ajouter la résilience ciblée
+**Statut : à faire — feu vert requis.**
+
+En tant que consommateur de l'API, je veux que seules les tentatives sûres soient répétées, afin de mieux supporter une panne temporaire sans provoquer de doublon.
+
+**À faire :**
+- Ajouter avec Resilience4j un retry borné seulement pour une erreur transitoire et une répétition sûre ; pour une création, simuler et tester une garantie partenaire contre les doublons, ou ne pas réessayer.
+- Étudier un coupe-circuit (circuit breaker) sur un scénario concret avant tout ajout ; ne jamais remplacer un échec par une réussite fictive.
+
+**Terminé quand :**
+- [ ] Les tests comptent exactement les tentatives, y compris l'absence de retry d'une création non sûre et la garantie partenaire si elle est retenue.
+- [ ] Un test d'échec partiel montre les appels déjà réussis et l'absence de rollback global, sans réussite artificielle.
 
 ## Limites et hors périmètre
 
-Aucune garantie exactly-once, aucun retry aveugle de POST, aucune compensation automatique ni partenaire réel. Un état local `FAILED` ne signifie pas « aucune ressource externe créée ». Broker, service mesh et circuit breakers sans scénario justifié restent exclus.
+Le monolithe modulaire conserve Experience/BFF mince et Capability métier dans la même JVM ; le BFF ne porte ni métier ni persistance.
+L'UUID local sert à corréler une demande, pas à garantir l'idempotence, c'est-à-dire empêcher un effet supplémentaire lors d'une répétition.
+Aucun exactly-once, retry aveugle de `POST`, rollback distribué ou compensation automatique : `FAILED` ne signifie pas « aucune ressource externe créée ».
+Pas de partenaire réel, de broker, de service mesh ni de coupe-circuit sans scénario justifié.
 
-## Explication à maîtriser
+## Démo et clôture
 
-Après un timeout, pourquoi réessayer une création peut-il produire un doublon ? Quelles garanties supplémentaires un UUID local ne donne-t-il pas ?
+- [ ] Montrer le succès puis une panne WireMock ; expliquer les tentatives observées et pourquoi un timeout de création peut cacher une création réussie chez le partenaire.
 
-## Preuves de clôture
-
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint), avec matrice d'erreurs, journaux WireMock des tentatives et résultats des tests.
+Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec la matrice d'erreurs, les journaux WireMock des tentatives et les résultats réellement observés.
