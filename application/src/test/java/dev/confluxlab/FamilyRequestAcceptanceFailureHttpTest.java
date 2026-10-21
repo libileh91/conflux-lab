@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(classes = ConfluxLabApplication.class)
 @AutoConfigureMockMvc
-class FamilyRequestAcceptanceFailureHttpTest {
+class FamilyRequestAcceptanceFailureHttpTest extends MongoTestSupport {
 
     private static final String PERSONAL_MARKER = "INT08FictivePerson";
     private static final String VALID_REQUEST = """

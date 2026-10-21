@@ -50,7 +50,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-class InMemoryFamilyRequestsTest {
+class FamilyRequestServiceTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-10-21T12:00:00Z"), ZoneOffset.UTC);
     private static final PersonPayload PRINCIPAL = new PersonPayload("Alex", "Exemple", LocalDate.of(1990, 4, 12));
@@ -80,7 +80,7 @@ class InMemoryFamilyRequestsTest {
     @Test
     void storesThePayloadAsPendingBeforeReturningAcceptance() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
         CreateFamilyRequest request = new CreateFamilyRequest(PRINCIPAL, DEPENDENTS);
 
         RequestAccepted accepted = service.createFamily(request);
@@ -98,7 +98,7 @@ class InMemoryFamilyRequestsTest {
     @Test
     void storesTwoIdenticalRequestsUnderDistinctIds() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
         CreateFamilyRequest request = new CreateFamilyRequest(PRINCIPAL, DEPENDENTS);
 
         RequestAccepted first = service.createFamily(request);
@@ -112,7 +112,7 @@ class InMemoryFamilyRequestsTest {
     @Test
     void keepsAnImmutableSnapshotWhenTheCallerChangesItsListAfterAcceptance() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
         List<PersonPayload> callerList = new ArrayList<>(DEPENDENTS);
 
         RequestAccepted accepted = service.createFamily(new CreateFamilyRequest(PRINCIPAL, callerList));
@@ -126,7 +126,7 @@ class InMemoryFamilyRequestsTest {
     @Test
     void aNewStoreDoesNotRecoverPreviouslyAcceptedRequests() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
         RequestAccepted accepted = service.createFamily(new CreateFamilyRequest(PRINCIPAL, DEPENDENTS));
 
         assertTrue(new InMemoryFamilyRequestStore().findById(accepted.requestId()).isEmpty());
@@ -138,7 +138,7 @@ class InMemoryFamilyRequestsTest {
         InMemoryFamilyRequestStore failingStore = mock(InMemoryFamilyRequestStore.class);
         IllegalStateException failure = new IllegalStateException("Simulated storage failure.");
         doThrow(failure).when(failingStore).save(any(StoredFamilyRequest.class));
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(failingStore, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(failingStore, validator, CLOCK);
 
         assertSame(failure, assertThrows(IllegalStateException.class,
                 () -> service.createFamily(new CreateFamilyRequest(PRINCIPAL, DEPENDENTS))));
@@ -147,9 +147,9 @@ class InMemoryFamilyRequestsTest {
     @Test
     void retrievesStoredMetadataWithoutUpdatingItsCreationTime() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
         RequestAccepted accepted = service.createFamily(new CreateFamilyRequest(PRINCIPAL, DEPENDENTS));
-        InMemoryFamilyRequests laterReader = new InMemoryFamilyRequests(
+        FamilyRequestService laterReader = new FamilyRequestService(
                 store, validator, Clock.offset(CLOCK, Duration.ofHours(1)));
         RequestView expected = new RequestView(accepted.requestId(), RequestStatus.PENDING, CLOCK.instant());
 
@@ -161,7 +161,7 @@ class InMemoryFamilyRequestsTest {
     @Test
     void rejectsAnUnknownIdWithoutInventingARequest() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
         UUID unknownId = UUID.randomUUID();
 
         RequestNotFoundException exception = assertThrows(RequestNotFoundException.class,
@@ -174,7 +174,7 @@ class InMemoryFamilyRequestsTest {
     @Test
     void rejectsANullIdBeforeAccessingTheStore() {
         InMemoryFamilyRequestStore store = mock(InMemoryFamilyRequestStore.class);
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
 
         assertThrows(IllegalArgumentException.class, () -> service.getRequest(null));
         verifyNoInteractions(store);
@@ -194,7 +194,7 @@ class InMemoryFamilyRequestsTest {
             stored = stored.transitionTo(status, CLOCK.instant());
         }
         when(store.findById(requestId)).thenReturn(Optional.of(stored));
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
 
         assertEquals(new RequestView(requestId, status, CLOCK.instant()),
                 service.getRequest(requestId));
@@ -206,7 +206,7 @@ class InMemoryFamilyRequestsTest {
     @MethodSource("invalidRequests")
     void directJavaCallsCannotStoreInvalidContractData(String description, CreateFamilyRequest request) {
         InMemoryFamilyRequestStore store = mock(InMemoryFamilyRequestStore.class);
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
 
         InvalidFamilyRequestException exception = assertThrows(InvalidFamilyRequestException.class,
                 () -> service.createFamily(request));
@@ -217,7 +217,7 @@ class InMemoryFamilyRequestsTest {
     @Test
     void acceptsNamesAtThe100CharacterBoundary() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
         PersonPayload person = new PersonPayload("A".repeat(100), "B".repeat(100), PRINCIPAL.birthDate());
         CreateFamilyRequest request = new CreateFamilyRequest(person, List.of(person, person));
 
@@ -230,9 +230,9 @@ class InMemoryFamilyRequestsTest {
     @Test
     void keepsTwoPayloadsAndTheirDatesSeparateAcrossAnInterveningRefusal() {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests firstService = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService firstService = new FamilyRequestService(store, validator, CLOCK);
         Clock laterClock = Clock.offset(CLOCK, Duration.ofHours(1));
-        InMemoryFamilyRequests secondService = new InMemoryFamilyRequests(store, validator, laterClock);
+        FamilyRequestService secondService = new FamilyRequestService(store, validator, laterClock);
         CreateFamilyRequest firstRequest = new CreateFamilyRequest(PRINCIPAL, DEPENDENTS);
         CreateFamilyRequest secondRequest = anotherValidRequest();
 
@@ -253,7 +253,7 @@ class InMemoryFamilyRequestsTest {
     @Test
     void concurrentCallersKeepDistinctRequestsAndTheirOwnPayloads() throws Exception {
         InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-        InMemoryFamilyRequests service = new InMemoryFamilyRequests(store, validator, CLOCK);
+        FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK);
         CreateFamilyRequest firstRequest = new CreateFamilyRequest(PRINCIPAL, DEPENDENTS);
         CreateFamilyRequest secondRequest = anotherValidRequest();
         CountDownLatch ready = new CountDownLatch(2);

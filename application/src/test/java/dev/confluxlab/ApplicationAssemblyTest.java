@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest(classes = ConfluxLabApplication.class)
-class ApplicationAssemblyTest {
+class ApplicationAssemblyTest extends MongoTestSupport {
 
     @Autowired
     private ApplicationContext context;

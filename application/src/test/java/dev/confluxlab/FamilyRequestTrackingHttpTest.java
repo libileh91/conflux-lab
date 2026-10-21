@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(classes = ConfluxLabApplication.class)
 @AutoConfigureMockMvc
-class FamilyRequestTrackingHttpTest {
+class FamilyRequestTrackingHttpTest extends MongoTestSupport {
 
     private static final String VALID_REQUEST = """
             {

@@ -1,6 +1,10 @@
 spring:
   application:
     name: conflux-lab
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/conflux_lab?serverSelectionTimeoutMS=3000&connectTimeoutMS=3000&socketTimeoutMS=5000&retryWrites=false}
+      uuid-representation: standard
 
 server:
   port: 8080

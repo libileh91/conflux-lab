@@ -2,6 +2,7 @@ package dev.confluxlab.capability.internal;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -15,13 +16,13 @@ import jakarta.validation.Validator;
 import org.springframework.stereotype.Service;
 
 @Service
-class InMemoryFamilyRequests implements FamilyRequests {
+class FamilyRequestService implements FamilyRequests {
 
-    private final InMemoryFamilyRequestStore store;
+    private final FamilyRequestStore store;
     private final Validator validator;
     private final Clock clock;
 
-    InMemoryFamilyRequests(InMemoryFamilyRequestStore store, Validator validator, Clock clock) {
+    FamilyRequestService(FamilyRequestStore store, Validator validator, Clock clock) {
         this.store = store;
         this.validator = validator;
         this.clock = clock;
@@ -40,7 +41,8 @@ class InMemoryFamilyRequests implements FamilyRequests {
         }
 
         UUID requestId = UUID.randomUUID();
-        StoredFamilyRequest stored = StoredFamilyRequest.pending(requestId, snapshot, Instant.now(clock));
+        StoredFamilyRequest stored = StoredFamilyRequest.pending(
+                        requestId, snapshot, Instant.now(clock).truncatedTo(ChronoUnit.MILLIS));
         store.save(stored);
         return new RequestAccepted(requestId, stored.status(), "/api/v1/requests/" + requestId);
     }
