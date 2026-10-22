@@ -26,9 +26,15 @@ Les fiches de sprint et les tâches à réaliser sont dans [docs/stages](../docs
 | **5. Vérifications et limites** | Ce qui est prouvé, historique ou non testé ; pas de succès inventé |
 | **6. Suivi centralisé** | Liens vers les actions et repères de `todos.md` |
 
-**Profondeur demandée par l'utilisateur :** pour chaque nouvelle technologie, expliquer son rôle, son fonctionnement concret dans le projet, les alternatives écartées et les pièges. Inclure les schémas d'architecture avant/après et les séquences utiles de succès/erreur, la carte des fichiers, le câblage Spring et les extraits de code/config importants expliqués. Les paramètres de commandes doivent être compréhensibles sans connaissance implicite de l'outil. Les illustrations non exécutées restent étiquetées comme telles.
+**Format durable demandé par l'utilisateur — modèle des notes INT-14/15/16 révisées :**
 
-Un cours long comporte un sommaire et un parcours de lecture. Il ne doit pas devenir une copie intégrale des sources : expliquer les extraits utiles est plus important que multiplier les blocs de code. **Documentation approfondie ne signifie pas davantage de tests** : conserver la sélection minimale adaptée au risque et ne pas relancer des commandes pour le seul besoin d'illustrer le texte.
+- Expliquer le code **bout par bout** : un court extrait utile, puis son rôle, son enchaînement et ses limites. Ne pas coller une classe entière ni la reconstituer exhaustivement en plusieurs blocs.
+- Omettre les imports, packages, constructeurs, injections et autres éléments Spring répétitifs ; renvoyer au fichier source pour le code complet. Identifier les extraits partiels et la version historique si elle diffère du code actuel.
+- Pour les tests, ne garder que les signaux, interceptions ou assertions qui portent la preuve. Expliquer le montage nécessaire en quelques phrases ou dans un tableau, sans recopier fixtures, injections ou préparation banale.
+- Conserver les tableaux utiles de **beans, annotations et propriétés**. Expliquer le pourquoi, le flux et les pièges concrets ; ajouter un schéma ou une alternative seulement si cela aide, sans catalogue systématique.
+- Garder les commandes compréhensibles, les preuves historiques distinctes des vérifications de session et les illustrations non exécutées explicitement étiquetées.
+
+Un cours long comporte un sommaire et un parcours de lecture. La profondeur vient de l'explication, pas du volume de code recopié. **Documentation approfondie ne signifie pas davantage de tests** : conserver la sélection minimale adaptée au risque, réutiliser l'existant et ne pas relancer des commandes pour le seul besoin d'illustrer le texte.
 
 ## Lire le registre central
 
@@ -72,11 +78,12 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 | INT-13 | [Dessiner les fenêtres de panne](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) | Terminée, simplifiée : un schéma, trois situations de panne et les nuances indispensables ; documentation uniquement, aucune panne exécutée |
 | INT-14 | [Publier et consommer](sprint-04/INT-14-publier-et-consommer.md) | Terminée : événement après sauvegarde, listener async, prise en charge atomique ; 1 scénario ajouté, 9 cas ciblés réussis ; pas de métier ni d'état final |
 | INT-15 | [Borner l'exécution](sprint-04/INT-15-borner-l-execution.md) | Terminée : executor dédié borné, rejet explicite et erreur async journalisée sans message privé ; 2 cas ajoutés, 4 cas ciblés réussis ; aucune reprise |
+| INT-16 | [Tester avec un traitement contrôlé](sprint-04/INT-16-tester-avec-un-traitement-controle.md) | Terminée : quatre comportements couverts par trois cas existants, attentes/nettoyage relus et rapports INT-15 inspectés ; aucun code, test ou réglage modifié, aucune réexécution |
 | INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
 
 Les preuves historiques restent datées : INT-01 conserve le cadrage initial ; le cours INT-06 explique désormais l'acceptation réalisée et renvoie à la version publiée de sa rétrospective pour l'ébauche antérieure. Les autres dossiers n'ont pas de compte rendu de réussite anticipé.
 
-**INT-13** ouvre le sprint 04 par une explication courte des limites du flux Spring Event/`@Async`, sans clôture pédagogique automatique du sprint 03. La [note simplifiée](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) n'impose pas une matrice exhaustive de tests. Après sa pause, INT-14 est reprise sur demande explicite et validée avec 9 cas ciblés ; le cours distingue cette prise en charge du métier encore absent. INT-15 a ensuite livré le bornage dédié et la journalisation avec 4 cas ciblés réussis, sans replay du JAR ni suite complète. [Repère TD-R020](todos.md#td-r020).
+**INT-13** ouvre le sprint 04 par une explication courte des limites du flux Spring Event/`@Async`, sans clôture pédagogique automatique du sprint 03. La [note simplifiée](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) n'impose pas une matrice exhaustive de tests. Après sa pause, INT-14 est reprise sur demande explicite et validée avec 9 cas ciblés ; le cours distingue cette prise en charge du métier encore absent. INT-15 a ensuite livré le bornage dédié et la journalisation avec 4 cas ciblés réussis, sans replay du JAR ni suite complète. INT-16 consolide ces preuves et relit le contrôle des workers sans ajouter ni réexécuter de test ; la clôture pédagogique du sprint 04 reste à confirmer. [Repère TD-R020](todos.md#td-r020).
 
 ## Compléments théoriques
 

@@ -1,6 +1,6 @@
 # Sprint 04 — Spring Events locaux et traitement asynchrone
 
-**Statut : INT-13 simplifiée, INT-14 et INT-15 terminées ; INT-16 non commencée.** INT-14 et le plan allégé ont été commitées localement dans `bdb93f8` avant INT-15. La consolidation INT-16 attend son feu vert individuel ; la clôture pédagogique du sprint 03 reste à confirmer.
+**Statut : INT-13 à INT-16 terminées dans leur périmètre technique ; clôture pédagogique du sprint 04 à confirmer.** INT-14 et le plan allégé sont dans `bdb93f8`, INT-15 et les notes enrichies dans `59c881c`. INT-16 consolide ces preuves sur feu vert « go 16 », sans modification Java ni réexécution des tests. La clôture pédagogique du sprint 03 reste également à confirmer.
 
 ## Objectif
 
@@ -62,7 +62,7 @@ En tant que développeur, je veux limiter les tâches en cours et en attente, af
 **Limite volontaire :** pas de stockage de diagnostics, de nouvel état, de reprise ou de simulation de crash. Les états finaux seront gérés avec le travail métier réel.
 
 ### INT-16 — Tester avec un traitement contrôlé
-**Statut : à faire — feu vert requis.** Prérequis : INT-14/15 disponibles. Cette tâche consolide les preuves, elle ne recrée pas leurs scénarios.
+**Statut : terminée sur feu vert « go 16 ».** Consolidation du code de `59c881c` et des preuves INT-14/15, sans nouveau scénario ni réexécution. [Bilan et lecture guidée INT-16](../../notes/sprint-04/INT-16-tester-avec-un-traitement-controle.md).
 
 En tant que développeur, je veux disposer de tests fiables et de preuves lisibles du flux asynchrone, afin de le vérifier sans dépendre du hasard ni multiplier les tests.
 
@@ -71,8 +71,10 @@ En tant que développeur, je veux disposer de tests fiables et de preuves lisibl
 - Vérifier les attentes bornées, la libération des signaux de test et les preuves obtenues ; compléter seulement un manque concret.
 
 **Terminé quand :**
-- [ ] Les preuves couvrent `202` indépendant du worker, un seul gagnant, rejet à saturation et erreur async journalisée. Chaque comportement est vérifié au bon endroit, sans doublon obligatoire entre INT-14/15/16 ni `Thread.sleep` comme preuve.
-- [ ] Un bilan court indique les tests réellement exécutés et rappelle la limite d'abandon expliquée dans INT-13. Aucun nouveau test, redémarrage du JAR ou crash forcé n'est exigé si les preuves existantes suffisent.
+- [x] Les trois cas existants couvrent `202` indépendant du worker, un seul gagnant, rejet à saturation et erreur async journalisée. Câblage sur `familyRequestExecutor`, attentes bornées et nettoyage dans les `finally` relus ; pas de doublon ni de `Thread.sleep` comme preuve.
+- [x] Le bilan distingue les résultats historiques d'INT-14/15 de la revue INT-16, sans exécution supplémentaire. La limite d'abandon d'INT-13 est rappelée ; aucun nouveau test, redémarrage du JAR ou crash forcé n'est nécessaire aux critères.
+
+**Preuves :** revue du test et de son câblage ; relecture des deux rapports ciblés d'INT-15 (1 cas Surefire et 3 cas Failsafe, aucun échec/erreur/ignoré). Ces quatre réussites ne sont pas une nouvelle exécution INT-16. Aucune adaptation de code n'a été nécessaire.
 
 ## Limites et hors périmètre
 

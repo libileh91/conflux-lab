@@ -53,7 +53,7 @@ Les tests accompagnent chaque story : ils ne sont pas reportés au sprint 07. **
 | [01 — Socle modulaire](sprint-01-socle.md) | Construire et démarrer une application aux modules séparés | INT-01 à INT-04 ; INT-37 | Clôturé techniquement et documenté sur demande utilisateur (2026-10-21) ; restitution orale non évaluée |
 | [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05 à INT-08 terminées techniquement ; passage à INT-09 demandé, restitution orale non évaluée |
 | [03 — MongoDB](sprint-03-mongodb.md) | Conserver une demande après redémarrage | INT-09 à INT-12 | INT-09 à INT-12 terminées techniquement ; clôture et restitution pédagogique à confirmer |
-| [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | INT-13 simplifiée, INT-14/15 terminées ; INT-16 reste à autoriser |
+| [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | INT-13 à INT-16 terminées techniquement ; clôture pédagogique à confirmer |
 | [05 — Orchestration](sprint-05-orchestration.md) | Faire avancer les six opérations selon leurs dépendances | INT-17 à INT-20 | Planifié |
 | [06 — Partenaire et résilience](sprint-06-partenaire.md) | Appeler un partenaire simulé et traiter ses pannes sans retry aveugle | INT-21 à INT-24 | Planifié |
 | [07 — Validation et mesures](sprint-07-validation.md) | Démontrer le parcours, expliquer un échec et mesurer le labo | INT-25 à INT-28 | Planifié |
@@ -78,7 +78,8 @@ Les identifiants ne changent pas ; ils ne sont pas un ordre de développement ob
 - **INT-13 réalisée puis simplifiée :** analyse documentaire du flux, ramenée sur demande utilisateur à un schéma et trois situations essentielles, sans mécanisme de reprise ni test de panne ajouté ; première version commitée localement dans `f12c97d`.
 - **INT-14 reprise et réalisée :** simplification d'INT-13 et consigne d'équilibre commitées localement (`6081781`), puis publication après insertion et listener `@Async` utilisant la prise en charge atomique ; un seul scénario ajouté, 9 cas ciblés réussis. Le JAR conserve `PROCESSING` au redémarrage, sans reprise de travail implémentée.
 - **INT-15 réalisée sur feu vert :** commit local préalable `bdb93f8`, executor dédié borné, rejet explicite et erreur async journalisée avec l'UUID sans message privé. Deux cas ajoutés, un cas événementiel réutilisé et un contrôle de frontière : 4 réussites ciblées, pas de reprise ou d'état final ajouté.
-- **Suite :** INT-16 nécessite un nouveau feu vert pour consolider les preuves sans doublons. Clôture pédagogique du sprint 03 toujours à confirmer.
+- **INT-16 réalisée sur feu vert « go 16 » :** code de `59c881c` et preuves INT-14/15 consolidés, attentes et nettoyage relus, deux rapports ciblés existants inspectés. Aucun ajout ou réexécution de test ; pas de manque identifié pour les critères.
+- **Suite :** clôture pédagogique des sprints 03/04 à confirmer ; INT-17 attend son propre feu vert.
 - La préparation avancée d'INT-05 ne lance ni l'assemblage ni les autres stories du sprint 02.
 
 ## Architecture à conserver

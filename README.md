@@ -17,7 +17,8 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 - **INT-13** est [simplifiée](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) : un schéma et trois cas essentiels (insertion non confirmée, `PENDING` sans prise en charge, traitement interrompu). Documentation uniquement ; sa simplification et la consigne d'équilibre sont commitées localement dans `6081781`.
 - **INT-14 est terminée dans son périmètre** : publication après insertion, listener `@Async` et prise en charge atomique. **Un seul scénario ajouté, 9 cas ciblés réussis** ; le code s'arrête à `PROCESSING`, sans métier fictif. Le pool dédié et les erreurs sont traités ensuite dans INT-15. INT-14 et le plan allégé sont commitées localement dans `bdb93f8`.
-- **INT-15 est terminée dans son périmètre** : `familyRequestExecutor` dédié, défauts modifiables de 2 workers/16 places/5 s d'attente de fermeture, rejet explicite et journal async UUID/type sans message privé. **Deux cas ajoutés, 4 cas ciblés réussis** ; aucun état final, stockage de diagnostics ou reprise. INT-16 attend son feu vert.
+- **INT-15 est terminée dans son périmètre** : `familyRequestExecutor` dédié, défauts modifiables de 2 workers/16 places/5 s d'attente de fermeture, rejet explicite et journal async UUID/type sans message privé. **Deux cas ajoutés, 4 cas ciblés réussis** ; aucun état final, stockage de diagnostics ou reprise. INT-15 et les notes enrichies sont commitées dans `59c881c`.
+- **INT-16 est terminée dans son périmètre** : preuves consolidées, câblage et synchronisation des trois cas événementiels relus, deux rapports ciblés existants inspectés. Aucun code, test ou réglage modifié, aucun test ajouté ou relancé. La clôture pédagogique du sprint 04 reste à confirmer ; INT-17 n'est pas démarrée.
 
 ## Prérequis
 
@@ -140,6 +141,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-13 — Fenêtres de panne avant et après le `202`](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md).
 - [INT-14 — Publication locale et prise en charge asynchrone](notes/sprint-04/INT-14-publier-et-consommer.md).
 - [INT-15 — Executor borné, rejet et erreurs async](notes/sprint-04/INT-15-borner-l-execution.md).
+- [INT-16 — Consolidation des preuves et synchronisation des tests](notes/sprint-04/INT-16-tester-avec-un-traitement-controle.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 

@@ -7,17 +7,17 @@
 ## Parcours de lecture
 
 - Pour comprendre le fonctionnement : sections **1 à 5**, puis le résultat en **7**.
-- Pour suivre les preuves : section **6**, avec le fichier de test complet et sa lecture guidée.
-- Les fichiers de production reproduits sont complets ; les petits extraits du service et de l'advice sont explicitement partiels. Les sources liées restent la référence si le code évolue.
+- Pour suivre les preuves : section **6**, avec les fragments de test utiles et leur lecture guidée.
+- Tous les extraits Java sont **partiels**, pris dans les sources de **`59c881c`** : chaque bloc conserve des lignes contiguës, sans réécriture ni points de suspension ajoutés. Les sources liées restent la référence si le code évolue ; les classes ne sont pas reconstituées intégralement dans la note.
 
 ### Sommaire
 
 - [1. Le problème et le flux](#1-le-problème-et-le-flux)
-- [2. La configuration Java complète](#2-la-configuration-java-complète)
+- [2. La configuration Java, réglage par réglage](#2-la-configuration-java-réglage-par-réglage)
 - [3. Le listener et la publication](#3-le-listener-et-la-publication)
 - [4. Rejet et exception async : deux chemins différents](#4-rejet-et-exception-async--deux-chemins-différents)
 - [5. Où se trouve la configuration YAML ?](#5-où-se-trouve-la-configuration-yaml-)
-- [6. Les tests complets et leur lecture guidée](#6-les-tests-complets-et-leur-lecture-guidée)
+- [6. Les tests : extraits et lecture guidée](#6-les-tests--extraits-et-lecture-guidée)
 - [7. Commande exécutée, résultats et limites](#7-commande-exécutée-résultats-et-limites)
 - [8. Formulation d'entretien](#8-formulation-dentretien)
 - [9. Suivi centralisé](#9-suivi-centralisé)
@@ -55,92 +55,30 @@ Les branches HTTP et worker n'imposent aucun ordre entre le démarrage du listen
 
 Trois fichiers changent dans INT-15 : [la configuration](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java), [le listener](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) et [le test événementiel](../../application/src/test/java/dev/confluxlab/capability/internal/FamilyRequestEventsIT.java). Il n'y a ni nouvelle dépendance, ni route HTTP, ni champ MongoDB.
 
-## 2. La configuration Java complète
+## 2. La configuration Java, réglage par réglage
 
-### 2.1 Fichier réel
+### 2.1 Repérer les responsabilités
 
-[FamilyRequestConfiguration.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java) — **fichier complet inspecté** :
+[FamilyRequestConfiguration.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java) rassemble trois beans. On garde leur carte plutôt que recopier la classe ; les extraits partiels ci-dessous isolent les décisions d'INT-15.
 
-```java
-package dev.confluxlab.capability.internal;
+| Bean | Type et rôle | Origine |
+|---|---|---|
+| `mongoTemplate` | `MongoTemplate` : accès MongoDB avec l'acquittement d'écriture retenu | Existant avant INT-15 |
+| `familyRequestClock` | `Clock` : horloge UTC utilisée pour dater les opérations | Existant avant INT-15 |
+| `familyRequestExecutor` | `ThreadPoolTaskExecutor` : pool dédié au listener, avec workers et file bornés | Ajout INT-15 |
 
-import java.time.Clock;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
-import com.mongodb.WriteConcern;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.MongoDatabaseFactory;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.convert.MongoConverter;
-import org.springframework.scheduling.annotation.AsyncConfigurer;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-
-@Configuration(proxyBeanMethods = false)
-@EnableAsync
-class FamilyRequestConfiguration implements AsyncConfigurer {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(FamilyRequestConfiguration.class);
-
-    @Bean
-    MongoTemplate mongoTemplate(MongoDatabaseFactory factory, MongoConverter converter) {
-        MongoTemplate template = new MongoTemplate(factory, converter);
-        template.setWriteConcern(WriteConcern.MAJORITY.withJournal(true).withWTimeout(5, TimeUnit.SECONDS));
-        return template;
-    }
-
-    @Bean
-    Clock familyRequestClock() {
-        return Clock.systemUTC();
-    }
-
-    @Bean
-    ThreadPoolTaskExecutor familyRequestExecutor(
-            @Value("${conflux.processing.workers:2}") int workers,
-            @Value("${conflux.processing.queue-capacity:16}") int queueCapacity,
-            @Value("${conflux.processing.shutdown-await-seconds:5}") int shutdownAwaitSeconds) {
-        if (workers < 1 || queueCapacity < 0 || shutdownAwaitSeconds < 1) {
-            throw new IllegalArgumentException("Processing workers and shutdown wait must be positive; queue capacity must be non-negative.");
-        }
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(workers);
-        executor.setMaxPoolSize(workers);
-        executor.setQueueCapacity(queueCapacity);
-        executor.setThreadNamePrefix("family-request-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(shutdownAwaitSeconds);
-        return executor;
-    }
-
-    @Override
-    public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
-        return (failure, method, parameters) -> {
-            String requestId = parameters.length > 0 && parameters[0] instanceof FamilyRequestSubmitted submitted
-                    ? submitted.requestId().toString() : "unknown";
-            // Exception messages and event arguments may contain personal data; do not log them.
-            LOGGER.error("Async family request failed: requestId={}, exceptionType={}",
-                    requestId, failure.getClass().getSimpleName());
-        };
-    }
-}
-```
+La classe implémente aussi `AsyncConfigurer` pour fournir le handler d'exception décrit en section 4. Ce callback et la politique de rejet du pool ne traitent pas le même moment du flux.
 
 ### 2.2 Les annotations et l'injection
 
-- **`@Configuration`** indique une classe de configuration Spring ; ses méthodes `@Bean` fournissent des objets gérés par le conteneur.
-- **`proxyBeanMethods = false`** désactive l'interception des appels Java entre méthodes `@Bean` de cette classe. Cela **ne désactive pas** les proxies `@Async` du listener : ce sont deux mécanismes distincts.
-- **`@EnableAsync`** active le traitement de `@Async`. Spring peut alors placer un proxy devant le listener pour soumettre ses appels à un executor.
-- **`@Bean familyRequestExecutor(...)`** donne ici son nom au bean. C'est exactement ce nom que le listener demande avec `@Async("familyRequestExecutor")`.
-- **`@Value`** résout une propriété Spring puis la convertit en `int` ; la valeur après `:` est le défaut si la propriété est absente.
-- **`implements AsyncConfigurer`** permet de fournir à Spring le handler des exceptions non capturées des méthodes async `void`. Ce handler n'est pas la politique de rejet du pool.
+| Annotation / contrat | Rôle dans cette configuration |
+|---|---|
+| `@Configuration` | Déclarer une configuration dont les méthodes `@Bean` fournissent des objets gérés par Spring |
+| `proxyBeanMethods = false` | Désactiver l'interception des appels Java entre méthodes `@Bean` de cette classe ; cela **ne désactive pas** les proxies `@Async` du listener |
+| `@EnableAsync` | Activer le traitement de `@Async` : Spring peut placer un proxy devant le listener pour soumettre ses appels à un executor |
+| `@Bean` sur `familyRequestExecutor(...)` | Donner ici le nom de la méthode au bean, exactement celui demandé par `@Async("familyRequestExecutor")` |
+| `@Value` | Résoudre une propriété Spring et la convertir en `int` ; la valeur après `:` est le défaut si la propriété est absente |
+| `implements AsyncConfigurer` | Fournir le handler des exceptions non capturées des méthodes async `void`, distinct de la politique de rejet du pool |
 
 Spring crée normalement un seul bean de cet executor, l'initialise et gère sa destruction. Il ne faut donc ni créer un pool par requête ni appeler manuellement son initialisation dans ce code.
 
@@ -154,11 +92,31 @@ Les beans `mongoTemplate` et `familyRequestClock` existaient déjà. Le premier 
 | `conflux.processing.queue-capacity` | 16 | Nombre de tâches pouvant attendre en mémoire |
 | `conflux.processing.shutdown-await-seconds` | 5 | Attente de terminaison lors de la destruction de ce bean |
 
-Le garde-fou Java refuse un nombre de workers ou une attente inférieurs à 1, ainsi qu'une file négative. **Une file de capacité `0` est permise** : pas de stockage en attente, une soumission doit pouvoir être remise immédiatement à un worker disponible, sinon elle est rejetée.
+Extrait partiel de `familyRequestExecutor(...)` dans `FamilyRequestConfiguration.java` :
+
+```java
+if (workers < 1 || queueCapacity < 0 || shutdownAwaitSeconds < 1) {
+    throw new IllegalArgumentException("Processing workers and shutdown wait must be positive; queue capacity must be non-negative.");
+}
+```
+
+Ce contrôle a lieu à la création du bean : une configuration invalide fait échouer le démarrage, pas une requête ultérieure. Il refuse un nombre de workers ou une attente inférieurs à 1, ainsi qu'une file négative. **Une file de capacité `0` est permise** : pas de stockage en attente, une soumission doit pouvoir être remise immédiatement à un worker disponible, sinon elle est rejetée.
 
 Les valeurs se remplacent par les propriétés Spring usuelles. Dans les tests exécutés, `@SpringBootTest(properties = ...)` les remplace réellement : **2 workers, mais seulement 1 place en file**. Il n'y a pas de fichier de configuration fictif à créer pour expliquer ce réglage.
 
 ### 2.4 Le rôle de chaque réglage du pool
+
+Extrait partiel de `familyRequestExecutor(...)` dans `FamilyRequestConfiguration.java`, après la création de l'executor :
+
+```java
+executor.setCorePoolSize(workers);
+executor.setMaxPoolSize(workers);
+executor.setQueueCapacity(queueCapacity);
+executor.setThreadNamePrefix("family-request-");
+executor.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+```
+
+Les deux premières lignes utilisent **la même valeur** : le pool ne peut pas ajouter de workers au-delà de ce plafond quand la file se remplit. La dernière choisit un refus explicite plutôt qu'une exécution de secours sur le thread appelant. Le tableau détaille chaque réglage :
 
 | Instruction | Pourquoi elle est là |
 |---|---|
@@ -180,42 +138,20 @@ La capacité de file borne un **nombre de tâches**, pas directement une quantit
 
 ## 3. Le listener et la publication
 
-### 3.1 Listener complet
+### 3.1 Du proxy à la tentative de prise en charge
 
-[FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) — **fichier complet inspecté** :
+[FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) — **extrait partiel**, limité à la méthode qui reçoit l'événement :
 
 ```java
-package dev.confluxlab.capability.internal;
-
-import java.time.Clock;
-import java.time.Instant;
-
-import dev.confluxlab.contracts.RequestStatus;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-
-@Component
-class FamilyRequestListener {
-
-    private final MongoFamilyRequestStore store;
-    private final Clock clock;
-
-    FamilyRequestListener(MongoFamilyRequestStore store, Clock clock) {
-        this.store = store;
-        this.clock = clock;
-    }
-
-    @Async("familyRequestExecutor")
-    @EventListener
-    public void onFamilyRequestSubmitted(FamilyRequestSubmitted event) {
-        store.findById(event.requestId())
-                .filter(request -> request.status() == RequestStatus.PENDING)
-                .ifPresent(request -> {
-                    // This increment stops at the atomic claim; no business processing is simulated.
-                    store.transition(request.requestId(), RequestStatus.PENDING, RequestStatus.PROCESSING, Instant.now(clock));
-                });
-    }
+@Async("familyRequestExecutor")
+@EventListener
+public void onFamilyRequestSubmitted(FamilyRequestSubmitted event) {
+    store.findById(event.requestId())
+            .filter(request -> request.status() == RequestStatus.PENDING)
+            .ifPresent(request -> {
+                // This increment stops at the atomic claim; no business processing is simulated.
+                store.transition(request.requestId(), RequestStatus.PENDING, RequestStatus.PROCESSING, Instant.now(clock));
+            });
 }
 ```
 
@@ -270,7 +206,19 @@ Le test vérifie `500`, le détail générique, l'absence de `Location` et de `r
 
 ### 4.2 Lire le callback d'exception async
 
-Le handler complet figure dans la configuration de la section 2. Spring lui fournit :
+Extrait partiel de `getAsyncUncaughtExceptionHandler()` dans `FamilyRequestConfiguration.java` :
+
+```java
+return (failure, method, parameters) -> {
+    String requestId = parameters.length > 0 && parameters[0] instanceof FamilyRequestSubmitted submitted
+            ? submitted.requestId().toString() : "unknown";
+    // Exception messages and event arguments may contain personal data; do not log them.
+    LOGGER.error("Async family request failed: requestId={}, exceptionType={}",
+            requestId, failure.getClass().getSimpleName());
+};
+```
+
+Cette lambda est le callback retourné à Spring via `AsyncConfigurer` : elle sera appelée pour une exception non capturée du listener `void`, pas à chaque création de demande. Spring lui fournit :
 
 - `failure` : l'exception non capturée du corps async ;
 - `method` : la méthode concernée, non utilisée dans le message actuel ;
@@ -290,33 +238,22 @@ Le handler **ne modifie aucun statut**. Un échec avant prise en charge ne perme
 
 ## 5. Où se trouve la configuration YAML ?
 
-Les défauts `2 / 16 / 5` sont dans les `@Value` Java. **INT-15 n'a ajouté ni fichier YAML ni section `conflux.processing`.** Le test remplace réellement deux valeurs par son annotation Spring ; la section 6 en montre le code.
+Les défauts `2 / 16 / 5` sont dans les `@Value` Java. **INT-15 n'a ajouté ni fichier YAML ni section `conflux.processing`.** Le test remplace réellement deux valeurs par son annotation Spring ; la section 6 décrit ce câblage et montre les assertions sur le pool obtenu.
 
-[application.yml](../../application/src/main/resources/application.yml) — **fichier existant complet, inchangé dans INT-15** :
+[application.yml](../../application/src/main/resources/application.yml) reste inchangé dans INT-15. Les propriétés utiles pour comprendre la distinction sont :
 
-```yaml
-spring:
-  application:
-    name: conflux-lab
-  data:
-    mongodb:
-      uri: ${MONGODB_URI:mongodb://localhost:27017/conflux_lab?serverSelectionTimeoutMS=3000&connectTimeoutMS=3000&socketTimeoutMS=5000&retryWrites=false}
-      uuid-representation: standard
-
-server:
-  port: 8080
-  error:
-    include-message: never
-    include-binding-errors: never
-    include-stacktrace: never
-    include-exception: false
-```
+| Propriété existante | Valeur / rôle |
+|---|---|
+| `spring.data.mongodb.uri` | `MONGODB_URI`, avec une URI locale par défaut et des délais réseau MongoDB ; pas un réglage de l'executor |
+| `spring.data.mongodb.uuid-representation` | `standard` : représentation des UUID MongoDB |
+| `server.error.include-message`, `include-binding-errors`, `include-stacktrace` | `never` : ne pas inclure ces détails dans les erreurs Boot |
+| `server.error.include-exception` | `false` : ne pas exposer le type d'exception dans ces erreurs |
 
 - L'URI MongoDB sert au démarrage local ; les tests Testcontainers lui substituent l'adresse de leur base temporaire via `MongoTestSupport`.
 - `server.error.*` règle les informations autorisées dans les erreurs Boot. Ces clés **n'assainissent pas automatiquement les journaux Java** et ne remplacent pas le `ProblemDetail` générique construit par l'advice.
 - Les délais de connexion/lecture MongoDB, l'acquittement d'écriture et l'attente de fermeture du pool sont des réglages distincts. Ils ne définissent pas ensemble une garantie de durée métier.
 
-## 6. Les tests complets et leur lecture guidée
+## 6. Les tests : extraits et lecture guidée
 
 ### 6.1 Pourquoi trois cas, pas une nouvelle matrice
 
@@ -326,231 +263,28 @@ server:
 | `rejectsTheNextRequestWhenWorkersAndQueueAreFull` | Nouveau INT-15 | Capacité réellement bornée et refus explicite, sans exécution sur le thread HTTP |
 | `logsAsyncFailureWithItsRequestIdWithoutLeakingTheExceptionMessage` | Nouveau INT-15 | Erreur du worker visible, corrélée et sans message privé ; statut non inventé |
 
-### 6.2 Fichier de test réel complet
+### 6.2 Vérifier le pool réellement injecté
 
-[FamilyRequestEventsIT.java](../../application/src/test/java/dev/confluxlab/capability/internal/FamilyRequestEventsIT.java) — **fichier complet inspecté**, incluant le cas réutilisé pour voir le câblage et le nettoyage sans devoir assembler plusieurs fragments :
+[FamilyRequestEventsIT.java](../../application/src/test/java/dev/confluxlab/capability/internal/FamilyRequestEventsIT.java) — **extrait partiel** du début du cas de saturation :
 
 ```java
-package dev.confluxlab.capability.internal;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.confluxlab.ConfluxLabApplication;
-import dev.confluxlab.MongoTestSupport;
-import dev.confluxlab.contracts.RequestStatus;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.dao.DataAccessResourceFailureException;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.http.MediaType;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@SpringBootTest(classes = ConfluxLabApplication.class, properties = {
-        "conflux.processing.workers=2", "conflux.processing.queue-capacity=1"})
-@AutoConfigureMockMvc
-@ExtendWith(OutputCaptureExtension.class)
-class FamilyRequestEventsIT extends MongoTestSupport {
-
-    private static final String VALID_REQUEST = """
-            {
-              "principal": {"firstName": "Alex", "lastName": "Exemple", "birthDate": "1990-04-12"},
-              "dependents": [
-                {"firstName": "Camille", "lastName": "Exemple", "birthDate": "2015-08-21"},
-                {"firstName": "Noa", "lastName": "Exemple", "birthDate": "2018-02-03"}
-              ]
-            }
-            """;
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private ApplicationEventPublisher events;
-
-    @Autowired
-    @Qualifier("familyRequestExecutor")
-    private ThreadPoolTaskExecutor taskExecutor;
-
-    @MockitoSpyBean
-    private MongoFamilyRequestStore store;
-
-    @Autowired
-    private MongoTemplate mongoTemplate;
-
-    @Test
-    void acceptsWhileTheListenerIsBlockedAndOnlyOneDuplicateEventCanClaim() throws Exception {
-        CountDownLatch ready = new CountDownLatch(2);
-        CountDownLatch release = new CountDownLatch(1);
-        CountDownLatch finished = new CountDownLatch(2);
-        Queue<Optional<?>> results = new ConcurrentLinkedQueue<>();
-        Queue<Thread> workers = new ConcurrentLinkedQueue<>();
-        Thread requestThread = Thread.currentThread();
-        doAnswer(invocation -> {
-            workers.add(Thread.currentThread());
-            ready.countDown();
-            try {
-                assertTrue(release.await(10, TimeUnit.SECONDS), "Test must release both claim attempts.");
-                Optional<?> result = (Optional<?>) invocation.callRealMethod();
-                results.add(result);
-                return result;
-            } finally {
-                finished.countDown();
-            }
-        }).when(store).transition(any(UUID.class), eq(RequestStatus.PENDING), eq(RequestStatus.PROCESSING), any(Instant.class));
-
-        try {
-            MvcResult response = postAcceptedRequest();
-            UUID requestId = UUID.fromString(objectMapper.readTree(response.getResponse().getContentAsString())
-                    .path("requestId").asText());
-            events.publishEvent(new FamilyRequestSubmitted(requestId));
-
-            assertTrue(ready.await(5, TimeUnit.SECONDS), "Both event deliveries must reach the claim before release.");
-            assertTrue(workers.stream().allMatch(worker -> worker != requestThread), "The listener must not run on the HTTP thread.");
-            assertEquals(RequestStatus.PENDING, store.findById(requestId).orElseThrow().status());
-
-            release.countDown();
-            assertTrue(finished.await(10, TimeUnit.SECONDS), "Both claim attempts must finish.");
-            assertEquals(2, results.size(), "Both MongoDB attempts must return normally; inspect async logs otherwise.");
-            assertEquals(1L, results.stream().filter(Optional::isPresent).count());
-            assertEquals(RequestStatus.PROCESSING, store.findById(requestId).orElseThrow().status());
-            mockMvc.perform(get("/api/v1/requests/{requestId}", requestId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("PROCESSING"));
-        } finally {
-            release.countDown();
-            awaitWorkersIdle();
-        }
-    }
-
-    @Test
-    void rejectsTheNextRequestWhenWorkersAndQueueAreFull() throws Exception {
-        assertEquals(2, taskExecutor.getCorePoolSize());
-        assertEquals(2, taskExecutor.getMaxPoolSize());
-        assertEquals(1, taskExecutor.getQueueCapacity());
-        CountDownLatch running = new CountDownLatch(2);
-        CountDownLatch release = new CountDownLatch(1);
-        Queue<Thread> workers = new ConcurrentLinkedQueue<>();
-        Thread requestThread = Thread.currentThread();
-        doAnswer(invocation -> {
-            workers.add(Thread.currentThread());
-            running.countDown();
-            assertTrue(release.await(10, TimeUnit.SECONDS), "Test must release the saturated workers.");
-            return invocation.callRealMethod();
-        }).when(store).transition(any(UUID.class), eq(RequestStatus.PENDING), eq(RequestStatus.PROCESSING), any(Instant.class));
-
-        try {
-            postAcceptedRequest();
-            postAcceptedRequest();
-            assertTrue(running.await(5, TimeUnit.SECONDS), "Both workers must be occupied before filling the queue.");
-            postAcceptedRequest();
-            assertEquals(1, taskExecutor.getThreadPoolExecutor().getQueue().size());
-
-            mockMvc.perform(post("/api/v1/families")
-                            .contentType(MediaType.APPLICATION_JSON).content(VALID_REQUEST))
-                    .andExpect(status().isInternalServerError())
-                    .andExpect(header().doesNotExist("Location"))
-                    .andExpect(jsonPath("$.detail").value("An unexpected error occurred."))
-                    .andExpect(jsonPath("$.requestId").doesNotHaveJsonPath());
-            assertEquals(2, workers.size(), "The rejected task must not execute on the HTTP thread.");
-            assertTrue(workers.stream().allMatch(worker -> worker != requestThread));
-
-            ArgumentCaptor<StoredFamilyRequest> saved = ArgumentCaptor.forClass(StoredFamilyRequest.class);
-            verify(store, times(4)).save(saved.capture());
-            UUID rejectedId = saved.getAllValues().get(3).requestId();
-            release.countDown();
-            awaitWorkersIdle();
-            verify(store, times(3)).transition(any(UUID.class), eq(RequestStatus.PENDING), eq(RequestStatus.PROCESSING), any(Instant.class));
-            assertEquals(RequestStatus.PENDING, store.findById(rejectedId).orElseThrow().status(),
-                    "Insertion is not rolled back when submission is rejected.");
-        } finally {
-            release.countDown();
-            awaitWorkersIdle();
-        }
-    }
-
-    @Test
-    void logsAsyncFailureWithItsRequestIdWithoutLeakingTheExceptionMessage(CapturedOutput output) throws Exception {
-        String privateMarker = "INT15_PRIVATE_PAYLOAD_MARKER";
-        doThrow(new DataAccessResourceFailureException(privateMarker)).when(store).findById(any(UUID.class));
-
-        try {
-            MvcResult response = postAcceptedRequest();
-            UUID requestId = UUID.fromString(objectMapper.readTree(response.getResponse().getContentAsString())
-                    .path("requestId").asText());
-            String expectedLog = "Async family request failed: requestId=" + requestId
-                    + ", exceptionType=DataAccessResourceFailureException";
-            await("Correlated async error log").atMost(Duration.ofSeconds(5))
-                    .untilAsserted(() -> assertTrue(output.getAll().contains(expectedLog)));
-            awaitWorkersIdle();
-            assertFalse(output.getAll().contains(privateMarker));
-            StoredFamilyRequest stored = mongoTemplate.findById(requestId, StoredFamilyRequest.class);
-            assertEquals(RequestStatus.PENDING, stored.status(), "A failure before claiming must not invent FAILED.");
-        } finally {
-            awaitWorkersIdle();
-        }
-    }
-
-    private MvcResult postAcceptedRequest() throws Exception {
-        return mockMvc.perform(post("/api/v1/families")
-                        .contentType(MediaType.APPLICATION_JSON).content(VALID_REQUEST))
-                .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.status").value("PENDING"))
-                .andReturn();
-    }
-
-    private void awaitWorkersIdle() {
-        await("Async test workers to finish").atMost(Duration.ofSeconds(10))
-                .until(() -> taskExecutor.getActiveCount() == 0 && taskExecutor.getThreadPoolExecutor().getQueue().isEmpty());
-    }
-}
+assertEquals(2, taskExecutor.getCorePoolSize());
+assertEquals(2, taskExecutor.getMaxPoolSize());
+assertEquals(1, taskExecutor.getQueueCapacity());
 ```
+
+Ces assertions portent sur le bean `familyRequestExecutor` injecté dans le test : elles vérifient que les propriétés ont réellement produit **2 workers fixes et 1 place en file**. Sans ce contrôle, on pourrait croire saturer un pool dont la configuration effective est différente. La fixture JSON, les champs injectés et les annotations sont décrits ci-dessous plutôt que recopiés.
 
 ### 6.3 Le contexte de test n'est pas une simulation totale
 
-- **`@SpringBootTest`** charge l'assemblage réel, avec des propriétés de test pour le pool ; le défaut de file `16` devient `1` pour atteindre rapidement la saturation.
-- **`@AutoConfigureMockMvc`** fournit `MockMvc`. Les POST passent par le vrai contrôleur et le service, mais **sans socket HTTP réel** : le thread du test tient ici le rôle du thread de requête. Le test du JAR d'INT-14, distinct, utilisait un vrai client réseau.
-- **`MongoTestSupport`** démarre le MongoDB Testcontainers temporaire. Il ne remplace pas MongoDB par une map.
-- **`@MockitoSpyBean`** enveloppe le vrai store : sauf interception explicite, ses méthodes accèdent réellement à MongoDB. Ce n'est pas un repository intégralement mocké.
-- **`@Qualifier("familyRequestExecutor")`** injecte précisément le pool que le proxy du listener utilise. Le test contrôle donc le bean réel, pas un executor isolé créé pour l'occasion.
-- **`OutputCaptureExtension` / `CapturedOutput`** capturent les sorties pour vérifier le journal du handler.
+| Annotation / support | Ce qui est réellement exercé |
+|---|---|
+| `@SpringBootTest` | Assemblage réel, avec `conflux.processing.workers=2` et `conflux.processing.queue-capacity=1` ; le défaut de file `16` devient `1` pour atteindre rapidement la saturation |
+| `@AutoConfigureMockMvc` | Vrai contrôleur et service, mais **sans socket HTTP réel** : le thread du test tient le rôle du thread de requête ; le test du JAR d'INT-14 utilisait, lui, un vrai client réseau |
+| `MongoTestSupport` | MongoDB Testcontainers temporaire, pas une map en mémoire |
+| `@MockitoSpyBean` sur le store | Vrai store : sauf interception explicite, ses méthodes accèdent réellement à MongoDB ; pas un repository intégralement mocké |
+| `@Autowired` et `@Qualifier("familyRequestExecutor")` | Injection précisément du pool utilisé par le proxy du listener, pas d'un executor isolé créé pour le test |
+| `@ExtendWith(OutputCaptureExtension.class)` / `CapturedOutput` | Capture des sorties pour vérifier le journal du handler |
 
 Les données JSON sont fictives. Les blocages et exceptions ajoutés par les tests ne sont pas un traitement métier branché dans l'application.
 
@@ -558,11 +292,38 @@ Les données JSON sont fictives. Les blocages et exceptions ajoutés par les tes
 
 `ready` part de 2 et confirme que deux workers ont atteint la tentative de transition. `release` part de 1 et garde ces tentatives bloquées jusqu'à sa libération. `finished` permet d'attendre leurs retours. Les collections sont concurrentes parce que plusieurs workers y écrivent.
 
-Le premier POST doit obtenir `202` alors que `release` est fermé ; une seconde publication du même UUID fait arriver le second candidat. Les deux ont pu lire `PENDING`. Après libération, `invocation.callRealMethod()` exécute les vraies commandes MongoDB : deux retours normaux, mais **un seul `Optional` présent**.
+Le premier POST doit obtenir `202` alors que `release` est fermé ; une seconde publication du même UUID fait arriver le second candidat. Les deux ont pu lire `PENDING`. **Extrait partiel** de la première méthode de `FamilyRequestEventsIT.java`, après ces arrivées :
+
+```java
+release.countDown();
+assertTrue(finished.await(10, TimeUnit.SECONDS), "Both claim attempts must finish.");
+assertEquals(2, results.size(), "Both MongoDB attempts must return normally; inspect async logs otherwise.");
+assertEquals(1L, results.stream().filter(Optional::isPresent).count());
+assertEquals(RequestStatus.PROCESSING, store.findById(requestId).orElseThrow().status());
+```
+
+`release.countDown()` ouvre le signal ; dans l'interception du spy, `invocation.callRealMethod()` peut alors exécuter les vraies commandes MongoDB. `finished` est décrémenté dans un `finally`, même si une tentative échoue : attendre zéro ne suffit donc pas à prouver deux retours normaux. C'est le rôle de `results.size() == 2`, avant de compter **un seul `Optional` présent** et de relire `PROCESSING`. Un résultat vide est une commande conditionnelle sans correspondance, pas une exception avalée.
 
 Si le listener exécutait ce travail sur le thread du POST, il resterait bloqué derrière le signal et le scénario ne pourrait pas se dérouler comme attendu. Le test vérifie également l'identité des threads ; il ne déduit pas l'asynchronisme d'une simple durée ou du nom du worker.
 
 ### 6.5 Lire le cas de saturation
+
+Les deux premiers POST occupent les workers, bloqués par le test. **Extrait partiel** de la deuxième méthode de `FamilyRequestEventsIT.java` :
+
+```java
+assertTrue(running.await(5, TimeUnit.SECONDS), "Both workers must be occupied before filling the queue.");
+postAcceptedRequest();
+assertEquals(1, taskExecutor.getThreadPoolExecutor().getQueue().size());
+
+mockMvc.perform(post("/api/v1/families")
+                .contentType(MediaType.APPLICATION_JSON).content(VALID_REQUEST))
+        .andExpect(status().isInternalServerError())
+        .andExpect(header().doesNotExist("Location"))
+        .andExpect(jsonPath("$.detail").value("An unexpected error occurred."))
+        .andExpect(jsonPath("$.requestId").doesNotHaveJsonPath());
+```
+
+`running.await(...)` confirme l'occupation des **deux** workers avant le troisième POST. Ce dernier remplit la seule place ; l'assertion sur la file le confirme avant le quatrième POST. Ses assertions HTTP exigent un refus générique **sans reçu ni `Location`**, pas un faux `202`. Aucune durée mesurée ne sert à déduire la saturation.
 
 | Étape contrôlée | Ce qu'elle établit |
 |---|---|
@@ -581,7 +342,20 @@ Si le listener exécutait ce travail sur le thread du POST, il resterait bloqué
 
 `doThrow(...)` provoque l'échec de `findById` dans le listener. **Il s'agit d'une erreur simulée au niveau du store, pas d'une coupure réseau MongoDB.** L'insertion, elle, a déjà eu lieu.
 
-Le POST doit toujours pouvoir répondre `202`, car l'exception du corps async n'est pas renvoyée à ce thread. Awaitility attend une condition concrète, le message attendu, au plus 5 s. Le test vérifie ensuite que le marqueur privé de l'exception n'a pas été recopié.
+Le POST doit toujours pouvoir répondre `202`, car l'exception du corps async n'est pas renvoyée à ce thread. **Extrait partiel** de la troisième méthode de `FamilyRequestEventsIT.java`, une fois le reçu obtenu et son UUID lu :
+
+```java
+String expectedLog = "Async family request failed: requestId=" + requestId
+        + ", exceptionType=DataAccessResourceFailureException";
+await("Correlated async error log").atMost(Duration.ofSeconds(5))
+        .untilAsserted(() -> assertTrue(output.getAll().contains(expectedLog)));
+awaitWorkersIdle();
+assertFalse(output.getAll().contains(privateMarker));
+StoredFamilyRequest stored = mongoTemplate.findById(requestId, StoredFamilyRequest.class);
+assertEquals(RequestStatus.PENDING, stored.status(), "A failure before claiming must not invent FAILED.");
+```
+
+Awaitility attend une condition concrète, le message avec **UUID et type**, au plus 5 s ; ce délai est une borne d'attente du test, pas un timeout de traitement. Après retour au repos du pool, l'assertion négative vérifie que le marqueur privé de l'exception n'a pas été recopié.
 
 La lecture finale passe directement par `mongoTemplate` parce que `store.findById` est précisément la méthode sabotée par le spy. Elle vérifie le véritable document en base, encore `PENDING` : le handler ne l'a pas transformé artificiellement en `FAILED`.
 
@@ -646,4 +420,4 @@ Ils sont générés sous `target/`, ignorés par Git et supprimables par un futu
 
 - [TD-B013 — Bornage et journalisation : action terminée avec preuves](../todos.md#td-b013).
 - [TD-R022 — Capacités, rejet et erreurs async : repère de cours](../todos.md#td-r022).
-- [TD-B014 — INT-16 : consolidation des preuves, nouveau feu vert requis](../todos.md#td-b014).
+- [TD-B014 — INT-16 : consolidation des preuves terminée](../todos.md#td-b014).

@@ -2,7 +2,7 @@
 
 **Statut : terminée sur reprise explicite « commit la 13 et reprends la 14 ».** Les preuves du **2026-10-22** portent sur 9 cas ciblés réussis. INT-14 et le plan allégé ont ensuite été commitées localement dans **`bdb93f8`**, avant INT-15, sans push.
 
-> **Version de référence du cours : `bdb93f8`.** Les codes ci-dessous ont été vérifiés dans ce commit, pas reconstruits de mémoire. Depuis [INT-15](INT-15-borner-l-execution.md), le listener utilise `familyRequestExecutor`, dédié et borné, et le test événementiel contient deux cas supplémentaires. Ici, on explique **l'étape INT-14 avec `applicationTaskExecutor`**, sans attribuer les ajouts d'INT-15 à cette étape. La réécriture n'a changé aucun code ni relancé les tests.
+> **Version de référence du cours : `bdb93f8`.** Les extraits ci-dessous proviennent de ce commit. Depuis [INT-15](INT-15-borner-l-execution.md), le listener utilise `familyRequestExecutor`, dédié et borné, et le test événementiel contient deux cas supplémentaires. Ici, on explique **l'étape INT-14 avec `applicationTaskExecutor`**, sans attribuer les ajouts d'INT-15 à cette étape. La réécriture n'a changé aucun code ni relancé les tests.
 
 **[Simulation ConfluxLab]** Une seule application Spring Boot : Experience appelle Capability en Java, sans HTTP interne. L'événement est local au processus. Le code et les résultats décrivent le laboratoire, pas une implémentation historique AXA certifiée.
 
@@ -11,7 +11,7 @@
 - **Sections 1 à 4** : comprendre le flux, les types, le service et le proxy async.
 - **Sections 5 et 6** : distinguer les preuves unitaires du véritable câblage Spring/MongoDB.
 - **Sections 7 et 8** : comprendre les adaptations HTTP/persistance et le résultat réellement exécuté.
-- Les petits fichiers centraux et le test événementiel sont reproduits **en entier**. Les extraits d'autres tests et du store sont explicitement partiels ; les liens pointent vers les fichiers actuels, qui peuvent avoir évolué depuis le commit de référence.
+- Le code est présenté **par fragments utiles, expliqués juste après** : pas d'imports, de constructeurs répétitifs ni de classe de test entière. Les extraits sont partiels ; les liens donnent accès aux fichiers actuels, qui peuvent avoir évolué depuis le commit de référence.
 
 ### Sommaire
 
@@ -20,7 +20,7 @@
 - [3. Le service : enregistrer puis publier](#3-le-service--enregistrer-puis-publier)
 - [4. Configuration, listener et prise en charge atomique](#4-configuration-listener-et-prise-en-charge-atomique)
 - [5. Les deux tests unitaires renforcés](#5-les-deux-tests-unitaires-renforcés)
-- [6. Le test événementiel complet](#6-le-test-événementiel-complet)
+- [6. Le test événementiel, étape par étape](#6-le-test-événementiel-étape-par-étape)
 - [7. Adapter le suivi et la preuve de persistance](#7-adapter-le-suivi-et-la-preuve-de-persistance)
 - [8. Commande exécutée et résultat](#8-commande-exécutée-et-résultat)
 - [9. Limites et réponse d'entretien](#9-limites-et-réponse-dentretien)
@@ -62,16 +62,11 @@ Cet incrément s'arrête à la tentative de prise en charge. Le listener termine
 
 ## 2. L'événement et les objets à ne pas confondre
 
-### 2.1 Événement complet
+### 2.1 Le contrat de l'événement
 
-[FamilyRequestSubmitted.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestSubmitted.java) — **fichier complet de la version INT-14** :
+[FamilyRequestSubmitted.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestSubmitted.java) — **extrait partiel du fichier**, limité au record :
 
 ```java
-package dev.confluxlab.capability.internal;
-
-import java.util.Objects;
-import java.util.UUID;
-
 record FamilyRequestSubmitted(UUID requestId) {
 
     FamilyRequestSubmitted {
@@ -80,10 +75,9 @@ record FamilyRequestSubmitted(UUID requestId) {
 }
 ```
 
-- Le `record` transporte une seule valeur, un UUID immuable ; le constructeur compact interdit `null`.
-- Il reste dans `capability.internal`, sans modifier les contrats publics partagés avec Experience.
-- Il n'a pas besoin d'être un bean `@Component` : le service crée une valeur et la publie. Spring accepte les événements objets via `publishEvent(Object)` ; aucune classe héritant obligatoirement d'`ApplicationEvent` n'est nécessaire ici.
-- Le payload familial n'est pas recopié dans l'événement. Le listener le retrouverait dans le document en base lorsque le travail métier en aura besoin.
+Le `record` transporte une seule valeur, un UUID immuable ; son constructeur compact interdit `null`. Il reste dans `capability.internal`, sans modifier les contrats publics partagés avec Experience.
+
+Il n'a pas besoin d'être un bean `@Component` : le service crée une valeur et la publie. Spring accepte les événements objets via `publishEvent(Object)` ; aucune classe héritant obligatoirement d'`ApplicationEvent` n'est nécessaire ici. Le payload familial n'est pas recopié : le listener le retrouverait en base lorsque le travail métier en aura besoin.
 
 ### 2.2 Quatre rôles différents
 
@@ -98,79 +92,9 @@ L'UUID **corrèle** ces objets. Il n'empêche pas deux POST identiques de créer
 
 ## 3. Le service : enregistrer puis publier
 
-### 3.1 Fichier complet
+### 3.1 Repérer les dépendances
 
-[FamilyRequestService.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java) — **fichier complet de la version INT-14** :
-
-```java
-package dev.confluxlab.capability.internal;
-
-import java.time.Clock;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.UUID;
-
-import dev.confluxlab.capability.api.FamilyRequests;
-import dev.confluxlab.capability.api.InvalidFamilyRequestException;
-import dev.confluxlab.capability.api.RequestNotFoundException;
-import dev.confluxlab.contracts.CreateFamilyRequest;
-import dev.confluxlab.contracts.RequestAccepted;
-import dev.confluxlab.contracts.RequestView;
-import jakarta.validation.Validator;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-
-@Service
-class FamilyRequestService implements FamilyRequests {
-
-    private final FamilyRequestStore store;
-    private final Validator validator;
-    private final Clock clock;
-    private final ApplicationEventPublisher events;
-
-    FamilyRequestService(FamilyRequestStore store, Validator validator, Clock clock, ApplicationEventPublisher events) {
-        this.store = store;
-        this.validator = validator;
-        this.clock = clock;
-        this.events = events;
-    }
-
-    @Override
-    public RequestAccepted createFamily(CreateFamilyRequest request) {
-        if (request == null) {
-            throw new InvalidFamilyRequestException();
-        }
-        // Validate a local snapshot; the stored record then freezes its list before publication.
-        CreateFamilyRequest snapshot = new CreateFamilyRequest(request.principal(),
-                request.dependents() == null ? null : new ArrayList<>(request.dependents()));
-        if (!validator.validate(snapshot).isEmpty()) {
-            throw new InvalidFamilyRequestException();
-        }
-
-        UUID requestId = UUID.randomUUID();
-        StoredFamilyRequest stored = StoredFamilyRequest.pending(
-                        requestId, snapshot, Instant.now(clock).truncatedTo(ChronoUnit.MILLIS));
-        store.save(stored);
-        events.publishEvent(new FamilyRequestSubmitted(requestId));
-        return new RequestAccepted(requestId, stored.status(), "/api/v1/requests/" + requestId);
-    }
-
-    @Override
-    public RequestView getRequest(UUID requestId) {
-        if (requestId == null) {
-            throw new IllegalArgumentException("requestId must not be null.");
-        }
-        StoredFamilyRequest stored = store.findById(requestId)
-                .orElseThrow(RequestNotFoundException::new);
-        return new RequestView(stored.requestId(), stored.status(), stored.createdAt());
-    }
-}
-```
-
-### 3.2 Lire l'injection et l'ordre des opérations
-
-`@Service` rend l'implémentation découvrable par Spring. Avec ce constructeur unique, Spring injecte ses dépendances sans `@Autowired` supplémentaire :
+[FamilyRequestService.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java) porte ce cas d'usage. `@Service` le rend découvrable par Spring ; son constructeur unique reçoit les dépendances sans `@Autowired` supplémentaire. Le tableau évite de recopier les champs et le constructeur :
 
 | Dépendance | Utilité |
 |---|---|
@@ -179,118 +103,76 @@ class FamilyRequestService implements FamilyRequests {
 | `Clock` | Fournir une date UTC remplaçable par une horloge fixe dans les tests |
 | `ApplicationEventPublisher` | Publier la notification locale après sauvegarde ; c'est l'ajout central du service dans INT-14 |
 
-La séquence est volontairement simple :
+### 3.2 Lire l'ordre utile en deux étapes
 
-1. **Valider une copie locale.** La liste reçue est copiée avant validation ; le record stocké en fige ensuite la liste. Un appelant ne doit pas pouvoir modifier cette liste après l'acceptation.
-2. **Créer l'UUID et le document `PENDING`.** La date est normalisée à la milliseconde, précision retenue pour le stockage MongoDB.
-3. **Appeler `store.save(stored)`.** L'adaptateur attend l'insertion acquittée. S'il lève une exception, le flux ne passe pas à la ligne suivante.
-4. **Publier l'UUID.** Avec le distributeur Spring synchrone de ce montage, la publication appelle le proxy du listener, qui soumet la tâche. Le service n'attend pas le corps du listener.
-5. **Construire le reçu.** Le statut du record local reste `PENDING`, même si le document en base a déjà changé entre-temps.
+**Premier extrait partiel de `createFamily(...)` : protéger puis valider les données.** Le service a préalablement refusé une entrée `null`.
+
+```java
+CreateFamilyRequest snapshot = new CreateFamilyRequest(request.principal(),
+        request.dependents() == null ? null : new ArrayList<>(request.dependents()));
+if (!validator.validate(snapshot).isEmpty()) {
+    throw new InvalidFamilyRequestException();
+}
+```
+
+La liste reçue est copiée avant validation ; le record stocké en fige ensuite la liste. Un appelant ne doit pas pouvoir modifier cette liste après l'acceptation. Une violation arrête le flux avant insertion et publication.
+
+**Deuxième extrait partiel, dans la même méthode : enregistrer avant de réveiller le listener.**
+
+```java
+UUID requestId = UUID.randomUUID();
+StoredFamilyRequest stored = StoredFamilyRequest.pending(
+                requestId, snapshot, Instant.now(clock).truncatedTo(ChronoUnit.MILLIS));
+store.save(stored);
+events.publishEvent(new FamilyRequestSubmitted(requestId));
+return new RequestAccepted(requestId, stored.status(), "/api/v1/requests/" + requestId);
+```
+
+1. **Créer l'UUID et le document `PENDING`.** La date est normalisée à la milliseconde, précision retenue pour MongoDB.
+2. **Attendre `store.save(stored)`.** L'adaptateur attend l'insertion acquittée. S'il lève une exception, la publication n'est pas atteinte.
+3. **Publier l'UUID.** Avec le distributeur Spring synchrone de ce montage, la publication appelle le proxy du listener, qui soumet la tâche. Le service n'attend pas le corps du listener.
+4. **Construire le reçu.** Le record local reste `PENDING`, même si le document en base a déjà changé entre-temps.
 
 Publier avant de sauvegarder risquerait de réveiller un listener qui ne trouve pas encore le document, voire de déclencher du travail pour une écriture finalement refusée. Inversement, sauvegarder puis publier laisse une fenêtre de panne : un arrêt entre les deux peut abandonner un document `PENDING`. Cette limite n'est pas résolue par INT-14 ; voir [INT-13](INT-13-dessiner-les-fenetres-de-panne.md).
 
 ### 3.3 Le BFF reste mince
 
-Extrait partiel de [FamilyController.java](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java), **inchangé dans cet incrément** :
+[FamilyController.java](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java), inchangé dans cet incrément, appelle `familyRequests.createFamily(request)` via l'interface publique `FamilyRequests`, construit les liens HTTP et adapte le reçu. Il ne connaît ni l'événement interne, ni le listener, ni le store.
 
-```java
-@PostMapping("/families")
-public ResponseEntity<RequestAccepted> createFamily(@Valid @RequestBody CreateFamilyRequest request) {
-    RequestAccepted accepted = familyRequests.createFamily(request);
-    String statusUrl = "/api/v1/requests/" + accepted.requestId();
-    RequestAccepted publicResponse = new RequestAccepted(accepted.requestId(), accepted.status(), statusUrl);
-    return ResponseEntity.accepted()
-            .location(URI.create(statusUrl))
-            .body(publicResponse);
-}
-```
-
-Le contrôleur appelle l'interface publique `FamilyRequests`, construit les liens HTTP et adapte le reçu. Il ne connaît ni l'événement interne, ni le listener, ni le store. **La réponse `202` est construite après le retour du service, mais sa réception par le client reste distincte du démarrage du worker.**
+**La réponse `202` est construite après le retour du service, mais sa réception par le client reste distincte du démarrage du worker.**
 
 ## 4. Configuration, listener et prise en charge atomique
 
-### 4.1 Configuration complète à l'étape INT-14
+### 4.1 Activer l'asynchronisme sans ajouter encore de pool dédié
 
-[FamilyRequestConfiguration.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java) — **version complète du commit `bdb93f8`, avant les ajouts d'INT-15** :
+[FamilyRequestConfiguration.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java) — lecture de la version `bdb93f8`, **avant les ajouts d'INT-15** :
 
-```java
-package dev.confluxlab.capability.internal;
+| Élément | Rôle à l'étape INT-14 |
+|---|---|
+| `@EnableAsync` | Ajout INT-14 : activer le traitement des méthodes `@Async` par des proxies Spring |
+| `@Configuration(proxyBeanMethods = false)` | Configuration existante ; le paramètre concerne les appels entre méthodes `@Bean`, **pas** le proxy async du listener |
+| Bean `mongoTemplate` | Accès MongoDB avec le write concern déjà retenu dans INT-10 ; pas un ajout INT-14 |
+| Bean `familyRequestClock` | Horloge UTC préexistante, utilisée par le service et le listener |
+| Bean `applicationTaskExecutor` | Fourni par l'auto-configuration Boot de l'assemblage ; sélectionné par le nom dans `@Async` |
 
-import java.time.Clock;
-import java.util.concurrent.TimeUnit;
-
-import com.mongodb.WriteConcern;
-
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.mongodb.MongoDatabaseFactory;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.convert.MongoConverter;
-import org.springframework.scheduling.annotation.EnableAsync;
-
-@Configuration(proxyBeanMethods = false)
-@EnableAsync
-class FamilyRequestConfiguration {
-
-    @Bean
-    MongoTemplate mongoTemplate(MongoDatabaseFactory factory, MongoConverter converter) {
-        MongoTemplate template = new MongoTemplate(factory, converter);
-        template.setWriteConcern(WriteConcern.MAJORITY.withJournal(true).withWTimeout(5, TimeUnit.SECONDS));
-        return template;
-    }
-
-    @Bean
-    Clock familyRequestClock() {
-        return Clock.systemUTC();
-    }
-}
-```
-
-- Les beans MongoDB et horloge existaient déjà ; INT-14 ajoute **`@EnableAsync`** pour activer le traitement des méthodes `@Async` par des proxies Spring.
-- `proxyBeanMethods = false` concerne les appels entre méthodes `@Bean` de cette configuration. Cela **ne désactive pas** le proxy async du listener.
-- Aucun bean de pool dédié n'est déclaré à cette étape. L'assemblage Boot fournit `applicationTaskExecutor`, que le listener demande par son nom.
-- INT-14 ne fixe pas ici un dimensionnement de production. Le réglage à deux threads montré dans le test plus bas appartient au **contexte de test**.
+Aucun bean de pool dédié n'est déclaré à cette étape. INT-14 ne fixe pas ici un dimensionnement de production ; le réglage à deux threads du test plus bas appartient au **contexte de test**.
 
 L'executor dédié, sa file bornée et le handler personnalisé sont des changements **ultérieurs d'INT-15**, détaillés dans [son cours](INT-15-borner-l-execution.md). Il ne faut pas ajouter leurs propriétés à cette version historique pour expliquer les preuves INT-14.
 
-### 4.2 Listener complet à l'étape INT-14
+### 4.2 Ce que le listener fait sur le worker
 
-[FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) — **version complète du commit `bdb93f8`** :
+[FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) — **extrait partiel du corps de `onFamilyRequestSubmitted(...)` dans `bdb93f8`** :
 
 ```java
-package dev.confluxlab.capability.internal;
-
-import java.time.Clock;
-import java.time.Instant;
-
-import dev.confluxlab.contracts.RequestStatus;
-import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Component;
-
-@Component
-class FamilyRequestListener {
-
-    private final MongoFamilyRequestStore store;
-    private final Clock clock;
-
-    FamilyRequestListener(MongoFamilyRequestStore store, Clock clock) {
-        this.store = store;
-        this.clock = clock;
-    }
-
-    @Async("applicationTaskExecutor")
-    @EventListener
-    public void onFamilyRequestSubmitted(FamilyRequestSubmitted event) {
-        store.findById(event.requestId())
-                .filter(request -> request.status() == RequestStatus.PENDING)
-                .ifPresent(request -> {
-                    // This increment stops at the atomic claim; no business processing is simulated.
-                    store.transition(request.requestId(), RequestStatus.PENDING, RequestStatus.PROCESSING, Instant.now(clock));
-                });
-    }
-}
+store.findById(event.requestId())
+        .filter(request -> request.status() == RequestStatus.PENDING)
+        .ifPresent(request -> {
+            // This increment stops at the atomic claim; no business processing is simulated.
+            store.transition(request.requestId(), RequestStatus.PENDING, RequestStatus.PROCESSING, Instant.now(clock));
+        });
 ```
+
+Le listener relit le document à partir de l'UUID. Une absence ou un statut différent de `PENDING` arrête ce chemin. Sinon, il tente la transition atomique du store avec la date courante. Son constructeur injecte le store et l'horloge ; ce câblage classique n'est pas recopié.
 
 ### 4.3 Ce que font réellement les annotations
 
@@ -307,237 +189,83 @@ Les appels MongoDB restent bloquants pour le worker qui les exécute. `@Async` l
 
 ### 4.4 Pourquoi la lecture `PENDING` ne suffit pas
 
-Le listener relit le document, ignore une absence ou un état déjà différent de `PENDING`, puis tente la transition. Mais **deux workers peuvent avoir lu le même `PENDING`** avant que l'un écrive.
+**Deux workers peuvent avoir lu le même `PENDING`** avant que l'un écrive. Le store doit donc vérifier l'état au moment de la modification, pas seulement dans la lecture Java précédente.
 
-Voici la méthode de stockage réutilisée, **extrait partiel de [MongoFamilyRequestStore.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/MongoFamilyRequestStore.java), développée dans INT-11 et non ajoutée par INT-14** :
+[MongoFamilyRequestStore.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/MongoFamilyRequestStore.java) — **premier extrait partiel de `transition(...)`, développée dans INT-11 et réutilisée ici** :
 
 ```java
-Optional<StoredFamilyRequest> transition(
-    UUID requestId,
-    RequestStatus expectedStatus,
-    RequestStatus nextStatus,
-    Instant changedAt
-) {
-    Objects.requireNonNull(requestId, "requestId");
-    StoredFamilyRequest.requireTransition(expectedStatus, nextStatus);
-    Instant timestamp = Objects.requireNonNull(changedAt, "changedAt").truncatedTo(ChronoUnit.MILLIS);
-    Query query = Query.query(
-        Criteria.where("_id").is(requestId).and("status").is(expectedStatus).and("updatedAt").lte(timestamp)
-    );
-    Update update = new Update().set("status", nextStatus).set("updatedAt", timestamp);
-    if (nextStatus == RequestStatus.PROCESSING) {
-        update.unset("completedAt");
-    } else {
-        update.set("completedAt", timestamp);
-    }
-    // The expected status and the update must be evaluated together by MongoDB, not by a Java read/save pair.
-    return Optional.ofNullable(
-        mongoTemplate.findAndModify(
-            query,
-            update,
-            FindAndModifyOptions.options().returnNew(true).upsert(false),
-            StoredFamilyRequest.class
-        )
-    );
-}
+Query query = Query.query(
+    Criteria.where("_id").is(requestId).and("status").is(expectedStatus).and("updatedAt").lte(timestamp)
+);
 ```
 
-Dans INT-14, elle est appelée uniquement pour `PENDING → PROCESSING`. Le filtre exige toujours le statut attendu **au moment de l'écriture**, et MongoDB évalue condition et modification ensemble sur le document. Après le premier gagnant, le second filtre `status == PENDING` ne correspond plus, même si sa date est plus récente.
+Le filtre exige le bon UUID, le statut attendu et une date compatible. Après le premier gagnant, `status == PENDING` ne correspond plus, même si la date du second candidat est plus récente. Le garde-fou `updatedAt <= timestamp` évite un recul chronologique : **il ne détecte pas un second candidat**.
 
-Un `Optional` présent confirme la modification gagnante ; un résultat vide signifie qu'aucun document ne correspond. Une panne MongoDB reste une exception, pas un résultat vide. Le garde-fou de date empêche un recul chronologique : **il ne détecte pas un second candidat**.
+**Deuxième extrait partiel de la même méthode : la commande qui arbitre.**
 
-La méthode du listener finit après cette tentative. Elle n'a donc pas encore de travail métier à conditionner à son résultat. Lorsque l'orchestration sera ajoutée, elle devra continuer **seulement pour le gagnant** ; il ne faudra pas placer un appel partenaire inconditionnel après `transition(...)`.
+```java
+mongoTemplate.findAndModify(
+    query,
+    update,
+    FindAndModifyOptions.options().returnNew(true).upsert(false),
+    StoredFamilyRequest.class
+)
+```
+
+MongoDB évalue condition et modification atomiquement sur le document. L'`Update` préparé auparavant ne change que statut et dates, sans remplacer le payload ; pour `PROCESSING`, il supprime la date de fin. `returnNew(true)` demande la valeur après modification et `upsert(false)` interdit de créer une demande lors d'une transition.
+
+Le résultat est enveloppé dans un `Optional` : présent, il confirme la modification gagnante ; vide, il indique qu'aucun document ne correspond. **Une panne MongoDB reste une exception**, pas un résultat vide.
+
+Le listener finit après cette tentative. Lorsque l'orchestration sera ajoutée, elle devra continuer **seulement pour le gagnant** ; il ne faudra pas placer un appel partenaire inconditionnel après `transition(...)`.
 
 ## 5. Les deux tests unitaires renforcés
 
-Ces tests existaient avant INT-14 : on ajoute les assertions utiles à la publication, sans nouvelle matrice de cas. Ils créent le service directement, avec un validator et une horloge fixe préparés par leur classe de test.
+Ces tests existaient avant INT-14 : on ajoute les assertions utiles à la publication, sans nouvelle matrice de cas. Le montage du service avec son validator et son horloge fixe n'est pas recopié.
 
 ### 5.1 La publication doit observer le document déjà présent
 
-[FamilyRequestServiceTest.java](../../capability-api/src/test/java/dev/confluxlab/capability/internal/FamilyRequestServiceTest.java) — **extrait partiel du fichier, méthode complète de la version INT-14** :
+[FamilyRequestServiceTest.java](../../capability-api/src/test/java/dev/confluxlab/capability/internal/FamilyRequestServiceTest.java), méthode `storesThePayloadAsPendingBeforeReturningAcceptance` — **extrait partiel** :
 
 ```java
-@Test
-void storesThePayloadAsPendingBeforeReturningAcceptance() {
-    InMemoryFamilyRequestStore store = new InMemoryFamilyRequestStore();
-    List<FamilyRequestSubmitted> published = new ArrayList<>();
-    ApplicationEventPublisher events = event -> {
-        FamilyRequestSubmitted submitted = assertInstanceOf(FamilyRequestSubmitted.class, event);
-        assertTrue(store.findById(submitted.requestId()).isPresent(), "Insertion must precede publication.");
-        published.add(submitted);
-    };
-    FamilyRequestService service = new FamilyRequestService(store, validator, CLOCK, events);
-    CreateFamilyRequest request = new CreateFamilyRequest(PRINCIPAL, DEPENDENTS);
-
-    RequestAccepted accepted = service.createFamily(request);
-
-    assertNotNull(accepted.requestId());
-    assertEquals(RequestStatus.PENDING, accepted.status());
-    assertEquals("/api/v1/requests/" + accepted.requestId(), accepted.statusUrl());
-    StoredFamilyRequest stored = store.findById(accepted.requestId()).orElseThrow();
-    assertEquals(accepted.requestId(), stored.requestId());
-    assertEquals(RequestStatus.PENDING, stored.status());
-    assertEquals(request, stored.payload());
-    assertEquals(CLOCK.instant(), stored.createdAt());
-    assertEquals(List.of(new FamilyRequestSubmitted(accepted.requestId())), published);
-}
+List<FamilyRequestSubmitted> published = new ArrayList<>();
+ApplicationEventPublisher events = event -> {
+    FamilyRequestSubmitted submitted = assertInstanceOf(FamilyRequestSubmitted.class, event);
+    assertTrue(store.findById(submitted.requestId()).isPresent(), "Insertion must precede publication.");
+    published.add(submitted);
+};
 ```
 
-La lambda remplace le publisher pour ce test unitaire. Elle vérifie la présence dans le store **pendant l'appel de publication**, pas seulement après le retour du service : c'est ce qui prouve l'ordre sauvegarde → publication. La liste finale attend exactement un événement avec le bon UUID.
+La lambda remplace le publisher et vérifie la présence dans le store **pendant l'appel de publication**, pas seulement après le retour du service : c'est ce qui prouve l'ordre sauvegarde → publication. Le service est construit avec ce publisher, puis appelé avec une demande valide.
+
+**Autre extrait partiel, l'assertion finale propre à l'événement :**
+
+```java
+assertEquals(List.of(new FamilyRequestSubmitted(accepted.requestId())), published);
+```
+
+On exige exactement un événement avec l'UUID du reçu, pas simplement une liste non vide. Les assertions déjà existantes sur le payload et les liens du reçu restent dans le fichier source.
 
 `InMemoryFamilyRequestStore` est une doublure sous `src/test`, pas un fallback de production. Ce test ne prouve ni MongoDB ni l'asynchronisme : ces points exigent le contexte réel de la section 6.
 
 ### 5.2 Une sauvegarde échouée ne publie rien
 
-Même fichier — **extrait partiel, méthode complète** :
+Même fichier, méthode `doesNotReturnAcceptanceWhenTheStoreThrows`. Le montage Mockito force `save(...)` à lever `failure` et injecte un publisher mocké. **Extrait partiel, limité aux vérifications importantes :**
 
 ```java
-@Test
-void doesNotReturnAcceptanceWhenTheStoreThrows() {
-    InMemoryFamilyRequestStore failingStore = mock(InMemoryFamilyRequestStore.class);
-    IllegalStateException failure = new IllegalStateException("Simulated storage failure.");
-    doThrow(failure).when(failingStore).save(any(StoredFamilyRequest.class));
-    ApplicationEventPublisher events = mock(ApplicationEventPublisher.class);
-    FamilyRequestService service = new FamilyRequestService(failingStore, validator, CLOCK, events);
-
-    assertSame(failure, assertThrows(IllegalStateException.class,
-            () -> service.createFamily(new CreateFamilyRequest(PRINCIPAL, DEPENDENTS))));
-    verifyNoInteractions(events);
-}
+assertSame(failure, assertThrows(IllegalStateException.class,
+        () -> service.createFamily(new CreateFamilyRequest(PRINCIPAL, DEPENDENTS))));
+verifyNoInteractions(events);
 ```
 
-Mockito force `save(...)` à échouer. `assertThrows` et `assertSame` vérifient que cette erreur remonte sans reçu ; `verifyNoInteractions(events)` prouve qu'aucune publication n'a été tentée. **C'est une panne simulée**, pas une coupure réseau MongoDB.
+`assertThrows` et `assertSame` vérifient que cette erreur remonte sans reçu ; `verifyNoInteractions(events)` prouve qu'aucune publication n'a été tentée. **C'est une panne simulée**, pas une coupure réseau MongoDB.
 
 Dans les autres tests unitaires, un publisher inactif satisfait simplement la nouvelle dépendance du constructeur. On ne duplique pas ces assertions dans tous les tests de validation ou de lecture.
 
-## 6. Le test événementiel complet
+## 6. Le test événementiel, étape par étape
 
-### 6.1 Version historique réelle
+[FamilyRequestEventsIT.java](../../application/src/test/java/dev/confluxlab/capability/internal/FamilyRequestEventsIT.java) — les extraits partiels de cette section viennent du **commit `bdb93f8`**, avec son unique nouveau scénario INT-14. La version actuelle contient aussi les deux cas ajoutés dans INT-15 ; ils ne sont pas recopiés ici.
 
-[FamilyRequestEventsIT.java](../../application/src/test/java/dev/confluxlab/capability/internal/FamilyRequestEventsIT.java) — **fichier complet du commit `bdb93f8`**, avec son unique nouveau scénario INT-14. La version actuelle contient aussi les deux cas ajoutés dans INT-15 ; ils ne sont pas recopiés ici :
-
-```java
-package dev.confluxlab.capability.internal;
-
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Optional;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.confluxlab.ConfluxLabApplication;
-import dev.confluxlab.MongoTestSupport;
-import dev.confluxlab.contracts.RequestStatus;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.http.MediaType;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
-@SpringBootTest(classes = ConfluxLabApplication.class, properties = "spring.task.execution.pool.core-size=2")
-@AutoConfigureMockMvc
-class FamilyRequestEventsIT extends MongoTestSupport {
-
-    private static final String VALID_REQUEST = """
-            {
-              "principal": {"firstName": "Alex", "lastName": "Exemple", "birthDate": "1990-04-12"},
-              "dependents": [
-                {"firstName": "Camille", "lastName": "Exemple", "birthDate": "2015-08-21"},
-                {"firstName": "Noa", "lastName": "Exemple", "birthDate": "2018-02-03"}
-              ]
-            }
-            """;
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private ApplicationEventPublisher events;
-
-    @Autowired
-    @Qualifier("applicationTaskExecutor")
-    private ThreadPoolTaskExecutor taskExecutor;
-
-    @MockitoSpyBean
-    private MongoFamilyRequestStore store;
-
-    @Test
-    void acceptsWhileTheListenerIsBlockedAndOnlyOneDuplicateEventCanClaim() throws Exception {
-        CountDownLatch ready = new CountDownLatch(2);
-        CountDownLatch release = new CountDownLatch(1);
-        CountDownLatch finished = new CountDownLatch(2);
-        Queue<Optional<?>> results = new ConcurrentLinkedQueue<>();
-        Queue<Thread> workers = new ConcurrentLinkedQueue<>();
-        Thread requestThread = Thread.currentThread();
-        doAnswer(invocation -> {
-            workers.add(Thread.currentThread());
-            ready.countDown();
-            try {
-                assertTrue(release.await(10, TimeUnit.SECONDS), "Test must release both claim attempts.");
-                Optional<?> result = (Optional<?>) invocation.callRealMethod();
-                results.add(result);
-                return result;
-            } finally {
-                finished.countDown();
-            }
-        }).when(store).transition(any(UUID.class), eq(RequestStatus.PENDING), eq(RequestStatus.PROCESSING), any(Instant.class));
-
-        try {
-            MvcResult response = mockMvc.perform(post("/api/v1/families")
-                            .contentType(MediaType.APPLICATION_JSON).content(VALID_REQUEST))
-                    .andExpect(status().isAccepted())
-                    .andExpect(jsonPath("$.status").value("PENDING"))
-                    .andReturn();
-            UUID requestId = UUID.fromString(objectMapper.readTree(response.getResponse().getContentAsString())
-                    .path("requestId").asText());
-            events.publishEvent(new FamilyRequestSubmitted(requestId));
-
-            assertTrue(ready.await(5, TimeUnit.SECONDS), "Both event deliveries must reach the claim before release.");
-            assertTrue(workers.stream().allMatch(worker -> worker != requestThread), "The listener must not run on the HTTP thread.");
-            assertEquals(RequestStatus.PENDING, store.findById(requestId).orElseThrow().status());
-
-            release.countDown();
-            assertTrue(finished.await(10, TimeUnit.SECONDS), "Both claim attempts must finish.");
-            assertEquals(2, results.size(), "Both MongoDB attempts must return normally; inspect async logs otherwise.");
-            assertEquals(1L, results.stream().filter(Optional::isPresent).count());
-            assertEquals(RequestStatus.PROCESSING, store.findById(requestId).orElseThrow().status());
-            mockMvc.perform(get("/api/v1/requests/{requestId}", requestId))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.status").value("PROCESSING"));
-        } finally {
-            release.countDown();
-            await("Async test workers to finish").atMost(Duration.ofSeconds(10))
-                    .until(() -> taskExecutor.getActiveCount() == 0 && taskExecutor.getThreadPoolExecutor().getQueue().isEmpty());
-        }
-    }
-}
-```
-
-### 6.2 Lire le contexte et les injections
+### 6.1 Le contexte utile, sans la classe entière
 
 | Élément | Ce qui est réel / contrôlé |
 |---|---|
@@ -549,9 +277,9 @@ class FamilyRequestEventsIT extends MongoTestSupport {
 | `@Qualifier("applicationTaskExecutor")` | Sélectionne le même executor que celui demandé par `@Async` à cette étape |
 | `@MockitoSpyBean` | Enveloppe le vrai store : le test intercepte une méthode mais les accès restent réels quand il appelle la méthode originale |
 
-Les données JSON sont fictives. Le spy est une **instrumentation de test**, pas un faux traitement de production.
+Les données JSON sont fictives. Le spy est une **instrumentation de test**, pas un faux traitement de production. Les imports, injections et données de préparation restent dans le fichier source.
 
-### 6.3 Les trois signaux
+### 6.2 Bloquer juste avant la commande MongoDB
 
 Un `CountDownLatch` est un compteur qui permet d'attendre un événement précis. `countDown()` le décrémente ; `await(...)` attend zéro, ici avec une borne de temps.
 
@@ -561,24 +289,77 @@ Un `CountDownLatch` est un compteur qui permet d'attendre un événement précis
 | `release` | 1 | Bloquer ces tentatives jusqu'à ce que le test ouvre la porte |
 | `finished` | 2 | Attendre que les deux tentatives de commande se terminent |
 
-Les `ConcurrentLinkedQueue` collectent les threads et les résultats sans utiliser une liste non protégée depuis plusieurs workers. `doAnswer(...)` ajoute un comportement à la méthode du spy ; `any(...)` et `eq(...)` définissent les arguments concernés.
+**Extrait partiel de l'interception de `transition(...)` :**
 
-### 6.4 L'enchaînement exact de la preuve
+```java
+doAnswer(invocation -> {
+    workers.add(Thread.currentThread());
+    ready.countDown();
+    try {
+        assertTrue(release.await(10, TimeUnit.SECONDS), "Test must release both claim attempts.");
+        Optional<?> result = (Optional<?>) invocation.callRealMethod();
+        results.add(result);
+        return result;
+    } finally {
+        finished.countDown();
+    }
+}).when(store).transition(any(UUID.class), eq(RequestStatus.PENDING), eq(RequestStatus.PROCESSING), any(Instant.class));
+```
 
-1. Le POST insère le document et publie un premier événement. Sa réponse doit revenir alors que `release` est encore fermé : le service n'attend pas la prise en charge.
-2. Le test republie **le même UUID**, sans second POST : il simule une double réception de la notification, pas deux demandes métier distinctes.
-3. `ready.await(...)` attend que les deux workers soient arrivés à `transition(...)`. Ils ont donc pu passer la lecture et le filtre `PENDING`, mais pas encore exécuter la commande MongoDB.
-4. L'identité des threads prouve qu'ils ne sont pas le thread du POST. La lecture en base confirme que le document est encore `PENDING` pendant ce blocage.
-5. `release.countDown()` ouvre la porte. `invocation.callRealMethod()` effectue les **vrais `findAndModify`** du store ; il ne fabrique pas un gagnant dans Mockito.
-6. Le test attend deux retours normaux et compte un seul `Optional` présent. Il relit le document et le GET public en `PROCESSING`.
+`doAnswer(...)` intercepte les tentatives correspondant aux arguments indiqués par `any(...)` et `eq(...)`. Il enregistre le thread, annonce son arrivée, puis attend l'ouverture de `release`. **La lecture `PENDING` a déjà eu lieu, mais pas encore le `findAndModify`.** Après libération, `invocation.callRealMethod()` exécute la vraie commande ; Mockito ne fabrique pas un gagnant.
+
+Les `ConcurrentLinkedQueue` collectent les threads et les résultats sans utiliser une liste non protégée depuis plusieurs workers. Le `finally` décrémente `finished` même si une tentative échoue.
+
+### 6.3 Obtenir la réponse puis provoquer une seconde réception
+
+Le premier POST valide insère la demande, publie le premier événement et doit revenir sans ouvrir `release`. **Extrait partiel de ses assertions HTTP :**
+
+```java
+.andExpect(status().isAccepted())
+.andExpect(jsonPath("$.status").value("PENDING"))
+```
+
+Le test extrait ensuite l'UUID du reçu. **Extrait partiel suivant :**
+
+```java
+events.publishEvent(new FamilyRequestSubmitted(requestId));
+
+assertTrue(ready.await(5, TimeUnit.SECONDS), "Both event deliveries must reach the claim before release.");
+assertTrue(workers.stream().allMatch(worker -> worker != requestThread), "The listener must not run on the HTTP thread.");
+assertEquals(RequestStatus.PENDING, store.findById(requestId).orElseThrow().status());
+```
+
+Il republie **le même UUID**, sans second POST : double réception de la notification, pas deux demandes métier distinctes. `ready.await(...)` confirme que les deux candidats ont passé la lecture et le filtre `PENDING`. L'identité des threads vérifie l'asynchronisme ; la lecture en base confirme que la prise en charge n'a pas encore eu lieu.
 
 Le test **n'impose pas** que le worker ait commencé avant le `202`, ni qu'il démarre après. Il prouve que la réponse peut être obtenue sans libérer le travail. Les attentes sont des conditions explicites, pas un `Thread.sleep` utilisé comme intuition de synchronisation.
 
+### 6.4 Libérer puis compter les retours normaux et le gagnant
+
+**Extrait partiel après confirmation des deux arrivées :**
+
+```java
+release.countDown();
+assertTrue(finished.await(10, TimeUnit.SECONDS), "Both claim attempts must finish.");
+assertEquals(2, results.size(), "Both MongoDB attempts must return normally; inspect async logs otherwise.");
+assertEquals(1L, results.stream().filter(Optional::isPresent).count());
+assertEquals(RequestStatus.PROCESSING, store.findById(requestId).orElseThrow().status());
+```
+
+Le signal ouvre la porte aux vrais `findAndModify`. Comme `finished` est décrémenté même en cas d'exception, attendre zéro ne suffit pas : **`results.size() == 2` exige les deux retours normaux**. Sinon, une panne pourrait être confondue avec un candidat perdant.
+
+Parmi ces deux retours, un seul `Optional` doit être présent. La relecture vérifie `PROCESSING` ; le test contrôle également cet état via le GET public.
+
 ### 6.5 Pourquoi le nettoyage fait partie du test
 
-Le `finally` ouvre toujours `release`, même si une assertion échoue. Awaitility attend ensuite zéro worker actif et une file vide, au plus 10 s. Sans ce nettoyage, des tâches de test pourraient rester bloquées ou perturber le scénario suivant.
+**Extrait partiel du `finally` extérieur :**
 
-L'assertion `results.size() == 2` est également utile : une exception du worker ne doit pas être confondue avec un simple candidat perdant. Le test exige les deux retours normaux avant d'interpréter le nombre de résultats présents.
+```java
+release.countDown();
+await("Async test workers to finish").atMost(Duration.ofSeconds(10))
+        .until(() -> taskExecutor.getActiveCount() == 0 && taskExecutor.getThreadPoolExecutor().getQueue().isEmpty());
+```
+
+Le `finally` ouvre toujours `release`, même si une assertion échoue. Awaitility attend ensuite zéro worker actif **et** une file vide, au plus 10 s. Sans ce nettoyage, des tâches de test pourraient rester bloquées ou perturber le scénario suivant. Ces délais bornent les attentes de test ; ce ne sont pas des mesures de performance.
 
 ## 7. Adapter le suivi et la preuve de persistance
 
@@ -591,34 +372,24 @@ Le POST décrit l'acceptation initiale avec `PENDING`. Le GET relit l'état cour
 
 On ne doit ni réécrire le document à `PENDING` pour l'aligner sur le reçu, ni imposer que deux GET conservent le même statut. En revanche, UUID, contrat des trois champs publics et `createdAt` restent stables.
 
-[FamilyRequestTrackingHttpTest.java](../../application/src/test/java/dev/confluxlab/FamilyRequestTrackingHttpTest.java) — **extrait partiel du fichier, helper complet de la version INT-14** :
+[FamilyRequestTrackingHttpTest.java](../../application/src/test/java/dev/confluxlab/FamilyRequestTrackingHttpTest.java) — **extrait partiel de l'assertion GET adaptée** :
 
 ```java
-private JsonNode getRequestAndAssertMetadata(MvcResult accepted) throws Exception {
-    JsonNode acceptance = objectMapper.readTree(accepted.getResponse().getContentAsString());
-    String requestId = acceptance.path("requestId").asText();
-    String location = accepted.getResponse().getHeader("Location");
-
-    MvcResult result = mockMvc.perform(get(location))
-            .andExpect(status().isOk())
-            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("$.requestId").value(requestId))
-            .andExpect(jsonPath("$.status").value(anyOf(is("PENDING"), is("PROCESSING"))))
-            .andExpect(jsonPath("$.createdAt").isString())
-            .andReturn();
-
-    JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
-    assertEquals(3, response.size(), "Tracking must expose only requestId, status and createdAt.");
-    assertDoesNotThrow(() -> Instant.parse(response.path("createdAt").asText()));
-    return response;
-}
+.andExpect(jsonPath("$.status").value(anyOf(is("PENDING"), is("PROCESSING"))))
 ```
 
-Accepter ces deux états n'abandonne pas la vérification de progression : **le test événementiel vérifie séparément `PROCESSING` après les tentatives**, et le test de persistance attend cet état avant son snapshot.
+Cette assertion accepte les deux états compatibles avec la course. Les contrôles de l'UUID, du type de contenu et de `createdAt` restent présents. **Autre extrait partiel, une fois la réponse JSON lue :**
+
+```java
+assertEquals(3, response.size(), "Tracking must expose only requestId, status and createdAt.");
+assertDoesNotThrow(() -> Instant.parse(response.path("createdAt").asText()));
+```
+
+On conserve le contrat de trois métadonnées et une date lisible. Accepter ces deux états n'abandonne pas la vérification de progression : **le test événementiel vérifie séparément `PROCESSING` après les tentatives**, et le test de persistance attend cet état avant son snapshot.
 
 ### 7.2 Comparer après stabilisation du point vérifié
 
-[FamilyRequestPersistenceIT.java](../../application/src/test/java/dev/confluxlab/FamilyRequestPersistenceIT.java) — **extrait partiel de la version INT-14** :
+[FamilyRequestPersistenceIT.java](../../application/src/test/java/dev/confluxlab/FamilyRequestPersistenceIT.java) — **extrait partiel de l'attente ajoutée dans la version INT-14** :
 
 ```java
 beforeRestart = await("Request to reach PROCESSING before restart")
@@ -628,23 +399,13 @@ beforeRestart = await("Request to reach PROCESSING before restart")
             assertEquals(200, lookup.statusCode(), lookup.body());
             return mapper.readTree(lookup.body());
         }, view -> "PROCESSING".equals(view.path("status").asText()));
-assertEquals(3, beforeRestart.size(), "Tracking must contain only its three public metadata fields.");
-assertEquals(requestId.toString(), beforeRestart.path("requestId").asText());
-assertEquals("PROCESSING", beforeRestart.path("status").asText());
-Instant.parse(beforeRestart.path("createdAt").asText());
 ```
 
-Le test attend une condition réelle, puis arrête la première JVM et relance le même JAR avec la même base. Autre **extrait partiel du même test** :
+Le test attend une condition réelle, puis arrête la première JVM et relance le même JAR avec la même base. Il vérifie que le PID a changé, relit la demande par HTTP et compare son contenu. **Extrait partiel de cette comparaison :**
 
 ```java
-RunningApplication second = start(jar, reports.resolve("persistence-after-restart.log"));
-try (second) {
-    assertNotEquals(first.process().pid(), second.process().pid(), "The restart must use a new JVM.");
-    HttpResponse<String> lookup = get(client, second.origin().resolve(location));
-    assertEquals(200, lookup.statusCode(), lookup.body());
-    assertEquals(beforeRestart, mapper.readTree(lookup.body()),
-            "UUID, PROCESSING and original createdAt must survive the application restart.");
-}
+assertEquals(beforeRestart, mapper.readTree(lookup.body()),
+        "UUID, PROCESSING and original createdAt must survive the application restart.");
 ```
 
 La comparaison `JsonNode` porte sur le contenu JSON, sans dépendre de l'ordre textuel des propriétés. Elle prouve la conservation de l'UUID, du statut et de la date initiale. **MongoDB est maintenu en fonctionnement ; il n'est pas redémarré. Retrouver `PROCESSING` ne prouve pas la reprise du travail.**
@@ -724,4 +485,4 @@ Elle affiche le fichier tel qu'il était au commit INT-14, sans restaurer ce fic
 - [TD-B012 — Publication et consommation : action terminée avec preuves](../todos.md#td-b012).
 - [TD-R021 — Événement local, proxy async et prise en charge : repère de cours](../todos.md#td-r021).
 - [TD-B013 — Bornage et erreurs d'exécution : action INT-15 terminée](../todos.md#td-b013).
-- [TD-B014 — Consolidation des preuves : INT-16, nouveau feu vert requis](../todos.md#td-b014).
+- [TD-B014 — Consolidation des preuves : réalisée dans INT-16](../todos.md#td-b014).

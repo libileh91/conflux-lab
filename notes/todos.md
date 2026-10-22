@@ -28,7 +28,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | Terminée : JAR redémarré sur la même base, Failsafe exécuté dans `verify` |
 | [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | Terminée : événement après sauvegarde, listener async, un seul gagnant ; 9 cas ciblés réussis |
 | [TD-B013](#td-b013) | Borner l'exécution et journaliser ses erreurs | INT-15 | Terminée : executor dédié borné, refus en `500`, journal UUID/type ; 4 cas ciblés réussis |
-| [TD-B014](#td-b014) | Consolider les tests contrôlés existants | INT-16 | À autoriser après INT-15 ; réutiliser les preuves, compléter seulement les manques, sans crash forcé |
+| [TD-B014](#td-b014) | Consolider les tests contrôlés existants | INT-16 | Terminée : preuves et synchronisation relues, rapports INT-15 inspectés ; aucun ajout ou réexécution de test |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
@@ -224,11 +224,11 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
 | **Story liée** | [INT-16 — Tester avec un traitement contrôlé](../docs/stages/sprint-04-async.md#int-16--tester-avec-un-traitement-contrôlé) ; suivi de la story existante |
-| **Dépend de** | INT-14/15 disponibles puis feu vert individuel INT-16 |
-| **Fichiers** | `FamilyRequestEventsIT.java`, tests d'INT-15 et rapports existants ; note INT-16 à créer après réalisation, sans nouvelle doublure métier obligatoire |
+| **Dépend de** | INT-14/15 commitées, point de départ `59c881c` ; feu vert « go 16 » reçu |
+| **Fichiers** | `FamilyRequestEventsIT.java`, listener/configuration et `MongoTestSupport.java` relus, deux rapports ciblés INT-15 existants ; [note INT-16](sprint-04/INT-16-tester-avec-un-traitement-controle.md) créée, aucun code modifié |
 | **Action** | Réutiliser les preuves d'INT-14/15 ; adapter le contrôle des workers si nécessaire, vérifier les attentes bornées et le nettoyage, compléter seulement un manque concret |
 | **Validation** | Preuves de réponse indépendante, un seul gagnant, rejet et erreur journalisée ; pas de scénario dupliqué ou de relance uniquement pour la note. Bilan honnête rappelant le risque d'abandon, sans crash forcé ou nouvelle démonstration du JAR |
-| **Statut** | ⏸ À autoriser — INT-16 non commencée ; consolidation allégée, aucune nouvelle suite ou reprise automatique imposée |
+| **Statut** | ✅ Terminée sur feu vert INT-16 : quatre comportements couverts par trois cas existants, attentes bornées et nettoyage relus, aucun manque identifié pour les critères. Les rapports relus comptent 1 cas Surefire + 3 cas Failsafe sans échec/erreur/ignoré, historiquement exécutés dans INT-15 ; aucune nouvelle exécution INT-16, reprise ou simulation de crash |
 
 ## Repères de cours
 

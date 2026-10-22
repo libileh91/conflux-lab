@@ -260,7 +260,11 @@ Le listener s'arrête après cette tentative : aucun travail métier, faux succ�
 
 **Preuves du 2026-10-22 :** `verify` ciblé réussi, **1 contrôle Surefire de frontière + 3 cas Failsafe**, aucun échec/erreur/ignoré. Le cas concurrent INT-14 est réutilisé ; deux cas sont ajoutés : saturation avec 2 workers/1 place puis refus du quatrième POST, et erreur de lecture simulée journalisée avec UUID sans message privé, document toujours `PENDING`. Pas de nouveau redémarrage du JAR, test d'arrêt prolongé, crash ou suite complète. Voir le [cours INT-15](../../notes/sprint-04/INT-15-borner-l-execution.md).
 
-**INT-16** reste à autoriser : consolider ces preuves et celles d'INT-14, compléter seulement un manque, sans suite redondante ou simulation de crash obligatoire. Aucune reprise automatique n'est promise.
+### 7.4 Consolidation des preuves — INT-16
+
+**[Simulation ConfluxLab — réalisée sur feu vert « go 16 »]** : revue du code commité dans `59c881c`, sans modification applicative ou de test. Les trois cas existants de `FamilyRequestEventsIT` couvrent les quatre comportements : réponse indépendante, prise en charge unique, rejet à saturation et erreur async corrélée. Le câblage sur le pool dédié, les attentes bornées et le nettoyage ont été relus ; aucun manque nécessitant une adaptation n'a été identifié pour ces critères.
+
+Les deux rapports ciblés d'INT-15 ont été relus (1 cas Surefire + 3 cas Failsafe, aucun échec/erreur/ignoré) : ce sont des preuves historiques, pas une nouvelle exécution INT-16. Aucun build, test, redémarrage du JAR ou crash n'est relancé. Le risque d'abandon `PENDING`/`PROCESSING` reste une limite, sans reprise automatique. Voir le [bilan INT-16](../../notes/sprint-04/INT-16-tester-avec-un-traitement-controle.md). Les stories techniques du sprint 04 sont réalisées ; sa clôture pédagogique reste à confirmer et INT-17 n'est pas démarrée.
 
 ## 8. Performance et observabilité
 
