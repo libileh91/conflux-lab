@@ -6,16 +6,17 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 - **INT-01 à INT-12 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi, refus, stockage MongoDB, transitions atomiques et relecture après redémarrage de l'application. La clôture pédagogique du sprint 03 reste à confirmer. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
-- Le dernier `clean verify` **non filtré** observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré. INT-12 a depuis compilé et packagé tout le réacteur avec une sélection de **6 cas réussis**, sans rejouer toute la suite Surefire.
+- Le dernier `clean verify` **non filtré** observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré. Le dernier `verify` ciblé, dans INT-14, compile et package le réacteur avec **9 cas réussis**, sans rejouer toutes les suites.
 - Depuis **INT-10**, un **POST valide retourne `202`, UUID, `PENDING` et des liens cohérents après insertion acquittée dans MongoDB**. Le GET relit cette base ; MongoDB doit donc être accessible pour réussir ces opérations. Aucun partenaire n'est nécessaire.
 - Le **GET retourne `200` pour une demande connue**, avec seulement `requestId`, `status` et `createdAt` ; UUID inconnu `404`, identifiant mal formé `400`. Le GET ne modifie ni statut ni date.
-- L'ancien stockage mémoire n'existe plus en production ; il reste une doublure de test. Un `_id` UUID unique interdit l'écrasement à l'insertion. Aucun traitement, événement, asynchronisme ou workflow CI n'est livré. **INT-12 démontre la conservation après redémarrage du JAR avec la même base** ; MongoDB lui-même n'a pas été redémarré.
+- L'ancien stockage mémoire n'existe plus en production ; il reste une doublure de test. Un `_id` UUID unique interdit l'écrasement à l'insertion. Depuis INT-14, un événement local et un listener asynchrone assurent la prise en charge ; aucun métier de création de famille, état final ou workflow CI n'est livré. **INT-12 démontre la conservation après redémarrage du JAR avec la même base** ; MongoDB lui-même n'a pas été redémarré.
 - **INT-09** a défini les dates et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition à cette étape. **INT-10 : 2 nouveaux tests + 1 test POST/GET existant réussis** avec un MongoDB temporaire réel ; panne d'insertion simulée renvoyant `500`, sans faux reçu. À cette étape INT-10, suite globale et JAR non relancés.
 
-- **INT-11** ajoute une transition MongoDB conditionnelle et atomique, sans upsert : un seul appelant prend la demande en charge, les dates ne reculent pas et un état final ne peut être écrasé. **2 nouveaux tests + 2 tests du modèle passent** ; aucun appelant de production n'exécute encore ces transitions. Les POST restent normalement `PENDING` et le GET demeure en lecture seule.
+- **INT-11** ajoute une transition MongoDB conditionnelle et atomique, sans upsert : un seul appelant prend la demande en charge, les dates ne reculent pas et un état final ne peut être écrasé. **2 nouveaux tests + 2 tests du modèle passent à cette étape** ; le listener INT-14 utilise désormais cette opération en production. Le reçu POST reste `PENDING` et le GET demeure en lecture seule, mais peut voir `PROCESSING`.
 - **INT-12** branche trois classes `*IT` à Failsafe et ajoute **un seul scénario** : deux JVM successives exécutent le même JAR et retrouvent le même UUID, `PENDING` et `createdAt` sur le même MongoDB temporaire. Les quatre cas MongoDB préexistants sont réutilisés ; processus et conteneurs temporaires sont arrêtés à l'issue de la vérification.
 
-- **INT-13** est [simplifiée](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) : un schéma et trois cas essentiels (insertion non confirmée, `PENDING` sans prise en charge, traitement interrompu). Documentation uniquement. **L'ébauche INT-14 reste en pause et non validée** ; ses changements seront revus séparément.
+- **INT-13** est [simplifiée](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) : un schéma et trois cas essentiels (insertion non confirmée, `PENDING` sans prise en charge, traitement interrompu). Documentation uniquement ; sa simplification et la consigne d'équilibre sont commitées localement dans `6081781`.
+- **INT-14 est terminée dans son périmètre** : publication après insertion, listener `@Async` et prise en charge atomique. **Un seul scénario ajouté, 9 cas ciblés réussis** ; le code s'arrête à `PROCESSING`, sans métier fictif. Le pool dédié et les erreurs restent dans INT-15, qui attend son feu vert.
 
 ## Prérequis
 
@@ -37,7 +38,11 @@ Sur Linux/macOS, commandes de repérage exécutées dans les étapes précédent
 
 Ces commandes ont réussi historiquement sous Linux avec Java 21. La sélection `-pl contracts` ne compile pas Experience.
 
-### Vérification ciblée INT-12 — exécutée
+### Vérification ciblée INT-14 — exécutée
+
+Le `verify` ciblé du 2026-10-22 réussit avec **5 cas Surefire + 4 cas Failsafe**, aucun échec/erreur/ignoré. Il couvre publication, suivi HTTP, frontière Experience/Capability, double réception avec worker bloqué, insertion et conservation de `PROCESSING` après redémarrage du JAR. La [note INT-14](notes/sprint-04/INT-14-publier-et-consommer.md#4-commande-exécutée-et-résultat) donne la commande exacte, les rapports et les limites ; ce n'est pas une suite complète ni une preuve de reprise.
+
+### Vérification historique INT-12 — exécutée
 
 Depuis la racine, avec JDK 21 et Docker accessibles :
 
@@ -56,13 +61,13 @@ Depuis la racine, avec JDK 21 et Docker accessibles :
 
 Rapports : `application/target/surefire-reports/` et `application/target/failsafe-reports/`. Le [cours INT-12](notes/sprint-03/INT-12-verifier-la-persistance.md) explique le cycle Maven, les deux JVM et les limites de la preuve. Les commandes INT-10/11 dans leurs notes restent historiques : leurs classes MongoDB portent désormais le suffixe `IT`.
 
-### Vérification plus large — non exécutée sans filtre dans INT-12
+### Vérification plus large — non exécutée sans filtre dans INT-12/14
 
 ```sh
 ./mvnw -B -ntp verify
 ```
 
-Cette commande est configurée pour lancer les suites Surefire et les IT Failsafe ; **elle n'a pas été exécutée telle quelle dans INT-12**. Certains tests HTTP `*Test` utilisent eux aussi MongoDB : la phase Surefire n'est pas entièrement unitaire ou indépendante de Docker. Le dernier résultat non filtré reste celui d'INT-08, soit 181 cas à cette étape, avant MongoDB/Failsafe ; ce n'est pas le total courant validé.
+Cette commande est configurée pour lancer les suites Surefire et les IT Failsafe ; **elle n'a pas été exécutée telle quelle dans INT-12/14**. Certains tests HTTP `*Test` utilisent eux aussi MongoDB : la phase Surefire n'est pas entièrement unitaire ou indépendante de Docker. Le dernier résultat non filtré reste celui d'INT-08, soit 181 cas à cette étape, avant MongoDB/Failsafe ; ce n'est pas le total courant validé.
 
 Sous Windows/PowerShell, utiliser `./mvnw.cmd` à la place de `./mvnw` ; le script Windows est fourni mais son exécution n'a pas été testée dans cet environnement Linux. `.gitattributes` fixe LF pour le script Unix et CRLF pour le script Windows.
 
@@ -72,7 +77,7 @@ Sous Windows/PowerShell, utiliser `./mvnw.cmd` à la place de `./mvnw` ; le scri
 
 ## Démarrage local
 
-**Exemple manuel avec volume nommé, non exécuté dans INT-10/12.** Depuis la racine, pour un MongoDB local standalone avec volume conservé :
+**Exemple manuel avec volume nommé, non exécuté dans INT-10/12/14.** Depuis la racine, pour un MongoDB local standalone avec volume conservé :
 
 ```sh
 docker run -d --name conflux-lab-mongo -p 127.0.0.1:27017:27017 -v conflux-lab-mongo-data:/data/db mongo:8.0.16 --wiredTigerCacheSizeGB 0.25
@@ -88,7 +93,7 @@ La première commande crée un conteneur local et un volume ; le port n'est expo
 
 Le lien `Location`/`statusUrl` est désormais **consultable par GET** : une demande connue retourne `200` et les trois métadonnées, sans payload personnel ni résultat métier. Un UUID inconnu reçoit `404 application/problem+json` avec `Request not found.` ; un identifiant manifestement mal formé reçoit `400` avec `Invalid request.`.
 
-Le `202` signifie désormais « demande insérée avec acquittement MongoDB », pas famille créée ni traitement lancé. L'écriture impose `majority` avec journalisation ; sur cette instance seule, cela ne fournit ni réplication ni sauvegarde. Une déconnexion peut laisser l'issue d'une écriture inconnue, même avec un `500` : ne pas rejouer aveuglément un POST. La démonstration INT-12 retrouve les mêmes métadonnées après arrêt puis relance de l'application, avec la même base temporaire maintenue en fonctionnement ; elle ne teste ni redémarrage MongoDB ni perte du disque. Voir les cours [INT-10](notes/sprint-03/INT-10-persister-avant-d-accepter.md) et [INT-12](notes/sprint-03/INT-12-verifier-la-persistance.md) ; les cours INT-06/07 décrivent l'étape historique en mémoire.
+Le `202` signifie désormais « demande insérée avec acquittement MongoDB », pas famille créée ni exécution durable. Depuis INT-14, la publication suit l'insertion et le listener peut déjà avoir passé le document à `PROCESSING` lorsque le client reçoit le `202`. L'écriture impose `majority` avec journalisation ; sur cette instance seule, cela ne fournit ni réplication ni sauvegarde. Une déconnexion peut laisser l'issue d'une écriture inconnue, même avec un `500` : ne pas rejouer aveuglément un POST. La démonstration INT-12 retrouve les mêmes métadonnées après arrêt puis relance de l'application, avec la même base temporaire maintenue en fonctionnement ; elle ne teste ni redémarrage MongoDB ni perte du disque. Voir les cours [INT-10](notes/sprint-03/INT-10-persister-avant-d-accepter.md) et [INT-12](notes/sprint-03/INT-12-verifier-la-persistance.md) ; les cours INT-06/07 décrivent l'étape historique en mémoire.
 
 ### Refus et confidentialité
 
@@ -101,7 +106,7 @@ Les 181 cas étaient le total du projet à l'étape INT-08, pas 181 explications
 | Module | Responsabilité | État |
 |---|---|---|
 | `contracts` | Types Java échangés entre modules ; ni métier, ni contrôleur, ni persistance | Cinq types et 59 cas de test dans INT-05 |
-| `capability-api` | API Java publique, puis règles métier, statuts, stockage et orchestration ; le suffixe `-api` ne signifie pas un serveur autonome | Acceptation `PENDING`, validation, insertion et consultation MongoDB internes ; traitement non réalisé |
+| `capability-api` | API Java publique, puis règles métier, statuts, stockage et orchestration ; le suffixe `-api` ne signifie pas un serveur autonome | Acceptation `PENDING`, MongoDB, événement local et prise en charge async `PROCESSING` ; métier non réalisé |
 | `experience-api` | BFF mince : contrat HTTP, validation de forme et adaptation des réponses | POST `202`, GET `200` des métadonnées ; erreurs génériques `400`/`404`/`500` |
 | `application` | Assemblage, seul démarrage Spring Boot et seul JAR Boot exécutable | Créé et démarré dans INT-03 |
 
@@ -124,6 +129,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-11 — Transitions conditionnelles atomiques](notes/sprint-03/INT-11-securiser-les-mises-a-jour.md).
 - [INT-12 — Failsafe et persistance entre deux JVM](notes/sprint-03/INT-12-verifier-la-persistance.md).
 - [INT-13 — Fenêtres de panne avant et après le `202`](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md).
+- [INT-14 — Publication locale et prise en charge asynchrone](notes/sprint-04/INT-14-publier-et-consommer.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 

@@ -10,8 +10,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MongoConverter;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @Configuration(proxyBeanMethods = false)
+@EnableAsync
 class FamilyRequestConfiguration {
 
     @Bean

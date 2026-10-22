@@ -20,13 +20,13 @@
 
 Une requête HTTP demande la création d'une famille fictive de **trois personnes** : un assuré principal et deux ayants droit.
 
-**Lecture du flux :** la liste décrit le parcours cible. À l'issue d'INT-13, seuls l'acceptation persistée et le suivi sont implémentés ; publication, listener, orchestration et appels partenaires restent à développer sur leurs feux verts respectifs. INT-13 en documente les fenêtres de panne, sans ajouter de code applicatif.
+**Lecture du flux :** la liste décrit le parcours cible. Depuis INT-14, acceptation persistée, publication locale, prise en charge asynchrone et suivi sont implémentés. L'orchestration, les appels partenaires et la production d'un état final restent à développer sur leurs feux verts respectifs. INT-13 conserve l'explication courte des fenêtres de panne.
 
 1. Le module Experience/BFF reçoit la demande HTTP, valide son format et appelle l'interface Java publique du module Capability, dans la même application Spring Boot.
 2. Depuis INT-10, Capability génère un UUID et insère la demande `PENDING` dans MongoDB avant l'acceptation. À l'étape historique INT-06, ce stockage était temporairement réalisé en mémoire.
 3. Capability publie un **événement Spring local** contenant l'UUID ; un listener `@Async` est planifié.
 4. Capability renvoie l'acceptation et Experience retourne **HTTP `202 Accepted`** avec un `requestId` et une `statusUrl`, sans attendre les appels partenaires.
-5. Le listener lit la demande, la fait évoluer en `PROCESSING` et exécute l'orchestration métier.
+5. Le listener lit la demande et tente la transition atomique vers `PROCESSING` (INT-14). L'orchestration métier viendra ensuite ; elle n'est pas simulée dans cet incrément.
 6. Les appels passent par un client Feign configuré avec les mécanismes pertinents de Resilience4j.
 7. MongoDB reçoit l'état final `SUCCEEDED` ou `FAILED`.
 8. Le client consulte **GET `/api/v1/requests/{requestId}`**.
@@ -238,7 +238,23 @@ Ce passage **n'exécute pas la suite Surefire complète**. La commande non filtr
 
 **[Proposition — flux cible]** : insertion acquittée → publication/soumission → branches HTTP et listener indépendantes. Le listener peut commencer avant ou après la réception du `202`. L'événement local n'est pas durable ; le graphe reste `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans reprise automatique ajoutée.
 
-Le [cours INT-13](../../notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) porte le schéma et les explications. Analyse statique uniquement, aucune panne exécutée. INT-14 a été amorcée puis mise en pause ; ses choix de code et de tests seront revus séparément. Cette simplification ne les valide ni ne les supprime.
+Le [cours INT-13](../../notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) porte le schéma et les explications. Analyse statique uniquement, aucune panne exécutée dans INT-13. Après la simplification, INT-14 a été reprise et réalisée séparément, comme décrit ci-dessous.
+
+### 7.2 Publication et prise en charge asynchrone — INT-14
+
+**[Simulation ConfluxLab — réalisée sur reprise explicite « commit la 13 et reprends la 14 »]** : INT-13 simplifiée et la règle d'équilibre sont commitées localement dans `6081781`. `FamilyRequestService` reçoit `ApplicationEventPublisher` et publie `FamilyRequestSubmitted(requestId)` uniquement après le retour de l'insertion. L'événement est un record interne sans payload personnel ; le BFF et les contrats publics ne changent pas.
+
+`@EnableAsync` active les proxies ; `FamilyRequestListener` associe `@EventListener` et `@Async("applicationTaskExecutor")`. Il utilise provisoirement l'executor auto-configuré par Boot, sans pool dédié borné ou handler personnalisé ajouté avant INT-15. Il relit le document et, seulement s'il est `PENDING`, tente le `findAndModify` atomique d'INT-11. Deux lectures concurrentes ne remplacent pas cette protection en base.
+
+Le listener s'arrête après cette tentative : aucun travail métier, faux succès ou état final n'est produit. Le POST conserve son reçu initial `PENDING` ; le GET peut déjà lire `PROCESSING`. Ni l'ordre de démarrage par rapport au `202`, ni une reprise après crash ne sont garantis. La future orchestration devra continuer uniquement sur une prise en charge gagnante.
+
+**Preuves du 2026-10-22 :** `verify` ciblé réussi, **5 cas Surefire + 4 cas Failsafe**, aucun échec/erreur/ignoré. Deux tests unitaires existants vérifient publication après sauvegarde et absence de publication si elle échoue. Un seul scénario est ajouté : POST accepté pendant que les tentatives de prise en charge sont bloquées, puis deux réceptions donnent un seul gagnant sur MongoDB réel. Les tests de suivi, insertion et redémarrage existants sont adaptés au passage à `PROCESSING` ; le JAR réel conserve cet état entre deux JVM, ce qui ne démontre pas une reprise. Suite complète, saturation, traitement métier, CI et INT-15 non exécutés. Voir le [cours INT-14](../../notes/sprint-04/INT-14-publier-et-consommer.md).
+
+### 7.3 Suite du sprint 04 — périmètre simplifié, non implémenté
+
+Sur demande utilisateur, **INT-15** se limite à un executor dédié borné, un refus explicite et une attente d'arrêt bornée, ainsi qu'aux erreurs du listener journalisées avec le `requestId`, sans payload personnel. Aucun stockage de diagnostics ni nouvel état public n'est requis ; on ne force pas `FAILED` avant prise en charge et on ne promet pas une écriture si MongoDB est indisponible.
+
+**INT-16** consolide les preuves d'INT-14/15 : réponse indépendante, prise en charge unique, rejet et erreur journalisée. Réutiliser les tests et compléter seulement un manque ; pas de nouvelle doublure métier, suite redondante ou simulation de crash obligatoire. Le risque d'abandon reste une limite expliquée dans INT-13, pas une reprise à implémenter. Voir les [critères du sprint](../stages/sprint-04-async.md#int-15--borner-lexécution). Les deux tâches restent non commencées et attendent leurs feux verts individuels.
 
 ## 8. Performance et observabilité
 

@@ -1,6 +1,6 @@
 # INT-13 — Dessiner les fenêtres de panne
 
-**Statut : terminée — note simplifiée sur demande utilisateur.** Documentation uniquement, sans test de panne exécuté. La version initiale a été commitée dans `f12c97d` ; cette révision ne modifie pas le code. INT-14 a été amorcée ensuite, puis mise en pause : ses changements restent à revoir séparément.
+**Statut : terminée — note simplifiée sur demande utilisateur.** Documentation uniquement, sans test de panne exécuté. La version initiale a été commitée dans `f12c97d`, la simplification dans `6081781`, sans changement de code. Après sa pause, [INT-14 a été reprise et réalisée séparément](INT-14-publier-et-consommer.md).
 
 **[Simulation ConfluxLab]** L'objectif est de comprendre une limite du labo, pas de construire un système de reprise de production ni de décrire une implémentation historique AXA.
 
@@ -70,4 +70,4 @@ La conservation du document après redémarrage a été vérifiée dans [INT-12]
 ## 6. Suivi centralisé
 
 - [TD-R020 — Repère : enregistrement, soumission et réponse HTTP](../todos.md#td-r020).
-- [TD-B012 — INT-14 : ébauche en pause, à revoir séparément](../todos.md#td-b012).
+- [TD-B012 — INT-14 : publication et consommation](../todos.md#td-b012).

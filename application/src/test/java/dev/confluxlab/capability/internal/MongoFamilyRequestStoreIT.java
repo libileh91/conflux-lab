@@ -1,5 +1,6 @@
 package dev.confluxlab.capability.internal;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -22,13 +23,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -64,14 +68,18 @@ class MongoFamilyRequestStoreIT extends MongoTestSupport {
         JsonNode accepted = objectMapper.readTree(response.getResponse().getContentAsString());
         UUID requestId = UUID.fromString(accepted.path("requestId").asText());
 
-        StoredFamilyRequest stored = store.findById(requestId).orElseThrow();
+        StoredFamilyRequest stored = await("Request to reach PROCESSING in MongoDB")
+                        .atMost(Duration.ofSeconds(10))
+                        .until(() -> store.findById(requestId).orElseThrow(),
+                                request -> request.status() == RequestStatus.PROCESSING);
         assertEquals(requestId, stored.requestId());
         assertEquals(PAYLOAD, stored.payload());
-        assertEquals(RequestStatus.PENDING, stored.status());
-        assertEquals(stored.createdAt(), stored.updatedAt());
+        assertEquals(RequestStatus.PROCESSING, stored.status());
+        assertFalse(stored.updatedAt().isBefore(stored.createdAt()), "Claim time must not precede creation.");
         assertNull(stored.completedAt());
 
-        StoredFamilyRequest collision = stored.transitionTo(RequestStatus.PROCESSING, stored.updatedAt());
+        StoredFamilyRequest collision = StoredFamilyRequest.pending(requestId, PAYLOAD, stored.createdAt());
+        verify(store).save(collision);
         assertThrows(DuplicateKeyException.class, () -> store.save(collision));
         assertEquals(stored, store.findById(requestId).orElseThrow());
     }

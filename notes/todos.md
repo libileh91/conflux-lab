@@ -26,9 +26,9 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | Terminée : insertion/relecture et unicité réelles, erreur sans faux reçu |
 | [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | Terminée : transitions atomiques, un seul gagnant et états finaux protégés |
 | [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | Terminée : JAR redémarré sur la même base, Failsafe exécuté dans `verify` |
-| [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | Ébauche en pause, à revoir après la simplification d'INT-13 |
-| [TD-B013](#td-b013) | Borner l'exécution et traiter ses erreurs | INT-15 | À autoriser après INT-14 ; aucun executor dédié livré |
-| [TD-B014](#td-b014) | Tester avec un traitement contrôlé | INT-16 | À autoriser après INT-14/15 ; pannes seulement analysées dans INT-13 |
+| [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | Terminée : événement après sauvegarde, listener async, un seul gagnant ; 9 cas ciblés réussis |
+| [TD-B013](#td-b013) | Borner l'exécution et journaliser ses erreurs | INT-15 | À autoriser ; pool/file bornés, rejet explicite et journal corrélé, sans stockage de diagnostics |
+| [TD-B014](#td-b014) | Consolider les tests contrôlés existants | INT-16 | À autoriser après INT-15 ; réutiliser les preuves, compléter seulement les manques, sans crash forcé |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
@@ -196,39 +196,39 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
 | **Story liée** | [INT-14 — Publier et consommer](../docs/stages/sprint-04-async.md#int-14--publier-et-consommer) ; suivi de la story existante, pas une nouvelle tâche |
-| **Dépend de** | INT-13 simplifiée ; feu vert INT-14 reçu puis travail mis en pause pour revoir séparément son périmètre |
-| **Fichiers** | Ébauche non validée : `FamilyRequestService.java`, `FamilyRequestConfiguration.java`, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java` et tests concernés ; store MongoDB existant |
+| **Dépend de** | INT-13 simplifiée et commitée localement `6081781` ; reprise explicite INT-14 reçue |
+| **Fichiers** | `FamilyRequestService.java`, `FamilyRequestConfiguration.java`, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java`, nouveau `FamilyRequestEventsIT.java` ; tests de service, suivi, insertion et persistance adaptés ; store MongoDB réutilisé |
 | **Action** | Publier l'UUID uniquement après insertion confirmée, relire la demande et conditionner le travail à une prise en charge atomique gagnante, sans accès du BFF au stockage |
 | **Validation** | Échec d'écriture sans publication, double réception sans double prise en charge, réponse HTTP possible pendant un travail contrôlé, sans imposer le démarrage après le `202` |
-| **Statut** | ⏸ En pause — changements INT-14 amorcés, non testés et non terminés ; la révision d'INT-13 ne décide pas lesquels garder ou supprimer |
+| **Statut** | ✅ Terminée sur reprise INT-14 ; [cours et preuves](sprint-04/INT-14-publier-et-consommer.md), 5 cas Surefire + 4 cas Failsafe réussis. Un seul scénario ajouté ; arrêt à `PROCESSING`, sans métier ou état final, suite complète non exécutée |
 
 ## TD-B013
 
-**Borner l'exécution et rendre ses échecs observables**
+**Borner l'exécution et journaliser ses erreurs**
 
 | Champ | Valeur |
 |---|---|
 | **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
 | **Story liée** | [INT-15 — Borner l'exécution](../docs/stages/sprint-04-async.md#int-15--borner-lexécution) ; suivi de la story existante |
-| **Dépend de** | Listener INT-14 disponible puis feu vert individuel INT-15 ; capacités et politique à définir lors de cet incrément |
-| **Fichiers** | Configuration d'executor et gestion des erreurs à définir/créer dans Capability ; modèle/store existants et tests à adapter sans inventer de champ métier |
-| **Action** | Borner threads et file, rendre le rejet observable, gérer l'arrêt et les exceptions du worker, y compris `@Async void`, en respectant les transitions autorisées |
-| **Validation** | Saturation contrôlée sans `202` masquant un rejet connu ; diagnostic et statut cohérent si l'écriture est possible, sans prétendre qu'une panne MongoDB permet toujours de persister `FAILED` |
-| **Statut** | ⏸ À autoriser — INT-15 non commencée ; aucun réglage chiffré, mapping `503` ou mécanisme de reprise livré dans INT-13 |
+| **Dépend de** | INT-14 terminée puis feu vert individuel INT-15 ; valeurs de configuration à définir lors de cet incrément |
+| **Fichiers** | `FamilyRequestConfiguration.java`, `FamilyRequestListener.java` et tests existants ; gestionnaire d'exception async à définir/créer dans Capability si nécessaire, sans nouveau champ MongoDB ou HTTP |
+| **Action** | Un seul executor dédié, threads/file bornés, rejet explicite et attente d'arrêt bornée ; journaliser l'UUID et l'erreur du listener `void`, sans payload personnel |
+| **Validation** | Saturation contrôlée : tâche suivante refusée, ni exécution sur le thread HTTP ni `202` masquant le rejet ; exception async journalisée avec l'UUID. Pas de `FAILED` forcé avant prise en charge ni de statut garanti si MongoDB est indisponible |
+| **Statut** | ⏸ À autoriser — périmètre simplifié, INT-15 non commencée ; ni stockage de diagnostics, nouveau statut, crash forcé ou reprise demandés |
 
 ## TD-B014
 
-**Tester le traitement contrôlé et l'abandon**
+**Consolider les preuves du traitement contrôlé**
 
 | Champ | Valeur |
 |---|---|
 | **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
 | **Story liée** | [INT-16 — Tester avec un traitement contrôlé](../docs/stages/sprint-04-async.md#int-16--tester-avec-un-traitement-contrôlé) ; suivi de la story existante |
 | **Dépend de** | INT-14/15 disponibles puis feu vert individuel INT-16 |
-| **Fichiers** | Tests et doublure de traitement à définir/créer ; aucune doublure à brancher comme faux métier de production |
-| **Action** | Contrôler avancement/échec et simuler l'abandon entre enregistrement et consommation, en réutilisant les vérifications suffisantes d'INT-14/15 |
-| **Validation** | Attentes bornées et signaux explicites pour acceptation indépendante, rejet, échec et abandon ; aucun `Thread.sleep` comme preuve ni reprise revendiquée |
-| **Statut** | ⏸ À autoriser — INT-16 non commencée ; la matrice documentaire d'INT-13 ne remplace pas ces tests |
+| **Fichiers** | `FamilyRequestEventsIT.java`, tests d'INT-15 et rapports existants ; note INT-16 à créer après réalisation, sans nouvelle doublure métier obligatoire |
+| **Action** | Réutiliser les preuves d'INT-14/15 ; adapter le contrôle des workers si nécessaire, vérifier les attentes bornées et le nettoyage, compléter seulement un manque concret |
+| **Validation** | Preuves de réponse indépendante, un seul gagnant, rejet et erreur journalisée ; pas de scénario dupliqué ou de relance uniquement pour la note. Bilan honnête rappelant le risque d'abandon, sans crash forcé ou nouvelle démonstration du JAR |
+| **Statut** | ⏸ À autoriser — INT-16 non commencée ; consolidation allégée, aucune nouvelle suite ou reprise automatique imposée |
 
 ## Repères de cours
 
@@ -511,3 +511,17 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **À retenir** | Trois cas suffisent : insertion non confirmée ; document `PENDING` sans prise en charge ; traitement interrompu en `PROCESSING`. L'événement local n'est pas durable. Le listener peut commencer avant le `202`, qui ne garantit pas la réussite. Une erreur/timeout ne prouve pas l'absence d'écriture ; aucune reprise automatique n'est ajoutée |
 | **Vérification pédagogique** | Expliquer pourquoi un document peut survivre sans tâche et pourquoi le `202` ne fixe ni le début ni la réussite du traitement |
 | **Statut** | 📘 Référence INT-13 simplifiée : un schéma et trois situations, sans catalogue de pannes ou de politiques ; aucune panne exécutée ni connaissance évaluée |
+
+## TD-R021
+
+**Publier après sauvegarde et traverser le proxy async avant de prendre en charge**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-14](sprint-04/INT-14-publier-et-consommer.md) |
+| **Story liée** | INT-14 — Publier et consommer |
+| **Dépend de** | Insertion confirmée, événement local, proxy Spring et transition atomique d'INT-11 |
+| **Fichiers** | Service/configuration, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java`, `FamilyRequestEventsIT.java` et tests existants adaptés |
+| **À retenir** | `@EnableAsync` active l'interception ; `@EventListener` reçoit le type publié et `@Async("applicationTaskExecutor")` soumet au worker. Un appel direct contournant le proxy ne prouve pas l'asynchronisme. Le reçu reste `PENDING`, le GET peut déjà voir `PROCESSING`. Deux lectures `PENDING` restent possibles : le CAS MongoDB arbitre. Le listener s'arrête à la prise en charge, sans métier fictif, état final ou reprise |
+| **Vérification pédagogique** | Expliquer pourquoi le test peut bloquer le listener tout en obtenant `202`, et pourquoi sa lecture préalable ne remplace pas la commande atomique |
+| **Statut** | 📘 Référence fondée sur 9 cas ciblés réussis, dont un seul nouveau scénario événementiel ; compréhension de l'apprenant non évaluée |

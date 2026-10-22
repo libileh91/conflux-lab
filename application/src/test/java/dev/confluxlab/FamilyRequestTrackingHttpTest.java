@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -46,11 +48,11 @@ class FamilyRequestTrackingHttpTest extends MongoTestSupport {
     private ObjectMapper objectMapper;
 
     @Test
-    void followsThePostLocationToPendingMetadataAndKeepsCreatedAtAcrossGets() throws Exception {
+    void followsThePostLocationToMetadataAndKeepsCreatedAtAcrossGets() throws Exception {
         MvcResult accepted = postValidRequestAndAssertPendingAcceptance();
 
-        JsonNode firstView = getRequestAndAssertPendingMetadata(accepted);
-        JsonNode repeatedView = getRequestAndAssertPendingMetadata(accepted);
+        JsonNode firstView = getRequestAndAssertMetadata(accepted);
+        JsonNode repeatedView = getRequestAndAssertMetadata(accepted);
 
         assertEquals(firstView.path("createdAt").asText(), repeatedView.path("createdAt").asText());
     }
@@ -72,8 +74,8 @@ class FamilyRequestTrackingHttpTest extends MongoTestSupport {
         MvcResult firstAccepted = postValidRequestAndAssertPendingAcceptance();
         MvcResult secondAccepted = postValidRequestAndAssertPendingAcceptance();
 
-        JsonNode firstView = getRequestAndAssertPendingMetadata(firstAccepted);
-        JsonNode secondView = getRequestAndAssertPendingMetadata(secondAccepted);
+        JsonNode firstView = getRequestAndAssertMetadata(firstAccepted);
+        JsonNode secondView = getRequestAndAssertMetadata(secondAccepted);
 
         assertNotEquals(firstView.path("requestId").asText(), secondView.path("requestId").asText());
     }
@@ -96,7 +98,7 @@ class FamilyRequestTrackingHttpTest extends MongoTestSupport {
         return result;
     }
 
-    private JsonNode getRequestAndAssertPendingMetadata(MvcResult accepted) throws Exception {
+    private JsonNode getRequestAndAssertMetadata(MvcResult accepted) throws Exception {
         JsonNode acceptance = objectMapper.readTree(accepted.getResponse().getContentAsString());
         String requestId = acceptance.path("requestId").asText();
         String location = accepted.getResponse().getHeader("Location");
@@ -105,7 +107,7 @@ class FamilyRequestTrackingHttpTest extends MongoTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.requestId").value(requestId))
-                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.status").value(anyOf(is("PENDING"), is("PROCESSING"))))
                 .andExpect(jsonPath("$.createdAt").isString())
                 .andReturn();
 

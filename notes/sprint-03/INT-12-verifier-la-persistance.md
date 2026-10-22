@@ -1,5 +1,7 @@
 # INT-12 — Vérifier la persistance
 
+> **Repère historique :** les preuves ci-dessous sont celles d'INT-12, en `PENDING`. Depuis [INT-14](../sprint-04/INT-14-publier-et-consommer.md), le test existant attend `PROCESSING` avant le redémarrage puis vérifie sa conservation, sans ajouter de scénario ni prouver une reprise du travail.
+
 | Contexte | Description |
 |---|---|
 | **Sprint** | [03 — Persistance MongoDB et cycle des états](../../docs/stages/sprint-03-mongodb.md#int-12--vérifier-la-persistance) |

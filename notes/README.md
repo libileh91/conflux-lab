@@ -70,11 +70,12 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 | INT-11 | [Sécuriser les mises à jour](sprint-03/INT-11-securiser-les-mises-a-jour.md) | Terminée : transitions conditionnelles atomiques, un seul gagnant, dates et états finaux protégés ; 2 nouveaux tests + 2 tests du modèle réussis |
 | INT-12 | [Vérifier la persistance](sprint-03/INT-12-verifier-la-persistance.md) | Terminée : Failsafe branché à `verify`, JAR redémarré sur la même base, métadonnées conservées ; 1 test ajouté, 6 cas sélectionnés réussis |
 | INT-13 | [Dessiner les fenêtres de panne](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) | Terminée, simplifiée : un schéma, trois situations de panne et les nuances indispensables ; documentation uniquement, aucune panne exécutée |
+| INT-14 | [Publier et consommer](sprint-04/INT-14-publier-et-consommer.md) | Terminée : événement après sauvegarde, listener async, prise en charge atomique ; 1 scénario ajouté, 9 cas ciblés réussis ; pas de métier ni d'état final |
 | INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
 
 Les preuves historiques restent datées : INT-01 conserve le cadrage initial ; le cours INT-06 explique désormais l'acceptation réalisée et renvoie à la version publiée de sa rétrospective pour l'ébauche antérieure. Les autres dossiers n'ont pas de compte rendu de réussite anticipé.
 
-**INT-13** ouvre le sprint 04 par une explication courte des limites du flux Spring Event/`@Async`, sans clôture pédagogique automatique du sprint 03. La [note simplifiée](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) n'impose pas une matrice exhaustive de tests. INT-14 est ensuite amorcée puis mise en pause ; son périmètre sera revu séparément. [Repère TD-R020](todos.md#td-r020).
+**INT-13** ouvre le sprint 04 par une explication courte des limites du flux Spring Event/`@Async`, sans clôture pédagogique automatique du sprint 03. La [note simplifiée](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) n'impose pas une matrice exhaustive de tests. Après sa pause, INT-14 est reprise sur demande explicite et validée avec 9 cas ciblés ; le cours distingue la prise en charge livrée du métier et du bornage encore à venir. [Repère TD-R020](todos.md#td-r020).
 
 ## Compléments théoriques
 

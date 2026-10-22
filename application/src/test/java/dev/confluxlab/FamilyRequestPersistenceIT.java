@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -64,12 +65,16 @@ class FamilyRequestPersistenceIT extends MongoTestSupport {
                 assertEquals(location, receipt.path("statusUrl").asText());
                 assertEquals("PENDING", receipt.path("status").asText());
 
-                HttpResponse<String> lookup = get(client, first.origin().resolve(location));
-                assertEquals(200, lookup.statusCode(), lookup.body());
-                beforeRestart = mapper.readTree(lookup.body());
+                beforeRestart = await("Request to reach PROCESSING before restart")
+                        .atMost(Duration.ofSeconds(10))
+                        .until(() -> {
+                            HttpResponse<String> lookup = get(client, first.origin().resolve(location));
+                            assertEquals(200, lookup.statusCode(), lookup.body());
+                            return mapper.readTree(lookup.body());
+                        }, view -> "PROCESSING".equals(view.path("status").asText()));
                 assertEquals(3, beforeRestart.size(), "Tracking must contain only its three public metadata fields.");
                 assertEquals(requestId.toString(), beforeRestart.path("requestId").asText());
-                assertEquals("PENDING", beforeRestart.path("status").asText());
+                assertEquals("PROCESSING", beforeRestart.path("status").asText());
                 Instant.parse(beforeRestart.path("createdAt").asText());
             }
             assertFalse(first.process().isAlive(), "The first JVM must stop before the second one starts.");
@@ -80,10 +85,10 @@ class FamilyRequestPersistenceIT extends MongoTestSupport {
                 HttpResponse<String> lookup = get(client, second.origin().resolve(location));
                 assertEquals(200, lookup.statusCode(), lookup.body());
                 assertEquals(beforeRestart, mapper.readTree(lookup.body()),
-                        "UUID, PENDING and original createdAt must survive the application restart.");
+                        "UUID, PROCESSING and original createdAt must survive the application restart.");
             }
             assertFalse(second.process().isAlive(), "The second JVM must also be stopped after the proof.");
-            System.out.printf("INT-12 restart proof: firstPid=%d, secondPid=%d, requestId=%s, status=PENDING, both JVMs stopped.%n",
+            System.out.printf("INT-12 restart proof: firstPid=%d, secondPid=%d, requestId=%s, status=PROCESSING, both JVMs stopped.%n",
                     first.process().pid(), second.process().pid(), beforeRestart.path("requestId").asText());
         }
     }
