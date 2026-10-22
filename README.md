@@ -6,8 +6,8 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 - **INT-01 à INT-12 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi, refus, stockage MongoDB, transitions atomiques et relecture après redémarrage de l'application. La clôture pédagogique du sprint 03 reste à confirmer. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
-- Le dernier `clean verify` **non filtré** observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré. Le dernier `verify` ciblé, dans INT-14, compile et package le réacteur avec **9 cas réussis**, sans rejouer toutes les suites.
-- Depuis **INT-10**, un **POST valide retourne `202`, UUID, `PENDING` et des liens cohérents après insertion acquittée dans MongoDB**. Le GET relit cette base ; MongoDB doit donc être accessible pour réussir ces opérations. Aucun partenaire n'est nécessaire.
+- Le dernier `clean verify` **non filtré** observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré. Le dernier `verify` ciblé, dans INT-15, compile et package le réacteur avec **4 cas réussis**, sans rejouer toutes les suites.
+- Depuis **INT-10**, le POST conserve la demande avant d'acquitter. **Si l'insertion et la soumission réussissent, un POST valide retourne `202`, UUID, `PENDING` et des liens cohérents** ; depuis INT-15, une saturation peut refuser cette soumission après l'insertion. Le GET relit cette base ; MongoDB doit donc être accessible pour réussir ces opérations. Aucun partenaire n'est nécessaire.
 - Le **GET retourne `200` pour une demande connue**, avec seulement `requestId`, `status` et `createdAt` ; UUID inconnu `404`, identifiant mal formé `400`. Le GET ne modifie ni statut ni date.
 - L'ancien stockage mémoire n'existe plus en production ; il reste une doublure de test. Un `_id` UUID unique interdit l'écrasement à l'insertion. Depuis INT-14, un événement local et un listener asynchrone assurent la prise en charge ; aucun métier de création de famille, état final ou workflow CI n'est livré. **INT-12 démontre la conservation après redémarrage du JAR avec la même base** ; MongoDB lui-même n'a pas été redémarré.
 - **INT-09** a défini les dates et le graphe `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans sauvegarde de transition à cette étape. **INT-10 : 2 nouveaux tests + 1 test POST/GET existant réussis** avec un MongoDB temporaire réel ; panne d'insertion simulée renvoyant `500`, sans faux reçu. À cette étape INT-10, suite globale et JAR non relancés.
@@ -16,7 +16,8 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 - **INT-12** branche trois classes `*IT` à Failsafe et ajoute **un seul scénario** : deux JVM successives exécutent le même JAR et retrouvent le même UUID, `PENDING` et `createdAt` sur le même MongoDB temporaire. Les quatre cas MongoDB préexistants sont réutilisés ; processus et conteneurs temporaires sont arrêtés à l'issue de la vérification.
 
 - **INT-13** est [simplifiée](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) : un schéma et trois cas essentiels (insertion non confirmée, `PENDING` sans prise en charge, traitement interrompu). Documentation uniquement ; sa simplification et la consigne d'équilibre sont commitées localement dans `6081781`.
-- **INT-14 est terminée dans son périmètre** : publication après insertion, listener `@Async` et prise en charge atomique. **Un seul scénario ajouté, 9 cas ciblés réussis** ; le code s'arrête à `PROCESSING`, sans métier fictif. Le pool dédié et les erreurs restent dans INT-15, qui attend son feu vert.
+- **INT-14 est terminée dans son périmètre** : publication après insertion, listener `@Async` et prise en charge atomique. **Un seul scénario ajouté, 9 cas ciblés réussis** ; le code s'arrête à `PROCESSING`, sans métier fictif. Le pool dédié et les erreurs sont traités ensuite dans INT-15. INT-14 et le plan allégé sont commitées localement dans `bdb93f8`.
+- **INT-15 est terminée dans son périmètre** : `familyRequestExecutor` dédié, défauts modifiables de 2 workers/16 places/5 s d'attente de fermeture, rejet explicite et journal async UUID/type sans message privé. **Deux cas ajoutés, 4 cas ciblés réussis** ; aucun état final, stockage de diagnostics ou reprise. INT-16 attend son feu vert.
 
 ## Prérequis
 
@@ -38,9 +39,17 @@ Sur Linux/macOS, commandes de repérage exécutées dans les étapes précédent
 
 Ces commandes ont réussi historiquement sous Linux avec Java 21. La sélection `-pl contracts` ne compile pas Experience.
 
-### Vérification ciblée INT-14 — exécutée
+### Vérification ciblée INT-15 — exécutée
 
-Le `verify` ciblé du 2026-10-22 réussit avec **5 cas Surefire + 4 cas Failsafe**, aucun échec/erreur/ignoré. Il couvre publication, suivi HTTP, frontière Experience/Capability, double réception avec worker bloqué, insertion et conservation de `PROCESSING` après redémarrage du JAR. La [note INT-14](notes/sprint-04/INT-14-publier-et-consommer.md#4-commande-exécutée-et-résultat) donne la commande exacte, les rapports et les limites ; ce n'est pas une suite complète ni une preuve de reprise.
+```sh
+./mvnw -B -ntp -pl application -am '-Dtest=ModuleArchitectureTest#experienceOnlyUsesThePublicCapabilityApi' -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=FamilyRequestEventsIT verify
+```
+
+**Résultat observé le 2026-10-22 : 1 cas Surefire + 3 cas Failsafe réussis**, aucun échec/erreur/ignoré. Le passage couvre la frontière publique, le cas concurrent réutilisé, la saturation et l'erreur async corrélée. La [note détaillée INT-15](notes/sprint-04/INT-15-borner-l-execution.md) donne le code, les réglages, la lecture des tests et leurs limites. Suite complète, arrêt prolongé et redémarrage du JAR non exécutés dans cet incrément.
+
+### Vérification historique INT-14 — exécutée
+
+Le `verify` ciblé du 2026-10-22 réussit avec **5 cas Surefire + 4 cas Failsafe**, aucun échec/erreur/ignoré. Il couvre publication, suivi HTTP, frontière Experience/Capability, double réception avec worker bloqué, insertion et conservation de `PROCESSING` après redémarrage du JAR. La [note INT-14](notes/sprint-04/INT-14-publier-et-consommer.md#8-commande-exécutée-et-résultat) donne la commande exacte, les rapports et les limites ; ce n'est pas une suite complète ni une preuve de reprise.
 
 ### Vérification historique INT-12 — exécutée
 
@@ -89,7 +98,7 @@ La première commande crée un conteneur local et un volume ; le port n'est expo
 
 `-DskipTests package` produit le JAR sans relancer les tests ; ce n'est pas une preuve de validation. INT-10 n'avait pas produit ni lancé de JAR ; **INT-12 l'a depuis packagé et lancé deux fois automatiquement avec un MongoDB Testcontainers**, sans utiliser le volume nommé de cet exemple. `0` demande un port disponible, affiché par Tomcat ; pour ce démarrage manuel, arrêter l'application par `Ctrl+C`, puis éventuellement la base par `docker stop conflux-lab-mongo` (volume conservé). Aucun service sur 8081 ni propriété `CAPABILITY_BASE_URL` n'est requis.
 
-**À ce stade, `POST /api/v1/families` valide retourne `202 Accepted`**, avec `requestId`, `status: PENDING`, `statusUrl` et `Location`. Les données fictives de `contracts/src/test/resources/contracts/create-family.json` servent à la démonstration. Capability valide aussi les appels Java directs et insère un snapshot du payload dans MongoDB avant d'acquitter. Un échec d'enregistrement ne produit pas d'acceptation ; les détails internes restent masqués.
+**Si l'insertion et la soumission sont confirmées, un `POST /api/v1/families` valide retourne `202 Accepted`**, avec `requestId`, `status: PENDING`, `statusUrl` et `Location`. Les données fictives de `contracts/src/test/resources/contracts/create-family.json` servent à la démonstration. Capability valide aussi les appels Java directs et insère un snapshot du payload dans MongoDB avant d'acquitter. Un échec d'enregistrement ne produit pas d'acceptation ; les détails internes restent masqués.
 
 Le lien `Location`/`statusUrl` est désormais **consultable par GET** : une demande connue retourne `200` et les trois métadonnées, sans payload personnel ni résultat métier. Un UUID inconnu reçoit `404 application/problem+json` avec `Request not found.` ; un identifiant manifestement mal formé reçoit `400` avec `Invalid request.`.
 
@@ -130,6 +139,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-12 — Failsafe et persistance entre deux JVM](notes/sprint-03/INT-12-verifier-la-persistance.md).
 - [INT-13 — Fenêtres de panne avant et après le `202`](notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md).
 - [INT-14 — Publication locale et prise en charge asynchrone](notes/sprint-04/INT-14-publier-et-consommer.md).
+- [INT-15 — Executor borné, rejet et erreurs async](notes/sprint-04/INT-15-borner-l-execution.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 

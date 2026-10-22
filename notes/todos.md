@@ -27,7 +27,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | Terminée : transitions atomiques, un seul gagnant et états finaux protégés |
 | [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | Terminée : JAR redémarré sur la même base, Failsafe exécuté dans `verify` |
 | [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | Terminée : événement après sauvegarde, listener async, un seul gagnant ; 9 cas ciblés réussis |
-| [TD-B013](#td-b013) | Borner l'exécution et journaliser ses erreurs | INT-15 | À autoriser ; pool/file bornés, rejet explicite et journal corrélé, sans stockage de diagnostics |
+| [TD-B013](#td-b013) | Borner l'exécution et journaliser ses erreurs | INT-15 | Terminée : executor dédié borné, refus en `500`, journal UUID/type ; 4 cas ciblés réussis |
 | [TD-B014](#td-b014) | Consolider les tests contrôlés existants | INT-16 | À autoriser après INT-15 ; réutiliser les preuves, compléter seulement les manques, sans crash forcé |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
@@ -210,11 +210,11 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
 | **Story liée** | [INT-15 — Borner l'exécution](../docs/stages/sprint-04-async.md#int-15--borner-lexécution) ; suivi de la story existante |
-| **Dépend de** | INT-14 terminée puis feu vert individuel INT-15 ; valeurs de configuration à définir lors de cet incrément |
-| **Fichiers** | `FamilyRequestConfiguration.java`, `FamilyRequestListener.java` et tests existants ; gestionnaire d'exception async à définir/créer dans Capability si nécessaire, sans nouveau champ MongoDB ou HTTP |
+| **Dépend de** | INT-14 et plan allégé commitées `bdb93f8` ; feu vert INT-15 reçu |
+| **Fichiers** | `FamilyRequestConfiguration.java` (executor et `AsyncConfigurer`), `FamilyRequestListener.java`, `FamilyRequestEventsIT.java` ; aucun nouveau champ MongoDB/HTTP ni dépendance |
 | **Action** | Un seul executor dédié, threads/file bornés, rejet explicite et attente d'arrêt bornée ; journaliser l'UUID et l'erreur du listener `void`, sans payload personnel |
-| **Validation** | Saturation contrôlée : tâche suivante refusée, ni exécution sur le thread HTTP ni `202` masquant le rejet ; exception async journalisée avec l'UUID. Pas de `FAILED` forcé avant prise en charge ni de statut garanti si MongoDB est indisponible |
-| **Statut** | ⏸ À autoriser — périmètre simplifié, INT-15 non commencée ; ni stockage de diagnostics, nouveau statut, crash forcé ou reprise demandés |
+| **Validation** | Test à 2 workers/1 place : quatrième POST `500` sans reçu ni exécution HTTP, document refusé `PENDING`. Échec async de lecture simulé : UUID/type journalisés sans message privé, pas de `FAILED` forcé. Attente de fermeture configurée à 5 s par défaut, sans test d'arrêt prolongé |
+| **Statut** | ✅ Terminée sur feu vert INT-15 ; [cours et preuves](sprint-04/INT-15-borner-l-execution.md), 1 cas Surefire + 3 cas Failsafe réussis, dont 2 ajoutés. Aucun stockage de diagnostics, état final, crash ou reprise ; suite complète et JAR non rejoués |
 
 ## TD-B014
 
@@ -522,6 +522,20 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **Story liée** | INT-14 — Publier et consommer |
 | **Dépend de** | Insertion confirmée, événement local, proxy Spring et transition atomique d'INT-11 |
 | **Fichiers** | Service/configuration, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java`, `FamilyRequestEventsIT.java` et tests existants adaptés |
-| **À retenir** | `@EnableAsync` active l'interception ; `@EventListener` reçoit le type publié et `@Async("applicationTaskExecutor")` soumet au worker. Un appel direct contournant le proxy ne prouve pas l'asynchronisme. Le reçu reste `PENDING`, le GET peut déjà voir `PROCESSING`. Deux lectures `PENDING` restent possibles : le CAS MongoDB arbitre. Le listener s'arrête à la prise en charge, sans métier fictif, état final ou reprise |
+| **À retenir** | `@EnableAsync` active l'interception ; `@EventListener` reçoit le type publié et `@Async` soumet au worker (executor Boot dans INT-14, `familyRequestExecutor` dédié depuis INT-15). Un appel direct contournant le proxy ne prouve pas l'asynchronisme. Le reçu reste `PENDING`, le GET peut déjà voir `PROCESSING`. Deux lectures `PENDING` restent possibles : le CAS MongoDB arbitre. Le listener s'arrête à la prise en charge, sans métier fictif, état final ou reprise |
 | **Vérification pédagogique** | Expliquer pourquoi le test peut bloquer le listener tout en obtenant `202`, et pourquoi sa lecture préalable ne remplace pas la commande atomique |
 | **Statut** | 📘 Référence fondée sur 9 cas ciblés réussis, dont un seul nouveau scénario événementiel ; compréhension de l'apprenant non évaluée |
+
+## TD-R022
+
+**Borner les tâches sans masquer les rejets ou promettre une reprise**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-15](sprint-04/INT-15-borner-l-execution.md) |
+| **Story liée** | INT-15 — Borner l'exécution |
+| **Dépend de** | Listener proxifié INT-14 et executor dédié INT-15 |
+| **Fichiers** | `FamilyRequestConfiguration.java`, `FamilyRequestListener.java`, `FamilyRequestEventsIT.java` |
+| **À retenir** | Un pool fixe et une file bornée limitent les tâches acceptées ; `AbortPolicy` refuse au lieu de les exécuter sur le thread HTTP. Le rejet peut laisser `PENDING` après insertion malgré `500`. Le handler `@Async void` journalise UUID et type sans message/trace bruts et ne modifie pas le statut. L'attente de fermeture n'est pas un timeout de tâche ni une garantie d'arrêt forcé |
+| **Vérification pédagogique** | Distinguer le rejet synchrone de soumission de l'exception du worker ; expliquer pourquoi ni l'un ni l'autre ne justifie automatiquement `FAILED` ou une reprise |
+| **Statut** | 📘 Référence fondée sur 4 cas ciblés réussis, dont 2 ajoutés ; arrêt prolongé non testé et compréhension de l'apprenant non évaluée |

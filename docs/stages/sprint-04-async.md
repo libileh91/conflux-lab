@@ -1,6 +1,6 @@
 # Sprint 04 — Spring Events locaux et traitement asynchrone
 
-**Statut : INT-13 simplifiée et INT-14 terminées ; INT-15/16 non commencées.** INT-14 a été reprise explicitement après le commit de la simplification (`6081781`). Chaque story suivante conserve son feu vert individuel. La clôture pédagogique du sprint 03 reste à confirmer.
+**Statut : INT-13 simplifiée, INT-14 et INT-15 terminées ; INT-16 non commencée.** INT-14 et le plan allégé ont été commitées localement dans `bdb93f8` avant INT-15. La consolidation INT-16 attend son feu vert individuel ; la clôture pédagogique du sprint 03 reste à confirmer.
 
 ## Objectif
 
@@ -45,7 +45,7 @@ En tant que client de l'API, je veux que le travail soit pris en charge séparé
 **Preuves :** `verify` ciblé réussi, 5 cas Surefire + 4 cas Failsafe, aucun échec/erreur/ignoré. Un seul scénario ajouté ; tests de suivi, insertion et redémarrage réutilisés et adaptés. Le JAR réel conserve `PROCESSING` après redémarrage. Le listener s'arrête à cette transition : aucun métier, état final, reprise ou pool dédié borné ajouté. La suite complète et les scénarios d'INT-15/16 n'ont pas été exécutés.
 
 ### INT-15 — Borner l'exécution
-**Statut : à faire — feu vert requis.** Prérequis : listener INT-14 disponible. Périmètre resserré sur demande utilisateur ; aucun développement lancé par cette révision.
+**Statut : terminée sur feu vert « ok commit ça & go 15 ».** Périmètre allégé respecté, commit préalable `bdb93f8`. [Cours et preuves INT-15](../../notes/sprint-04/INT-15-borner-l-execution.md).
 
 En tant que développeur, je veux limiter les tâches en cours et en attente, afin d'éviter une accumulation sans limite et de rendre les refus visibles.
 
@@ -54,8 +54,10 @@ En tant que développeur, je veux limiter les tâches en cours et en attente, af
 - Journaliser les exceptions du listener `@Async void` avec le `requestId`, sans payload personnel ni nouveau champ public de diagnostic.
 
 **Terminé quand :**
-- [ ] Les limites et l'attente d'arrêt sont configurées et expliquées. Un test contrôlé remplit le pool et sa file, puis vérifie le refus suivant : pas de tâche exécutée sur le thread HTTP ni de `202` masquant ce rejet.
-- [ ] Une exception du listener produit un journal corrélé à l'UUID. Ne pas forcer un état `FAILED` pour un échec technique avant prise en charge, ni prétendre pouvoir écrire un statut quand MongoDB est indisponible.
+- [x] Executor dédié configuré à 2 workers, 16 places et 5 s d'attente à la destruction du bean, valeurs modifiables. Le test à 2 workers/1 place remplit ces capacités puis vérifie le quatrième POST refusé en `500`, sans exécution sur le thread HTTP ni faux `202` ; son document reste `PENDING`.
+- [x] Une erreur de lecture simulée du listener produit un journal `ERROR` avec UUID et type, sans le message privé de l'exception. Le document reste `PENDING`, sans écriture de `FAILED`.
+
+**Preuves :** `verify` ciblé, 1 cas Surefire + 3 cas Failsafe réussis, aucun échec/erreur/ignoré. Deux cas ajoutés, un cas événementiel existant réutilisé. L'attente de fermeture est configurée, pas expérimentée avec un worker durablement bloqué ; elle ne force pas la fin d'une tâche. Suite complète et redémarrage du JAR non exécutés dans INT-15.
 
 **Limite volontaire :** pas de stockage de diagnostics, de nouvel état, de reprise ou de simulation de crash. Les états finaux seront gérés avec le travail métier réel.
 

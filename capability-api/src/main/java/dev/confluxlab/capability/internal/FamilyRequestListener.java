@@ -19,7 +19,7 @@ class FamilyRequestListener {
         this.clock = clock;
     }
 
-    @Async("applicationTaskExecutor")
+    @Async("familyRequestExecutor")
     @EventListener
     public void onFamilyRequestSubmitted(FamilyRequestSubmitted event) {
         store.findById(event.requestId())
