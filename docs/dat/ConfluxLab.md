@@ -59,6 +59,12 @@ flowchart TD
 
 B, C et D peuvent être lancées en parallèle ; E et F n'attendent que leurs prérequis respectifs. Il ne s'agit pas de lancer aveuglément les six appels simultanément.
 
+### 3.1 Contrats internes des opérations — INT-17
+
+**[Simulation ConfluxLab — réalisée sur feu vert « go 17 »]** : `FamilyOperations`, interface sans bean dans `capability.internal`, définit les six opérations avec `CompletableFuture`. Chaque appel reçoit le `requestId` de corrélation ; A consomme `PersonPayload` et retourne `PrincipalId`, B utilise ce dernier et retourne `ContractId`, C/D utilisent le principal et les données de l'ayant droit pour retourner chacun un `DependentId`, E/F utilisent contrat et ayant droit et retournent `Void` (réussite sans nouvelle donnée). Les trois records d'identifiants distinguent les rôles, sans ajouter de validation de contenu ou d'appartenance à une famille.
+
+`ControlledFamilyOperations`, sous `src/test` uniquement, prépare un mock Mockito et six futures incomplètes. `test-compile` ciblé de Capability et de ses dépendances réussit ; aucun test n'est exécuté et la fixture sera exercée avec INT-18/19. Aucun contrat HTTP, POM, configuration, listener ou stockage n'est modifié. L'interface ne compose pas le graphe et n'implique aucun thread ou appel HTTP automatique. Voir le [cours INT-17](../../notes/sprint-05/INT-17-ecrire-les-contrats-des-operations.md).
+
 ## 4. Stack technique proposée
 
 | Domaine | Technologies / rôle |
@@ -264,7 +270,7 @@ Le listener s'arrête après cette tentative : aucun travail métier, faux succ�
 
 **[Simulation ConfluxLab — réalisée sur feu vert « go 16 »]** : revue du code commité dans `59c881c`, sans modification applicative ou de test. Les trois cas existants de `FamilyRequestEventsIT` couvrent les quatre comportements : réponse indépendante, prise en charge unique, rejet à saturation et erreur async corrélée. Le câblage sur le pool dédié, les attentes bornées et le nettoyage ont été relus ; aucun manque nécessitant une adaptation n'a été identifié pour ces critères.
 
-Les deux rapports ciblés d'INT-15 ont été relus (1 cas Surefire + 3 cas Failsafe, aucun échec/erreur/ignoré) : ce sont des preuves historiques, pas une nouvelle exécution INT-16. Aucun build, test, redémarrage du JAR ou crash n'est relancé. Le risque d'abandon `PENDING`/`PROCESSING` reste une limite, sans reprise automatique. Voir le [bilan INT-16](../../notes/sprint-04/INT-16-tester-avec-un-traitement-controle.md). Les stories techniques du sprint 04 sont réalisées ; sa clôture pédagogique reste à confirmer et INT-17 n'est pas démarrée.
+Les deux rapports ciblés d'INT-15 ont été relus (1 cas Surefire + 3 cas Failsafe, aucun échec/erreur/ignoré) : ce sont des preuves historiques, pas une nouvelle exécution INT-16. Aucun build, test, redémarrage du JAR ou crash n'est relancé. Le risque d'abandon `PENDING`/`PROCESSING` reste une limite, sans reprise automatique. Voir le [bilan INT-16](../../notes/sprint-04/INT-16-tester-avec-un-traitement-controle.md). Les stories techniques du sprint 04 sont réalisées ; leur consolidation ne valait pas feu vert pour INT-17. Ce feu vert est intervenu ensuite, séparément ; la clôture pédagogique du sprint 04 reste à confirmer.
 
 ## 8. Performance et observabilité
 

@@ -29,6 +29,7 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | Terminée : événement après sauvegarde, listener async, un seul gagnant ; 9 cas ciblés réussis |
 | [TD-B013](#td-b013) | Borner l'exécution et journaliser ses erreurs | INT-15 | Terminée : executor dédié borné, refus en `500`, journal UUID/type ; 4 cas ciblés réussis |
 | [TD-B014](#td-b014) | Consolider les tests contrôlés existants | INT-16 | Terminée : preuves et synchronisation relues, rapports INT-15 inspectés ; aucun ajout ou réexécution de test |
+| [TD-B015](#td-b015) | Composer le parcours réussi | INT-18 | À autoriser après INT-17 ; réutiliser la fixture pilotable, sans HTTP ni suite par dépendance |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
@@ -229,6 +230,20 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **Action** | Réutiliser les preuves d'INT-14/15 ; adapter le contrôle des workers si nécessaire, vérifier les attentes bornées et le nettoyage, compléter seulement un manque concret |
 | **Validation** | Preuves de réponse indépendante, un seul gagnant, rejet et erreur journalisée ; pas de scénario dupliqué ou de relance uniquement pour la note. Bilan honnête rappelant le risque d'abandon, sans crash forcé ou nouvelle démonstration du JAR |
 | **Statut** | ✅ Terminée sur feu vert INT-16 : quatre comportements couverts par trois cas existants, attentes bornées et nettoyage relus, aucun manque identifié pour les critères. Les rapports relus comptent 1 cas Surefire + 3 cas Failsafe sans échec/erreur/ignoré, historiquement exécutés dans INT-15 ; aucune nouvelle exécution INT-16, reprise ou simulation de crash |
+
+## TD-B015
+
+**Composer le parcours réussi à partir des contrats INT-17**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-17](sprint-05/INT-17-ecrire-les-contrats-des-operations.md) |
+| **Story liée** | [INT-18 — Composer le succès](../docs/stages/sprint-05-orchestration.md#int-18--composer-le-succès) ; suivi de la story existante |
+| **Dépend de** | Contrats et fixture INT-17 compilés ; nouveau feu vert INT-18 requis |
+| **Fichiers** | `FamilyOperations.java`, `ControlledFamilyOperations.java` ; orchestrateur interne et scénarios de composition à créer dans Capability, nom non arrêté |
+| **Action** | Composer A puis B/C/D, E après B/C et F après B/D, sans barrière globale ; réutiliser la fixture pour un parcours de succès piloté |
+| **Validation** | Ordre et chevauchement vérifiés en Java avec attentes bornées ; contrôler les bons identifiants et l'indépendance des branches, sans HTTP, Spring ou MongoDB pour la composition seule |
+| **Statut** | ⏸ À autoriser — INT-18 non commencée ; aucune composition exécutée dans INT-17 |
 
 ## Repères de cours
 
@@ -539,3 +554,17 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **À retenir** | Un pool fixe et une file bornée limitent les tâches acceptées ; `AbortPolicy` refuse au lieu de les exécuter sur le thread HTTP. Le rejet peut laisser `PENDING` après insertion malgré `500`. Le handler `@Async void` journalise UUID et type sans message/trace bruts et ne modifie pas le statut. L'attente de fermeture n'est pas un timeout de tâche ni une garantie d'arrêt forcé |
 | **Vérification pédagogique** | Distinguer le rejet synchrone de soumission de l'exception du worker ; expliquer pourquoi ni l'un ni l'autre ne justifie automatiquement `FAILED` ou une reprise |
 | **Statut** | 📘 Référence fondée sur 4 cas ciblés réussis, dont 2 ajoutés ; arrêt prolongé non testé et compréhension de l'apprenant non évaluée |
+
+## TD-R023
+
+**Distinguer contrats internes, identifiants typés et futures pilotables**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-17](sprint-05/INT-17-ecrire-les-contrats-des-operations.md) |
+| **Story liée** | INT-17 — Écrire les contrats des opérations |
+| **Dépend de** | Graphe A–F et types `PersonPayload` existants ; aucune infrastructure nouvelle |
+| **Fichiers** | `FamilyOperations.java` en production, `ControlledFamilyOperations.java` uniquement sous `src/test` |
+| **À retenir** | Les signatures expriment les données nécessaires, pas l'ordre d'exécution. `PrincipalId`, `ContractId` et `DependentId` distinguent les rôles sans valider contenu ou appartenance. Le `requestId` corrèle, sans rendre le POST idempotent. Une future ne crée pas de thread ; la fixture laisse les prochains tests choisir succès ou échec avec `complete`/`completeExceptionally`, sans HTTP |
+| **Vérification pédagogique** | Expliquer pourquoi E demande B/C mais pas D, pourquoi les records n'empêchent pas d'inverser deux ayants droit et pourquoi `test-compile` ne prouve pas le fonctionnement du graphe |
+| **Statut** | 📘 Référence issue d'une compilation ciblée réussie ; fixture pas encore exercée et compréhension de l'apprenant non évaluée |

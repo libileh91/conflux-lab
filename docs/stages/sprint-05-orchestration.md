@@ -1,6 +1,6 @@
 # Sprint 05 — Graphe métier et concurrence bornée
 
-**Statut : planifié — périmètre et tests simplifiés sur demande utilisateur.** Prérequis : sprint 04 clos et accord pour ouvrir ce sprint. Cette révision ne démarre aucune tâche INT-17 à INT-20.
+**Statut : INT-17 terminée ; INT-18 à INT-20 non commencées.** Le feu vert explicite « go 17 » ouvre cet incrément du sprint 05, sans valider la clôture pédagogique du sprint 04, qui reste à confirmer. Le périmètre et les tests simplifiés sont conservés ; chaque tâche suivante attend son propre accord.
 
 ## Objectif
 
@@ -23,7 +23,7 @@ Ce sprint est un objectif pédagogique : chaque tâche attend son feu vert indiv
 ## Tâches — un feu vert par tâche
 
 ### INT-17 — Écrire les contrats des opérations
-**Statut : à faire — feu vert requis.**
+**Statut : terminée sur feu vert « go 17 ».** [Cours et limites INT-17](../../notes/sprint-05/INT-17-ecrire-les-contrats-des-operations.md).
 
 En tant que développeur, je veux connaître les données attendues et renvoyées par chaque opération, afin de relier les six étapes sans confondre leurs identifiants.
 
@@ -32,8 +32,10 @@ En tant que développeur, je veux connaître les données attendues et renvoyée
 - Préparer une doublure réutilisable dont les tests pilotent les résultats avec des futures.
 
 **Terminé quand :**
-- [ ] Les contrats A–F décrivent les données nécessaires à chaque dépendance du graphe.
-- [ ] La doublure permet de terminer ou faire échouer une opération à la demande ; elle sera exercée dans les scénarios INT-18/19, sans suite de test dédiée au seul montage.
+- [x] `FamilyOperations` décrit les six opérations, leurs données et les identifiants typés nécessaires aux dépendances, sans modifier les contrats HTTP publics.
+- [x] `ControlledFamilyOperations`, uniquement sous `src/test`, prépare six futures pilotables en succès ou en échec. Elle est compilée et sera exercée dans INT-18/19, sans suite dédiée au seul montage.
+
+**Preuves :** `./mvnw -B -ntp -pl capability-api -am test-compile` réussi : production et sources de test compilées, aucun test exécuté. Deux fichiers Java ajoutés, aucune dépendance ou configuration modifiée. Aucun orchestrateur, branchement au listener, HTTP, executor ou état final ajouté.
 
 ### INT-18 — Composer le succès
 **Statut : à faire — feu vert requis.**

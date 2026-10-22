@@ -54,7 +54,7 @@ Les tests accompagnent chaque story : ils ne sont pas reportés au sprint 07. **
 | [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05 à INT-08 terminées techniquement ; passage à INT-09 demandé, restitution orale non évaluée |
 | [03 — MongoDB](sprint-03-mongodb.md) | Conserver une demande après redémarrage | INT-09 à INT-12 | INT-09 à INT-12 terminées techniquement ; clôture et restitution pédagogique à confirmer |
 | [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | INT-13 à INT-16 terminées techniquement ; clôture pédagogique à confirmer |
-| [05 — Orchestration](sprint-05-orchestration.md) | Faire avancer les six opérations selon leurs dépendances | INT-17 à INT-20 | Planifié |
+| [05 — Orchestration](sprint-05-orchestration.md) | Faire avancer les six opérations selon leurs dépendances | INT-17 à INT-20 | INT-17 terminée ; INT-18/19/20 non commencées |
 | [06 — Partenaire et résilience](sprint-06-partenaire.md) | Appeler un partenaire simulé et traiter ses pannes sans retry aveugle | INT-21 à INT-24 | Planifié |
 | [07 — Validation et mesures](sprint-07-validation.md) | Démontrer le parcours, expliquer un échec et mesurer le labo | INT-25 à INT-28 | Planifié |
 | [08 — CI](sprint-08-ci.md) | Faire compiler et tester automatiquement le projet par GitHub Actions | INT-29 à INT-32 | Planifié |
@@ -79,7 +79,8 @@ Les identifiants ne changent pas ; ils ne sont pas un ordre de développement ob
 - **INT-14 reprise et réalisée :** simplification d'INT-13 et consigne d'équilibre commitées localement (`6081781`), puis publication après insertion et listener `@Async` utilisant la prise en charge atomique ; un seul scénario ajouté, 9 cas ciblés réussis. Le JAR conserve `PROCESSING` au redémarrage, sans reprise de travail implémentée.
 - **INT-15 réalisée sur feu vert :** commit local préalable `bdb93f8`, executor dédié borné, rejet explicite et erreur async journalisée avec l'UUID sans message privé. Deux cas ajoutés, un cas événementiel réutilisé et un contrôle de frontière : 4 réussites ciblées, pas de reprise ou d'état final ajouté.
 - **INT-16 réalisée sur feu vert « go 16 » :** code de `59c881c` et preuves INT-14/15 consolidés, attentes et nettoyage relus, deux rapports ciblés existants inspectés. Aucun ajout ou réexécution de test ; pas de manque identifié pour les critères.
-- **Suite :** clôture pédagogique des sprints 03/04 à confirmer ; INT-17 attend son propre feu vert.
+- **INT-17 réalisée sur feu vert « go 17 » :** six contrats internes, trois types d'identifiants et une fixture de test à futures pilotables. `test-compile` ciblé réussi, sans test exécuté ni orchestration ajoutée.
+- **Suite :** clôture pédagogique des sprints 03/04 à confirmer ; INT-18 attend son propre feu vert.
 - La préparation avancée d'INT-05 ne lance ni l'assemblage ni les autres stories du sprint 02.
 
 ## Architecture à conserver
