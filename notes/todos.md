@@ -30,7 +30,8 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B013](#td-b013) | Borner l'exécution et journaliser ses erreurs | INT-15 | Terminée : executor dédié borné, refus en `500`, journal UUID/type ; 4 cas ciblés réussis |
 | [TD-B014](#td-b014) | Consolider les tests contrôlés existants | INT-16 | Terminée : preuves et synchronisation relues, rapports INT-15 inspectés ; aucun ajout ou réexécution de test |
 | [TD-B015](#td-b015) | Composer le parcours réussi | INT-18 | Terminée : deux ordres C/D vérifiés, 2 cas ciblés réussis ; aucun branchement au listener |
-| [TD-B016](#td-b016) | Composer les échecs | INT-19 | À autoriser ; un échec représentatif et les branches en cours, sans matrice de pannes |
+| [TD-B016](#td-b016) | Composer les échecs | INT-19 | Composition Java réalisée : B en échec, C/D attendues, E/F non appelés ; 3 cas ciblés réussis, sans état final persisté |
+| [TD-B017](#td-b017) | Borner les ressources du graphe | INT-20 | À autoriser ; réutiliser les preuves existantes, compléter seulement un risque non couvert |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
@@ -254,11 +255,25 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-18](sprint-05/INT-18-composer-le-succes.md) |
 | **Story liée** | [INT-19 — Composer les échecs](../docs/stages/sprint-05-orchestration.md#int-19--composer-les-échecs) ; suivi de la story existante |
-| **Dépend de** | Composition nominale INT-18 disponible ; nouveau feu vert INT-19 requis |
-| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java`, `ControlledFamilyOperations.java` ; raccordement au suivi à préciser dans le périmètre INT-19 |
+| **Dépend de** | Composition INT-18 commitée `516ea0e` ; feu vert « commit 18 & passe à 19 » reçu |
+| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java` modifiés ; fixture réutilisée sans changement. Le raccordement au suivi reste non réalisé, limite explicite du périmètre |
 | **Action** | Traiter un échec représentatif, empêcher les descendants concernés de démarrer et attendre les branches déjà lancées avant la finalisation, sans annulation forcée |
 | **Validation** | Réutiliser le scénario piloté pour vérifier l'absence de faux succès et de finalisation avant la fin des branches en cours ; pas de matrice d'erreur A–F |
-| **Statut** | ⏸ À autoriser — INT-19 non commencée ; aucun scénario d'échec exécuté dans INT-18 |
+| **Statut** | ✅ Composition Java réalisée ; [cours et limites](sprint-05/INT-19-composer-les-echecs.md), 3 cas ciblés réussis dont un seul échec B ajouté. C/D restent en cours jusqu'à leur fin, E/F ne sont pas appelés et la cause est conservée. Pas de `FAILED` persisté ou de preuve sur des écritures MongoDB tardives dans un parcours raccordé |
+
+## TD-B017
+
+**Borner les ressources sans dupliquer les preuves de saturation**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-19](sprint-05/INT-19-composer-les-echecs.md) |
+| **Story liée** | [INT-20 — Borner les ressources](../docs/stages/sprint-05-orchestration.md#int-20--borner-les-ressources) ; suivi de la story existante |
+| **Dépend de** | Contrats et composition Java INT-17/18/19 disponibles ; nouveau feu vert INT-20 requis |
+| **Fichiers** | Configuration et listener existants, `FamilyOrchestrator.java`, tests de composition et `FamilyRequestEventsIT.java` ; adaptations d'exécution à préciser après inspection |
+| **Action** | Choisir l'exécution explicite et bornée du graphe, sans attente du listener sur son propre pool ; réutiliser les preuves INT-15 et compléter seulement un risque nouveau |
+| **Validation** | Limites, rejet et absence d'auto-blocage vérifiés au bon niveau ; isolation entre demandes si un état est partagé, sans campagne de charge ni nouvelle suite automatique |
+| **Statut** | ⏸ À autoriser — INT-20 non commencée ; aucun executor ou contrôle de ressources ajouté dans INT-19 |
 
 ## Repères de cours
 
@@ -597,3 +612,17 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **À retenir** | B/C/D dépendent chacun d'A. E combine B/C et F combine B/D ; aplatir leur future imbriquée permet de suivre leur terminaison, pas seulement leur démarrage. Le seul `allOf` est final. Les continuations sans suffixe `Async` ne créent pas automatiquement de thread ; le chevauchement de futures en cours n'est pas une mesure de parallélisme de threads ou d'I/O |
 | **Vérification pédagogique** | Expliquer pourquoi une barrière B/C/D retarderait E/F, et comment le test détecte une fin globale annoncée alors que le second rattachement n'est pas achevé |
 | **Statut** | 📘 Référence fondée sur 2 cas paramétrés ciblés réussis, sans HTTP, Spring, MongoDB ou mesure de performance ; compréhension non évaluée |
+
+## TD-R025
+
+**Attendre les branches lancées sans masquer l'échec**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-19](sprint-05/INT-19-composer-les-echecs.md) |
+| **Story liée** | INT-19 — Composer les échecs |
+| **Dépend de** | Composition native des futures et jonction finale explicite B/C/D/E/F |
+| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java` ; fixture INT-17 inchangée |
+| **À retenir** | B en échec empêche les appels E/F sans annuler C/D déjà lancées. La jonction de fin attend les branches puis expose l'échec ; elle ne retarde pas le démarrage nominal des rattachements. `get` enveloppe l'échec dans `ExecutionException`, dont la cause originale est vérifiée. Une future exceptionnelle n'écrit pas `FAILED` dans MongoDB |
+| **Vérification pédagogique** | Expliquer pourquoi les futures composées E/F peuvent finir en échec alors que les méthodes partenaires E/F n'ont pas été appelées, et pourquoi le suivi doit distinguer erreur de branche et fin globale |
+| **Statut** | 📘 Référence fondée sur un échec B ajouté et les deux cas nominaux réutilisés, 3 réussites ciblées ; aucune preuve de persistance d'état final ou connaissance évaluée |

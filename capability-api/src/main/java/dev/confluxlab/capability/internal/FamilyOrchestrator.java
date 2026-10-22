@@ -35,6 +35,7 @@ final class FamilyOrchestrator {
         CompletableFuture<Void> secondAttachment = contract.thenCombine(secondDependent,
                         (contractId, dependentId) -> operations.attachSecondDependent(requestId, contractId, dependentId))
                 .thenCompose(future -> future);
-        return CompletableFuture.allOf(firstAttachment, secondAttachment);
+        // Settle started branches before the caller can finalize, even if attachments are skipped after a failure.
+        return CompletableFuture.allOf(contract, firstDependent, secondDependent, firstAttachment, secondAttachment);
     }
 }

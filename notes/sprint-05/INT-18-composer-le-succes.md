@@ -2,6 +2,8 @@
 
 **Statut : terminée sur feu vert « commit 17 & go 18 », le 2026-10-22.** INT-17 a d'abord été commitée localement dans **`d6f0e86`**, sans push. Cet incrément ajoute `FamilyOrchestrator` et un test paramétré utilisant la fixture existante : **2 cas réussis, aucun échec, erreur ou cas ignoré**.
 
+> **Version historique du cours : `516ea0e`, commit INT-18.** Les extraits et les 2 cas observés ci-dessous décrivent cette étape. Depuis [INT-19](INT-19-composer-les-echecs.md), le `allOf` final inclut explicitement B/C/D en plus des chemins E/F et la classe de test contient 3 cas. Relancer sa sélection sur le code actuel ne reproduirait donc plus le passage historique de 2 cas ; le rapport courant a été remplacé.
+
 **[Simulation ConfluxLab]** On compose le parcours nominal en Java, sans HTTP ni MongoDB. L'orchestrateur n'est pas un bean et **n'est pas branché au listener** : le POST/GET conserve son comportement actuel, sans production d'état final. La gestion métier des échecs reste dans INT-19 ; les ressources et le futur câblage d'exécution restent à traiter dans leur périmètre.
 
 ## Parcours de lecture
@@ -217,4 +219,4 @@ La commande écrit les sorties locales `target/` ; des téléchargements manquan
 
 - [TD-B015 — Composition nominale INT-18 : terminée avec deux cas ciblés réussis](../todos.md#td-b015).
 - [TD-R024 — Dépendances locales, aplatissement et fin globale](../todos.md#td-r024).
-- [TD-B016 — INT-19 : composer les échecs, nouveau feu vert requis](../todos.md#td-b016).
+- [TD-B016 — INT-19 : composition des échecs réalisée, sans état final persisté](../todos.md#td-b016).

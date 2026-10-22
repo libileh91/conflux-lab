@@ -20,7 +20,7 @@
 
 Une requête HTTP demande la création d'une famille fictive de **trois personnes** : un assuré principal et deux ayants droit.
 
-**Lecture du flux :** la liste décrit le parcours cible. Depuis INT-14, acceptation persistée, publication locale, prise en charge asynchrone et suivi sont implémentés. Depuis INT-18, la composition nominale du graphe existe et est testée en Java, sans branchement au listener. Le traitement de bout en bout, les appels partenaires et la production d'un état final restent à développer sur leurs feux verts respectifs. INT-13 conserve l'explication courte des fenêtres de panne.
+**Lecture du flux :** la liste décrit le parcours cible. Depuis INT-14, acceptation persistée, publication locale, prise en charge asynchrone et suivi sont implémentés. Depuis INT-18, la composition nominale du graphe existe et est testée en Java ; INT-19 ajoute la preuve d'un échec représentatif et d'une attente finale explicite des branches. Ce graphe n'est pas branché au listener. Le traitement de bout en bout, les appels partenaires et la production d'un état final restent à développer sur leurs feux verts respectifs. INT-13 conserve l'explication courte des fenêtres de panne.
 
 1. Le module Experience/BFF reçoit la demande HTTP, valide son format et appelle l'interface Java publique du module Capability, dans la même application Spring Boot.
 2. Depuis INT-10, Capability génère un UUID et insère la demande `PENDING` dans MongoDB avant l'acceptation. À l'étape historique INT-06, ce stockage était temporairement réalisé en mémoire.
@@ -70,6 +70,12 @@ B, C et D peuvent être lancées en parallèle ; E et F n'attendent que leurs pr
 **[Simulation ConfluxLab — réalisée sur feu vert « commit 17 & go 18 »]** : INT-17 est commitée localement dans `d6f0e86`, sans push. `FamilyOrchestrator`, classe Java interne sans bean Spring, dépend de `FamilyOperations` et retourne une `CompletableFuture<Void>`. A fournit le principal ; trois `thenCompose` enregistrent B/C/D indépendamment. E combine B/C et F combine B/D ; leur future de rattachement est aplatie avec `thenCompose`. Le seul `allOf` attend E/F à la fin, sans barrière globale avant leur démarrage.
 
 **Preuves :** un test paramétré réutilise la fixture INT-17 dans les deux ordres C/D ; 2 cas Surefire ciblés réussissent, aucun échec/erreur/ignoré. Il vérifie l'ordre, les UUID/données transmis, le chevauchement possible des opérations encore en cours, l'indépendance d'E/F et l'absence de fin globale prématurée. Pas de mesure de parallélisme de threads ou de performance réseau. Aucun `join`, `get` ou executor dans l'orchestrateur, aucun HTTP, accès MongoDB, état final ou branchement au listener. La gestion métier des échecs et le bornage restent dans INT-19/20. Voir le [cours INT-18](../../notes/sprint-05/INT-18-composer-le-succes.md).
+
+### 3.3 Composition des échecs — INT-19
+
+**[Simulation ConfluxLab — réalisée sur feu vert « commit 18 & passe à 19 »]** : INT-18 est commitée localement dans `516ea0e`, sans push. La jonction finale de `FamilyOrchestrator` attend explicitement B/C/D et les chemins E/F, sans modifier leurs conditions de démarrage. Si B échoue, les fonctions de rattachement ne sont pas appelées, les branches C/D déjà lancées ne sont pas annulées et la future globale ne termine en échec qu'après leur fin. Aucun fallback de réussite ou nouvel état n'est ajouté.
+
+**Preuves :** un seul cas d'échec B ajouté dans `FamilyOrchestratorTest`, avec C/D maintenues en cours puis terminées séparément, absence d'appel E/F et cause originale vérifiées. Le passage ciblé compte 3 cas Surefire réussis (2 nominaux réutilisés + 1 nouveau), aucun échec/erreur/ignoré. La future globale fournit la frontière de finalisation ; aucune écriture de `FAILED`, vérification d'écritures MongoDB tardives ou modification du suivi HTTP n'est réalisée. Le raccordement au listener reste absent et le bornage INT-20 attend son feu vert. Voir le [cours INT-19](../../notes/sprint-05/INT-19-composer-les-echecs.md).
 
 ## 4. Stack technique proposée
 

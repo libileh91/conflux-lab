@@ -1,6 +1,6 @@
 # Sprint 05 — Graphe métier et concurrence bornée
 
-**Statut : INT-17 et INT-18 terminées ; INT-19/20 non commencées.** Après « go 17 », le feu vert « commit 17 & go 18 » a autorisé la composition nominale. INT-17 est commitée localement dans `d6f0e86`, sans push. La clôture pédagogique du sprint 04 reste à confirmer ; le périmètre simplifié et le feu vert par tâche sont conservés.
+**Statut : INT-17 à INT-19 réalisées dans leur périmètre ; INT-20 non commencée.** INT-17 et INT-18 sont commitées localement dans `d6f0e86` et `516ea0e`, sans push. INT-19 vérifie la composition des échecs en Java, pas l'écriture d'un état final MongoDB ou le raccordement au listener. La clôture pédagogique du sprint 04 reste à confirmer ; le feu vert par tâche est conservé.
 
 ## Objectif
 
@@ -53,7 +53,7 @@ En tant que développeur, je veux lancer chaque opération dès que ses prérequ
 **Preuves :** `test` ciblé de `FamilyOrchestratorTest`, 2 cas Surefire réussis, aucun échec/erreur/ignoré. Fixture INT-17 réutilisée sans modification, attentes bornées, ni `sleep`, Spring, MongoDB ou HTTP. Aucun executor, branchement au listener ou état final ajouté ; on vérifie des futures en cours, pas un parallélisme de threads mesuré.
 
 ### INT-19 — Composer les échecs
-**Statut : à faire — feu vert requis.**
+**Statut : terminée pour la composition Java sur feu vert « commit 18 & passe à 19 ».** [Cours, preuve et limites INT-19](../../notes/sprint-05/INT-19-composer-les-echecs.md).
 
 En tant que consommateur de l'API, je veux un suivi d'échec fiable, afin de ne pas voir une demande annoncée réussie alors qu'une opération nécessaire a échoué.
 
@@ -62,8 +62,12 @@ En tant que consommateur de l'API, je veux un suivi d'échec fiable, afin de ne 
 - Garder une règle simple : attendre la fin des branches déjà lancées avant d'écrire l'état final, sans annulation forcée.
 
 **Terminé quand :**
-- [ ] Un échec représentatif, par exemple B, empêche ses descendants E/F de démarrer et interdit un résultat global réussi.
-- [ ] Le même scénario garde une branche en cours, puis la termine pour vérifier la finalisation en échec ; pas de matrice d'erreur A–F ni de réécriture tardive d'un état terminal.
+- [x] Un échec simulé de B empêche les appels E/F et se retrouve comme cause de l'échec global, sans faux résultat réussi.
+- [x] Le même scénario laisse C/D en cours, termine C puis D et vérifie que la future globale ne finit qu'après les branches lancées. C'est le point à utiliser avant une finalisation ; aucune écriture d'état terminal n'est ajoutée ou revendiquée ici.
+
+**Preuves :** 3 cas Surefire ciblés réussis, dont les 2 cas nominaux réutilisés et un seul cas d'échec ajouté ; aucun échec/erreur/ignoré. La jonction finale attend explicitement B/C/D et les chemins E/F, sans déplacer les conditions de démarrage. Pas d'annulation forcée, fallback, HTTP, Spring ou MongoDB.
+
+**Limite de portée :** le raccordement au suivi, l'écriture de `FAILED` et la vérification de l'absence d'écritures MongoDB tardives dans un parcours raccordé ne sont pas réalisés. Le graphe n'écrit actuellement aucun statut ; ne pas présenter cette preuve Java comme une preuve de suivi HTTP de bout en bout.
 
 ### INT-20 — Borner les ressources
 **Statut : à faire — feu vert requis.**

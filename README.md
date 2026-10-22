@@ -6,7 +6,7 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 
 - **INT-01 à INT-12 sont terminées dans leur périmètre** : socle, contrats, assemblage, frontières, acceptation, suivi, refus, stockage MongoDB, transitions atomiques et relecture après redémarrage de l'application. La clôture pédagogique du sprint 03 reste à confirmer. Le passage au sprint 03 a été demandé après les stories techniques du sprint 02, sans évaluation de la restitution orale. Le [sprint 01 est clôturé techniquement et documenté](docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) sur demande explicite ; la restitution orale de l'apprenant n'a pas été évaluée.
 - `application` produit le seul JAR Boot exécutable ; Experience appelle l'interface Java publique de Capability, sans HTTP interne.
-- Le dernier `clean verify` **non filtré** observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré. La dernière vérification ciblée, dans INT-18, exécute **2 cas paramétrés réussis** du graphe en Java ; ce n'est ni une nouvelle suite complète ni un `verify` de l'assemblage Boot.
+- Le dernier `clean verify` **non filtré** observé est celui d'INT-08 : **181 tests** (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture), aucun échec/erreur/ignoré. La dernière vérification ciblée, dans INT-19, exécute **3 cas réussis** du graphe en Java (2 nominaux réutilisés + 1 échec ajouté) ; ce n'est ni une nouvelle suite complète ni un `verify` de l'assemblage Boot.
 - Depuis **INT-10**, le POST conserve la demande avant d'acquitter. **Si l'insertion et la soumission réussissent, un POST valide retourne `202`, UUID, `PENDING` et des liens cohérents** ; depuis INT-15, une saturation peut refuser cette soumission après l'insertion. Le GET relit cette base ; MongoDB doit donc être accessible pour réussir ces opérations. Aucun partenaire n'est nécessaire.
 - Le **GET retourne `200` pour une demande connue**, avec seulement `requestId`, `status` et `createdAt` ; UUID inconnu `404`, identifiant mal formé `400`. Le GET ne modifie ni statut ni date.
 - L'ancien stockage mémoire n'existe plus en production ; il reste une doublure de test. Un `_id` UUID unique interdit l'écrasement à l'insertion. Depuis INT-14, un événement local et un listener asynchrone assurent la prise en charge ; aucun métier de création de famille, état final ou workflow CI n'est livré. **INT-12 démontre la conservation après redémarrage du JAR avec la même base** ; MongoDB lui-même n'a pas été redémarré.
@@ -20,7 +20,8 @@ Laboratoire pédagogique Java/Spring : création d'une famille fictive de trois 
 - **INT-15 est terminée dans son périmètre** : `familyRequestExecutor` dédié, défauts modifiables de 2 workers/16 places/5 s d'attente de fermeture, rejet explicite et journal async UUID/type sans message privé. **Deux cas ajoutés, 4 cas ciblés réussis** ; aucun état final, stockage de diagnostics ou reprise. INT-15 et les notes enrichies sont commitées dans `59c881c`.
 - **INT-16 est terminée dans son périmètre** : preuves consolidées, câblage et synchronisation des trois cas événementiels relus, deux rapports ciblés existants inspectés. Aucun code, test ou réglage modifié, aucun test ajouté ou relancé. La clôture pédagogique du sprint 04 reste à confirmer.
 - **INT-17 est terminée dans son périmètre** : six opérations internes décrites par `FamilyOperations`, identifiants typés et fixture Mockito à futures pilotables. `test-compile` ciblé réussi, sans test exécuté. Aucun branchement au listener ni parcours métier ajouté à cette étape. INT-17 est commitée localement dans `d6f0e86`.
-- **INT-18 est terminée dans son périmètre** : `FamilyOrchestrator` compose le succès A–F sans barrière globale avant E/F. Un scénario paramétré sur les deux ordres C/D réussit : **2 cas ciblés**, sans HTTP, Spring ou MongoDB. Aucun branchement au listener ni état final ; INT-19 attend son feu vert.
+- **INT-18 est terminée dans son périmètre** : `FamilyOrchestrator` compose le succès A–F sans barrière globale avant E/F. Un scénario paramétré sur les deux ordres C/D réussit : **2 cas ciblés**, sans HTTP, Spring ou MongoDB. Aucun branchement au listener ni état final. INT-18 est commitée localement dans `516ea0e`.
+- **INT-19 est réalisée pour la composition Java** : attente explicite des branches lancées avant la fin globale, descendants E/F non appelés après l'échec de B et cause originale préservée. **Un cas ajouté, 3 cas ciblés réussis.** Aucun statut `FAILED` persisté ni changement du suivi HTTP ; INT-20 attend son feu vert.
 
 ## Prérequis
 
@@ -42,13 +43,21 @@ Sur Linux/macOS, commandes de repérage exécutées dans les étapes précédent
 
 Ces commandes ont réussi historiquement sous Linux avec Java 21. La sélection `-pl contracts` ne compile pas Experience.
 
+### Vérification ciblée INT-19 — exécutée
+
+```sh
+./mvnw -B -ntp -pl capability-api -am -Dtest=FamilyOrchestratorTest -Dsurefire.failIfNoSpecifiedTests=false test
+```
+
+**Résultat observé le 2026-10-22 : 3 cas Surefire réussis**, aucun échec/erreur/ignoré : les deux cas nominaux et un échec représentatif de B. La [note INT-19](notes/sprint-05/INT-19-composer-les-echecs.md) distingue la fin exceptionnelle du graphe d'un état MongoDB persisté. Pas de Spring, MongoDB, HTTP ou JAR démarré ; INT-20 non commencée.
+
 ### Vérification ciblée INT-18 — exécutée
 
 ```sh
 ./mvnw -B -ntp -pl capability-api -am -Dtest=FamilyOrchestratorTest -Dsurefire.failIfNoSpecifiedTests=false test
 ```
 
-**Résultat observé le 2026-10-22 : 2 cas Surefire réussis**, aucun échec/erreur/ignoré. Seul le scénario paramétré de composition est exécuté ; pas de Spring, MongoDB, HTTP ou JAR démarré. La [note INT-18](notes/sprint-05/INT-18-composer-le-succes.md) explique les dépendances, l'aplatissement des futures, les preuves et les limites. La gestion métier des échecs et les ressources restent dans INT-19/20.
+**Résultat observé le 2026-10-22 : 2 cas Surefire réussis**, aucun échec/erreur/ignoré. Seul le scénario paramétré de composition est exécuté ; pas de Spring, MongoDB, HTTP ou JAR démarré. La [note INT-18](notes/sprint-05/INT-18-composer-le-succes.md) explique les dépendances, l'aplatissement des futures, les preuves et les limites. Ce passage INT-18 ne validait pas les échecs ; leur composition est vérifiée ensuite dans INT-19. Les ressources restent dans INT-20.
 
 ### Vérification ciblée INT-15 — exécutée
 
@@ -154,6 +163,7 @@ Experience appelle l'API publique Java de Capability ; aucune dépendance invers
 - [INT-16 — Consolidation des preuves et synchronisation des tests](notes/sprint-04/INT-16-tester-avec-un-traitement-controle.md).
 - [INT-17 — Contrats des six opérations et futures pilotables](notes/sprint-05/INT-17-ecrire-les-contrats-des-operations.md).
 - [INT-18 — Composition nominale, dépendances et fin des futures](notes/sprint-05/INT-18-composer-le-succes.md).
+- [INT-19 — Échecs du graphe et attente des branches lancées](notes/sprint-05/INT-19-composer-les-echecs.md).
 - [Spécification HTTP initiale](docs/dat/http-contracts.md).
 - [Index des notes](notes/README.md).
 
