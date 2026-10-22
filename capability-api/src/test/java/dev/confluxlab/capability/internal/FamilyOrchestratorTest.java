@@ -4,8 +4,13 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import dev.confluxlab.capability.internal.FamilyOperations.ContractId;
 import dev.confluxlab.capability.internal.FamilyOperations.DependentId;
@@ -16,12 +21,18 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class FamilyOrchestratorTest {
@@ -40,7 +51,7 @@ class FamilyOrchestratorTest {
     void startsEachAttachmentAsSoonAsItsOwnPrerequisitesAreReady(boolean firstDependentFinishesFirst) throws Exception {
         UUID requestId = UUID.randomUUID();
         ControlledFamilyOperations controlled = new ControlledFamilyOperations();
-        FamilyOrchestrator orchestrator = new FamilyOrchestrator(controlled.operations);
+        FamilyOrchestrator orchestrator = new FamilyOrchestrator(controlled.operations, Runnable::run);
         CreateFamilyRequest request = new CreateFamilyRequest(PRINCIPAL, List.of(FIRST_PERSON, SECOND_PERSON));
 
         CompletableFuture<Void> result = orchestrator.execute(requestId, request);
@@ -86,7 +97,7 @@ class FamilyOrchestratorTest {
     void waitsForStartedBranchesAndPropagatesContractFailureWithoutStartingAttachments() throws Exception {
         UUID requestId = UUID.randomUUID();
         ControlledFamilyOperations controlled = new ControlledFamilyOperations();
-        FamilyOrchestrator orchestrator = new FamilyOrchestrator(controlled.operations);
+        FamilyOrchestrator orchestrator = new FamilyOrchestrator(controlled.operations, Runnable::run);
         CreateFamilyRequest request = new CreateFamilyRequest(PRINCIPAL, List.of(FIRST_PERSON, SECOND_PERSON));
 
         CompletableFuture<Void> result = orchestrator.execute(requestId, request);
@@ -112,6 +123,105 @@ class FamilyOrchestratorTest {
         ExecutionException propagated = assertThrows(ExecutionException.class, () -> result.get(1, TimeUnit.SECONDS));
         assertSame(failure, propagated.getCause());
         verifyNoMoreInteractions(controlled.operations);
+    }
+
+    @ParameterizedTest(name = "initial submission is rejected: {0}")
+    @ValueSource(booleans = {true, false})
+    @Timeout(value = 5, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void propagatesSubmissionRejectionWithoutCallingTheRejectedOperation(boolean rejectInitially) throws Exception {
+        UUID requestId = UUID.randomUUID();
+        ControlledFamilyOperations controlled = new ControlledFamilyOperations();
+        RejectedExecutionException rejection = new RejectedExecutionException("Simulated saturation.");
+        AtomicBoolean reject = new AtomicBoolean(rejectInitially);
+        Executor executor = task -> {
+            if (reject.get()) {
+                throw rejection;
+            }
+            task.run();
+        };
+        FamilyOrchestrator orchestrator = new FamilyOrchestrator(controlled.operations, executor);
+        CreateFamilyRequest request = new CreateFamilyRequest(PRINCIPAL, List.of(FIRST_PERSON, SECOND_PERSON));
+
+        CompletableFuture<Void> result = orchestrator.execute(requestId, request);
+        if (rejectInitially) {
+            verifyNoInteractions(controlled.operations);
+        } else {
+            controlled.principal.complete(PRINCIPAL_ID);
+            verify(controlled.operations).createPrincipal(requestId, PRINCIPAL);
+            verify(controlled.operations).openContract(requestId, PRINCIPAL_ID);
+            verify(controlled.operations).createFirstDependent(requestId, PRINCIPAL_ID, FIRST_PERSON);
+            verify(controlled.operations).createSecondDependent(requestId, PRINCIPAL_ID, SECOND_PERSON);
+
+            reject.set(true);
+            controlled.contract.complete(CONTRACT_ID);
+            controlled.firstDependent.complete(FIRST_ID);
+            assertFalse(result.isDone(), "A rejected attachment must not abandon the other started branch.");
+            verifyNoMoreInteractions(controlled.operations);
+
+            reject.set(false);
+            controlled.secondDependent.complete(SECOND_ID);
+            verify(controlled.operations).attachSecondDependent(requestId, CONTRACT_ID, SECOND_ID);
+            assertFalse(result.isDone(), "The accepted attachment must actually finish.");
+            controlled.secondAttachment.complete(null);
+            verifyNoMoreInteractions(controlled.operations);
+        }
+        ExecutionException propagated = assertThrows(ExecutionException.class, () -> result.get(1, TimeUnit.SECONDS));
+        assertSame(rejection, propagated.getCause());
+    }
+
+    @Test
+    @Timeout(value = 10, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void sharesTheBoundedPoolWithoutWaitingForSubtasksOrMixingRequests() throws Exception {
+        ThreadPoolTaskExecutor executor = new FamilyRequestConfiguration().familyRequestExecutor(1, 16, 1);
+        executor.initialize();
+        try {
+            UUID firstRequestId = UUID.randomUUID();
+            UUID secondRequestId = UUID.randomUUID();
+            ControlledFamilyOperations controlled = new ControlledFamilyOperations();
+            CompletableFuture<PrincipalId> secondPrincipal = new CompletableFuture<>();
+            CountDownLatch started = new CountDownLatch(2);
+            ConcurrentLinkedQueue<Thread> workers = new ConcurrentLinkedQueue<>();
+            doAnswer(invocation -> {
+                workers.add(Thread.currentThread());
+                started.countDown();
+                return firstRequestId.equals(invocation.getArgument(0)) ? controlled.principal : secondPrincipal;
+            }).when(controlled.operations).createPrincipal(any(UUID.class), eq(PRINCIPAL));
+            FamilyOrchestrator orchestrator = new FamilyOrchestrator(controlled.operations, executor);
+            CreateFamilyRequest request = new CreateFamilyRequest(PRINCIPAL, List.of(FIRST_PERSON, SECOND_PERSON));
+
+            CompletableFuture<Void> firstResult = executor.submit(() -> orchestrator.execute(firstRequestId, request))
+                    .get(1, TimeUnit.SECONDS);
+            CompletableFuture<Void> secondResult = executor.submit(() -> orchestrator.execute(secondRequestId, request))
+                    .get(1, TimeUnit.SECONDS);
+            assertTrue(started.await(1, TimeUnit.SECONDS), "The only worker must be free to invoke both operations.");
+            assertTrue(workers.stream().allMatch(worker -> worker.getName().startsWith("family-request-")));
+
+            IllegalStateException failure = new IllegalStateException("Simulated second request failure.");
+            secondPrincipal.completeExceptionally(failure);
+            ExecutionException propagated = assertThrows(ExecutionException.class, () -> secondResult.get(1, TimeUnit.SECONDS));
+            assertSame(failure, propagated.getCause());
+            assertFalse(firstResult.isDone(), "The second request failure must not complete the first request.");
+
+            controlled.contract.complete(CONTRACT_ID);
+            controlled.firstDependent.complete(FIRST_ID);
+            controlled.secondDependent.complete(SECOND_ID);
+            controlled.firstAttachment.complete(null);
+            controlled.secondAttachment.complete(null);
+            controlled.principal.complete(PRINCIPAL_ID);
+            assertNull(firstResult.get(1, TimeUnit.SECONDS));
+            assertTrue(secondResult.isCompletedExceptionally());
+            verify(controlled.operations).createPrincipal(firstRequestId, PRINCIPAL);
+            verify(controlled.operations).createPrincipal(secondRequestId, PRINCIPAL);
+            verify(controlled.operations).openContract(firstRequestId, PRINCIPAL_ID);
+            verify(controlled.operations).createFirstDependent(firstRequestId, PRINCIPAL_ID, FIRST_PERSON);
+            verify(controlled.operations).createSecondDependent(firstRequestId, PRINCIPAL_ID, SECOND_PERSON);
+            verifyAttachment(controlled, firstRequestId, true);
+            verifyAttachment(controlled, firstRequestId, false);
+            verifyNoMoreInteractions(controlled.operations);
+        } finally {
+            executor.shutdown();
+            assertTrue(executor.getThreadPoolExecutor().awaitTermination(2, TimeUnit.SECONDS));
+        }
     }
 
     private static void verifyAttachment(ControlledFamilyOperations controlled, UUID requestId, boolean first) {
