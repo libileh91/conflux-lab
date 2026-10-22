@@ -1,6 +1,6 @@
 # Sprint 05 — Graphe métier et concurrence bornée
 
-**Statut : planifié.** Prérequis : sprint 04 clos et accord pour ouvrir ce sprint.
+**Statut : planifié — périmètre et tests simplifiés sur demande utilisateur.** Prérequis : sprint 04 clos et accord pour ouvrir ce sprint. Cette révision ne démarre aucune tâche INT-17 à INT-20.
 
 ## Objectif
 
@@ -29,11 +29,11 @@ En tant que développeur, je veux connaître les données attendues et renvoyée
 
 **À faire :**
 - Définir les entrées, les identifiants retournés et les données nécessaires à chaque opération.
-- Préparer des doublures dont les tests pilotent la réussite ou l'échec.
+- Préparer une doublure réutilisable dont les tests pilotent les résultats avec des futures.
 
 **Terminé quand :**
 - [ ] Les contrats A–F décrivent les données nécessaires à chaque dépendance du graphe.
-- [ ] Les tests peuvent compléter les doublures à la demande, sans appel HTTP.
+- [ ] La doublure permet de terminer ou faire échouer une opération à la demande ; elle sera exercée dans les scénarios INT-18/19, sans suite de test dédiée au seul montage.
 
 ### INT-18 — Composer le succès
 **Statut : à faire — feu vert requis.**
@@ -42,11 +42,11 @@ En tant que développeur, je veux lancer chaque opération dès que ses prérequ
 
 **À faire :**
 - Composer le parcours réussi avec `CompletableFuture`, sans barrière globale avant E/F.
-- Tester l'ordre et le chevauchement avec des futures/latches et des attentes bornées, pas avec des `sleep` comme preuve.
+- Réutiliser un scénario nominal piloté pour vérifier les dépendances et l'indépendance des branches, sans test distinct pour chaque flèche du graphe.
 
 **Terminé quand :**
-- [ ] Un test prouve que A précède B/C/D et que B/C/D peuvent être en cours simultanément.
-- [ ] Les tests prouvent que E démarre avec D encore bloquée et que F démarre avec C encore bloquée.
+- [ ] A précède B/C/D, qui peuvent être en cours ensemble ; E attend B/C et F attend B/D, sans barrière globale.
+- [ ] Le scénario contrôlé vérifie l'ordre et l'avancement d'une branche pendant que l'autre reste bloquée. Varier l'ordre de fin de C/D seulement si nécessaire pour vérifier les deux chemins, sans dupliquer toute la préparation.
 
 ### INT-19 — Composer les échecs
 **Statut : à faire — feu vert requis.**
@@ -55,11 +55,11 @@ En tant que consommateur de l'API, je veux un suivi d'échec fiable, afin de ne 
 
 **À faire :**
 - Empêcher le démarrage des opérations dont une dépendance a échoué.
-- Définir comment traiter les branches déjà lancées avant d'enregistrer l'état final.
+- Garder une règle simple : attendre la fin des branches déjà lancées avant d'écrire l'état final, sans annulation forcée.
 
 **Terminé quand :**
-- [ ] Les tests vérifient qu'une dépendance en échec bloque ses descendants.
-- [ ] Un test avec une branche encore en vol vérifie son traitement avant finalisation, sans faux succès ni écriture tardive écrasant un état terminal.
+- [ ] Un échec représentatif, par exemple B, empêche ses descendants E/F de démarrer et interdit un résultat global réussi.
+- [ ] Le même scénario garde une branche en cours, puis la termine pour vérifier la finalisation en échec ; pas de matrice d'erreur A–F ni de réécriture tardive d'un état terminal.
 
 ### INT-20 — Borner les ressources
 **Statut : à faire — feu vert requis.**
@@ -67,12 +67,19 @@ En tant que consommateur de l'API, je veux un suivi d'échec fiable, afin de ne 
 En tant que développeur, je veux limiter les ressources utilisées par les demandes concurrentes, afin d'éviter qu'elles bloquent tous les threads disponibles.
 
 **À faire :**
-- Choisir explicitement les executors, leurs limites et le comportement à saturation, sans `commonPool` implicite.
-- Tester plusieurs demandes sans laisser le listener attendre des tâches dans son propre pool saturé.
+- Choisir explicitement l'executor du graphe et ses limites, en réutilisant l'existant si adapté ; pas de `commonPool` implicite ni d'attente de sous-tâches dans leur propre pool.
+- Réutiliser les preuves de saturation d'INT-15 ; compléter seulement si le nouvel executor ou le nouveau chemin de soumission introduit un risque non couvert.
 
 **Terminé quand :**
-- [ ] Des tests à attentes bornées vérifient le comportement à saturation et l'absence de blocage du listener par son propre pool.
-- [ ] Les tests de demandes concurrentes ne mélangent ni UUID, ni états, ni résultats.
+- [ ] Les ressources sont bornées, le rejet est explicite et le listener ne bloque pas son propre pool en attendant le graphe ; un contrôle ciblé complète seulement les preuves manquantes.
+- [ ] UUID, états et résultats restent propres à chaque demande. Vérifier l'isolation sur deux demandes si un état est partagé, sans campagne de charge.
+
+## Tests au minimum utile
+
+- Partir d'un parcours de succès piloté et d'un échec représentatif ; réutiliser et enrichir ces scénarios entre les tâches, sans nouvelle suite à chaque incrément.
+- Tester le graphe en Java avec des futures contrôlées : pas de contexte Spring, MongoDB ou HTTP ajouté pour vérifier la composition seule.
+- Garder les attentes bornées et libérer les blocages dans les `finally` ; pas de `Thread.sleep` comme preuve.
+- Ajouter un contrôle de ressources ou d'isolation uniquement pour un risque concret du code retenu. Pas de test par DTO, par flèche ou par panne possible, ni d'objectif de nombre de tests.
 
 ## Limites et hors périmètre
 
