@@ -1,98 +1,70 @@
-# Sprint 02 — Contrat REST et BFF mince
+# Sprint 02 — Accepter et consulter une demande
 
-**Statut : stories techniques INT-05 à INT-08 terminées sur feux verts individuels ; passage à INT-09 demandé par l'utilisateur.** Acceptation, suivi mémoire et refus sont vérifiés. La restitution pédagogique de l'apprenant reste non évaluée ; le passage à la suite ne la valide pas.
+**[Simulation ConfluxLab] — INT-05 à INT-08 regroupées en un résultat technique réalisé.** Les développements et preuves historiques ont été obtenus sur leurs feux verts individuels. Ce regroupement documentaire ne crée ni nouvelle exécution, ni validation pédagogique : la restitution orale de l'apprenant reste non évaluée.
 
-## Objectif
+> **Version à retenir :** ce sprint décrit l'acceptation et le suivi **en mémoire au stade 02**, perdus au redémarrage. Depuis INT-10, la production du laboratoire utilise MongoDB ; depuis INT-14/15, elle publie un événement local et tente une prise en charge asynchrone. Ne pas lire les anciennes limites comme l'état actuel du code.
 
-Permettre au client de demander une création de famille puis de consulter son état, sans annoncer que la famille est déjà créée.
+## Story et résultat attendu
 
-## Repères
+En tant que client de l'API, je veux faire accepter une demande de création de famille, obtenir son identifiant puis consulter son état, afin de la suivre sans attendre ni supposer que la famille est déjà créée.
 
-- Un **contrat d'API** décrit les données envoyées, les réponses et les erreurs attendues.
-- Un **DTO** est un objet Java qui transporte des données entre composants ; ce n'est ni un service métier ni un document MongoDB.
-- `202 Accepted` signifie « demande acceptée », pas « traitement terminé » ; `PENDING` signifie « en attente ».
+**Résultat livré au terme du stade 02 :** POST valide → validation → appel Java à Capability → conservation d'un snapshot `PENDING` avec UUID et date → `202` avec liens cohérents ; GET → lecture des seules métadonnées ; refus explicites sans faux reçu ni données rejetées dans les réponses testées.
 
-**Prérequis :** INT-05 peut être préparée après INT-01, sur feu vert, pour débloquer INT-02. Les autres stories attendent le socle assemblé et vérifié d'INT-02/03/04. Cette proposition d'ordre ne démarre aucune tâche.
+**Prérequis historiques :** contrats INT-05 et socle INT-02/03/04 assemblé et vérifié pour le parcours HTTP. INT-05 avait été préparée après INT-01 pour débloquer la compilation d'INT-02, avant l'assemblage INT-03. Le regroupement ne réécrit pas cet ordre de réalisation.
 
-## Stories — un feu vert par tâche
+## Périmètre réalisé ensemble
 
-### INT-05 — Définir les contrats
-**Statut : terminée.** Préparation avancée sur feu vert pour lever le blocage d'INT-02. [Tutoriel INT-05](../../notes/sprint-02/INT-05-definir-les-contrats.md) et [contrat HTTP](../dat/http-contracts.md).
+- Définir cinq types partagés et leurs contraintes : une famille fictive composée d'un principal et de deux ayants droit, reçu et vue de suivi.
+- Garder le **BFF mince** : contrat HTTP, désérialisation/validation MVC, liens publics et adaptation des erreurs. Capability protège aussi les appels Java directs et possède états et stockage.
+- Conserver avant le reçu : copie du payload, UUID de corrélation, `PENDING`, `createdAt`, insertion sans écrasement ; pas d'acquittement artificiel si l'enregistrement échoue.
+- Exposer `POST /api/v1/families` et `GET /api/v1/requests/{requestId}` dans la même application, sans HTTP interne ni accès du BFF au store.
+- Lire sans modifier : `requestId`, `status`, `createdAt` seulement ; distinguer entrée invalide, absence et panne. Protéger les réponses contre l'écho de données sensibles, notamment via `ProblemDetail.instance`.
 
-En tant que développeur, je veux connaître les données et les règles du contrat, afin d'écrire le BFF et Capability sans deviner ce qu'ils doivent échanger.
+**Cours commun : [INT-05 à INT-08 — Accepter et consulter une demande](../../notes/sprint-02/INT-05-accepter-et-consulter-une-demande.md)** — flux, fragments réels, tableaux DTO/HTTP/annotations, preuves et différence avec MongoDB/async actuels. Références : [DAT](../dat/ConfluxLab.md) et [contrat HTTP initial](../dat/http-contracts.md).
 
-**À faire :**
-- Décrire des exemples JSON : un principal, deux ayants droit, acceptation, suivi et erreurs.
-- Définir les types Java correspondants, dont les trois DTO absents, et distinguer validation de forme et invariants métier.
+## Traçabilité des IDs et des preuves historiques
 
-**Terminé quand :**
-- [x] Les champs, règles minimales et exemples de réponses/refus sont documentés, sans données réelles.
-- [x] Les cinq types correspondent aux exemples ; 59 cas de test passent et le `clean verify` global réussit, sans service métier ajouté.
+Les IDs restent stables ; les lignes ci-dessous sont les contributions au même résultat, pas quatre nouvelles tâches à autoriser.
 
-### INT-06 — Accepter une demande
-**Statut : terminée sur demande explicite « ok go 06 ».** Socle INT-02/03/04 et contrats INT-05 disponibles. [Cours et preuves INT-06](../../notes/sprint-02/INT-06-accepter-une-demande.md).
+| ID conservé | Contribution au résultat | Preuve rapportée, non réexécutée ici |
+|---|---|---|
+| **INT-05 — Définir les contrats** | DTO, contraintes et exemples ; compilation débloquée | 59 cas de données/JSON et `clean verify` réussis, sans serveur ni test HTTP à cette étape |
+| **INT-06 — Accepter une demande** | UUID, snapshot mémoire et `PENDING` conservés avant `202` | 96 tests globaux ; JAR : deux POST `202` distincts, entrée invalide `400` ; **GET encore `503`**, pas encore une recherche |
+| **INT-07 — Consulter la demande** | Projection de trois métadonnées en lecture seule ; absence et format distingués | 108 tests globaux ; JAR : deux POST/GET `200 PENDING`, dates stables, `404`/`400`, puis ancien UUID `404` après redémarrage |
+| **INT-08 — Tester les refus** | Refus HTTP/Java sans enregistrement, erreurs confidentielles et isolation ; correction de l'écho via `instance` | 93 cas ciblés finaux, puis 181 tests globaux ; JAR : refus `400`/`415`/`404` sans marqueur ni `instance`, vues de deux demandes stables ; `500` simulés par doublures |
 
-En tant que client de l'API, je veux recevoir un identifiant après l'acceptation de ma demande, afin de pouvoir la suivre sans attendre sa réalisation.
+Ces totaux sont les états successifs consignés dans les notes, **pas des nombres à additionner ni des exécutions de cette réorganisation**. Le cours commun conserve le contexte des passages ciblés et des échecs ayant révélé le défaut de confidentialité, sans recopier les matrices de tests.
 
-**À faire :**
-- Dans Capability, générer un UUID et conserver la demande dans un stockage temporaire en mémoire.
-- Exposer `POST /api/v1/families` dans le BFF, qui appelle Capability en Java.
+## Critères observables — réalisation historique
 
-**Terminé quand :**
-- [x] Le test du POST valide retourne `202`, `requestId`, `PENDING`, `statusUrl` et `Location` cohérents avec la vraie implémentation ; les tests Capability prouvent la conservation préalable du payload et l'absence d'acceptation si le store échoue.
-- [x] Deux demandes identiques reçoivent des UUID distincts et sont conservées séparément ; aucune famille n'est annoncée créée ni aucun traitement simulé.
+- [x] Les cinq types et le contrat décrivent les champs, contraintes minimales et réponses, sans données réelles ni règle d'assurance inventée.
+- [x] Le vrai parcours POST retourne `202`, un UUID et `PENDING`, avec `Location` et `statusUrl` cohérents ; les tests internes prouvent la conservation préalable du payload et l'absence de reçu si le store échoue.
+- [x] Le GET réalisé depuis INT-07 retrouve l'UUID accepté en `200`, sans exposer le payload ; les GET répétés conservent `createdAt` et ne déclenchent aucune écriture ou traitement.
+- [x] UUID absent : `404` ; identifiants manifestement mal formés testés : `400` ; panne de lecture simulée : `500`, pas faux `404`.
+- [x] Les refus MVC n'appellent pas l'acceptation ; les refus Java ne touchent pas le store. Un cas valide à la borne de 100 caractères reste accepté.
+- [x] Les erreurs testées sont génériques, sans valeurs rejetées, traces, causes ou champs de succès ; le défaut d'écho du chemin dans `instance` est reproduit puis corrigé, sur l'objet Java et sa représentation HTTP.
+- [x] Deux demandes restent distinctes, malgré un refus intercalé et dans les essais Java concurrents bornés ; deux POST identiques ne sont pas présentés comme idempotents.
+- [x] La perte mémoire après redémarrage du JAR est démontrée ; les processus de démonstration sont arrêtés et les frontières modulaires restent vérifiées.
 
-**Preuves :** `clean verify` global réussi (96 tests). Démarrage borné du JAR réel : deux POST valides `202` avec UUID distincts, GET de suivi encore `503` et corps invalide `400`, puis processus arrêté. Validation Java directe, copie immuable, collisions et erreurs d'enregistrement sont également testées, sans déclarer INT-08 complète.
+**Apprentissage : non évalué à l'oral.** Les preuves techniques et le passage demandé à la suite ne valident pas automatiquement la compréhension de l'apprenant. Aucun questionnaire ni nouveau travail pédagogique n'est imposé par cette réécriture.
 
-### INT-07 — Consulter la demande
-**Statut : terminée sur demande explicite « commit & go 07 ».** Prérequis INT-06 rempli et commit local `6936408` créé avant le développement. [Cours et preuves INT-07](../../notes/sprint-02/INT-07-consulter-la-demande.md).
+## Limites de ce stade et évolution actuelle
 
-En tant que client de l'API, je veux consulter l'état de ma demande avec son identifiant, afin de savoir où elle en est.
+Au stade 02, la map est volatile, non bornée et sans nettoyage ; les demandes produites restent `PENDING`. Aucun événement, `@Async`, partenaire ou traitement de création de famille n'y est livré. `202` signifie acceptation, pas famille créée ni durabilité. L'UUID sert à la corrélation, pas à l'idempotence ou au contrôle d'accès.
 
-**À faire :**
-- Exposer `GET /api/v1/requests/{requestId}` en passant par l'API Java de Capability.
-- Traiter les identifiants inconnus ou mal formés sans accès direct du BFF au stockage.
+Les refus et la confidentialité sont prouvés pour les chemins exercés, pas pour toutes les combinaisons, coercitions JSON, champs inconnus ou erreurs hors de l'advice. La référence URI vide empêche MVC de recopier le chemin ; son omission du JSON dépend de la sérialisation observée. Ce n'est pas un audit complet de sécurité ou des logs.
 
-**Terminé quand :**
-- [x] Un POST réel puis GET via `Location` retrouve le même UUID en `PENDING`, avec `200` et les seules métadonnées `requestId`, `status`, `createdAt`. Le GET répété conserve l'horodatage.
-- [x] Les tests vérifient `404` pour un UUID inconnu et `400` pour trois identifiants manifestement mal formés, avec erreurs génériques sans champs de succès.
+**Aujourd'hui, le code a évolué :** insertion MongoDB avant le reçu, événement local puis tentative atomique vers `PROCESSING` sur executor borné. Le listener peut démarrer avant le retour du `202` ; il n'est pas encore raccordé au graphe d'orchestration ni aux appels partenaires. Les preuves de persistance après redémarrage relèvent d'INT-12, pas de ce sprint. Une erreur d'écriture ou de soumission actuelle ne prouve pas nécessairement l'absence de document. Voir les [évolutions situées dans le cours commun](../../notes/sprint-02/INT-05-accepter-et-consulter-une-demande.md#8-ne-pas-confondre-ce-stade-avec-le-flux-actuel).
 
-**Preuves :** `clean verify` global réussi (108 tests), dont tests de lecture sans écriture, date d'origine et projection du statut stocké. Le JAR réel vérifie deux POST/GET indépendants, `404`/`400`, puis `404` pour un UUID précédemment accepté après redémarrage ; les deux processus sont arrêtés. Les autres statuts n'apparaissent que dans des fixtures de projection, sans transition métier ajoutée.
+## Bilan technique historique et passage à la suite — 2026-10-21
 
-### INT-08 — Tester les refus
-**Statut : terminée sur demande explicite « commit 07 & go 08 ».** Prérequis INT-05/06/07 remplis ; commit préalable INT-07 `5859b57`, sans push. [Cours et preuves INT-08](../../notes/sprint-02/INT-08-tester-les-refus.md).
-
-En tant que client de l'API, je veux comprendre pourquoi ma demande est refusée, afin de pouvoir la corriger sans voir de détails techniques internes.
-
-**À faire :**
-- Tester les données invalides : champs obligatoires absents et nombre d'ayants droit incorrect.
-- Vérifier les contrôles métier de Capability directement, sans passer uniquement par le BFF.
-
-**Terminé quand :**
-- [x] Les refus HTTP n'appellent pas l'acceptation et les 25 entrées Java invalides ne touchent pas le store ; les contraintes existantes sont protégées sans dépendre du BFF et sans inventer de règle métier.
-- [x] Les erreurs testées restent génériques et sans données rejetées, traces, causes ou champs de succès ; l'écho d'un chemin sensible via `instance` a été reproduit puis corrigé. L'isolation de deux demandes est vérifiée, avec refus intercalé et deux appelants concurrents bornés.
-
-**Preuves :** passage ciblé final de 93 cas réussi puis `clean verify` global de 181 tests, sans échec/erreur/ignoré. JAR réel : refus `400`/`415`/`404` sans marqueur ni `instance`, et deux POST/GET valides inchangés autour des refus. Le processus est arrêté. Les pannes `500` sont simulées par des doublures, pas par une infrastructure réelle.
-
-## Limites et hors périmètre
-
-La mémoire est un stockage pédagogique **perdu au redémarrage**. Les demandes restent `PENDING` : pas encore d'événement, d'orchestration ou de partenaire. Le `202` ne prouve donc ni une conservation durable ni un traitement complet. Un UUID sert à retrouver la demande ; deux POST identiques peuvent encore créer deux demandes.
-
-INT-06 vérifie l'acceptation réelle en mémoire et INT-07 sa consultation via l'API publique, sans HTTP interne. Le GET est une lecture seule, pas un déclencheur métier ; après redémarrage, la map vide ne retrouve pas les anciens UUID. INT-08 complète la matrice choisie des refus, les bornes positives et l'isolation ; elle ne prétend pas couvrir toute combinaison possible, les coercitions non spécifiées ou un audit de sécurité complet. La map n'est ni bornée ni nettoyée à ce stade : usage de labo uniquement, aucune promesse de durabilité. Pas de MongoDB, résilience ou authentification entreprise dans ce sprint.
-
-## Démo et clôture
-
-- [x] Montrer un POST valide, son GET de suivi et un refus de données invalides : démonstrations INT-06/07 et tests associés ; preuves complétées dans INT-08 ; la clôture du sprint et la restitution de l'apprenant restent distinctes.
-- [ ] Expliquer la différence entre « demande acceptée » et « famille créée » ainsi que le partage des validations BFF/Capability.
-
-### Bilan technique et passage à la suite — 2026-10-21
-
-| Élément | Constat |
+| Élément | Constat conservé |
 |---|---|
-| Stories réalisées | INT-05 à INT-08 ; acceptation, consultation et refus en mémoire |
-| Preuves historiques | `clean verify` INT-08 : 181 tests réussis et démonstration du JAR réel ; détails dans le [cours INT-08](../../notes/sprint-02/INT-08-tester-les-refus.md) |
+| Résultat | INT-05 à INT-08 réalisées techniquement : contrat, acceptation, consultation et refus au stade mémoire |
+| Dernier passage global de ce stade | `clean verify` INT-08 : 181 tests réussis ; démonstration du JAR réel décrite dans le cours commun |
 | Contrôle avant commit | 1 test ciblé de confidentialité réussi ; suite globale et démonstration non relancées |
-| Git | INT-08 commitée localement : `fedb8b7` ; aucun push |
-| Limites | Mémoire volatile, demandes `PENDING`, aucune famille créée ni persistance durable |
-| Accord pour la suite | Demande « commit la 08 & passer 09 » ; périmètre limité à INT-09, pas INT-10 |
-| Point pédagogique | Restitution orale non évaluée ; le critère correspondant reste décoché |
+| Référence Git | Commit INT-08 local `fedb8b7` ; aucun push lors de ce passage historique |
+| Accord historique suivant | « commit la 08 & passer 09 » : passage à INT-09 demandé, sans autorisation implicite pour INT-10 ni validation orale |
+| Présente réorganisation | Anciennes notes regroupées dans le cours commun, liens et index migrés ; aucun code, test, build, démarrage ou commit exécuté |
+
+Suivi existant : [TD-B005 — Parcours REST mémoire vérifié](../../notes/todos.md#td-b005), [TD-R004 — Acceptation et réussite distinctes](../../notes/todos.md#td-r004), [TD-R014 — Refus et confidentialité](../../notes/todos.md#td-r014).

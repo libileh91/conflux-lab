@@ -1,90 +1,74 @@
 # Sprint 03 — Persistance MongoDB et cycle des états
 
-**Statut : stories techniques INT-09 à INT-12 terminées ; clôture et restitution pédagogique à confirmer.** Le passage à INT-09 a été demandé après les stories techniques INT-05 à INT-08 ; la restitution pédagogique du sprint 02 n'a pas été évaluée. Docker n'est pas nécessaire au modèle et aux tests unitaires INT-09 ; depuis INT-10, il est requis pour les tests MongoDB et les tests Spring d'assemblage/HTTP qui partagent cette base temporaire. Chaque story conserve son feu vert individuel.
+**[Simulation ConfluxLab] — Deux incréments réalisés techniquement ; clôture et restitution pédagogiques non confirmées.** Les regroupements répondent à deux résultats distincts, sans imposer la fusion de tout le sprint. Les IDs, dates et preuves restent ceux des réalisations INT-09 → INT-10 → INT-11 → INT-12.
 
-## Objectif
+## Prérequis communs
 
-Remplacer le stockage en mémoire par MongoDB pour retrouver une demande après un redémarrage et contrôler ses changements d'état.
+- Contrat POST/GET et frontières du monolithe établis : une application Spring Boot, appel Java Experience → API publique de Capability, aucun HTTP interne.
+- Capability possède modèle, stockage et transitions ; le BFF adapte les réponses sans accès direct à MongoDB.
+- JDK 21 et Maven Wrapper. Docker accessible pour les tests MongoDB/Testcontainers et les tests Spring concernés, pas pour le modèle unitaire seul.
+- Pour l'usage local de l'application : MongoDB accessible via `MONGODB_URI`. Démarrer le contexte Spring ne prouve pas que la base accepte les lectures/écritures.
 
-## Repères
+## INT-09 + INT-11 — Modèle et transitions atomiques
 
-- La **persistance** conserve les données au-delà de l'arrêt de l'application.
-- Un **repository** est le composant qui lit et écrit les données ; seul Capability y accède.
-- **Testcontainers** lance un MongoDB temporaire dans Docker pour isoler les tests.
+**Statut : réalisé techniquement.** [Cours — Modèle et transitions atomiques](../../notes/sprint-03/INT-09-modele-et-transitions-atomiques.md).
 
-## Stories — un feu vert par tâche
+En tant que développeur, je veux représenter la vie d'une demande et conditionner ses transitions à l'état réellement stocké, afin d'éviter les cycles incohérents, les doubles prises en charge et l'écrasement d'un état final.
 
-### INT-09 — Définir les données et transitions
-**Statut : terminée sur demande « commit la 08 & passer 09 ».** Commit local préalable INT-08 : `fedb8b7`, sans push. [Cours et preuves INT-09](../../notes/sprint-03/INT-09-definir-les-donnees-et-transitions.md).
+**Résultat livré :** un modèle de dates et de statuts, puis une modification partielle conditionnelle dans un seul `findAndModify`. La copie Java locale ne remplace pas la protection en base. La partie MongoDB s'appuie sur le document créé par l'incrément insertion/persistance.
 
-En tant que développeur, je veux définir les informations conservées et les changements d'état permis, afin de représenter correctement la vie d'une demande.
+**Critères observables, vérifiés historiquement :**
 
-**À faire :**
-- Décrire `family_requests` : identifiant, données reçues, état, dates et éventuels résultat/erreur.
-- Définir `PENDING → PROCESSING → SUCCEEDED/FAILED`, en expliquant chaque état.
+- [x] Le cycle autorise seulement `PENDING → PROCESSING → SUCCEEDED/FAILED`, sans saut, répétition ni réouverture d'un état final.
+- [x] `createdAt` reste fixe, `updatedAt` ne recule pas, et `completedAt` apparaît uniquement à la fin, égal à `updatedAt`. `transitionTo(...)` retourne une copie sans sauvegarde.
+- [x] Deux tentatives concurrentes sur le même UUID `PENDING` donnent un seul gagnant ; statut attendu périmé ou date trop ancienne ne modifie pas le document. Aucun upsert ne crée une demande inconnue.
+- [x] Une tentative périmée n'écrase ni `SUCCEEDED` ni `FAILED`, même avec une date future ; UUID, payload, dates d'origine et champs non concernés sont conservés.
+- [x] La projection HTTP ne divulgue pas le diagnostic fictif utilisé pour vérifier la conservation des champs internes. Ce témoin de test n'est pas un nouveau schéma métier d'erreur.
 
-**Terminé quand :**
-- [x] Le [modèle documenté](../dat/ConfluxLab.md#6-données-mongodb) décrit les champs et dates ; `StoredFamilyRequest` porte les six champs utiles au cycle. `result?`/`error?` restent des champs cibles optionnels explicitement différés, sans schéma métier inventé ni exposition au BFF.
-- [x] Deux tests unitaires vérifient les deux issues du cycle et les refus, notamment la sortie de `SUCCEEDED`/`FAILED` ; un test existant confirme toujours l'acceptation en mémoire avant retour.
+## INT-10 + INT-12 — Insertion et persistance MongoDB
 
-**Preuves :** 3 tests ciblés exécutés, aucun échec/erreur/ignoré, `BUILD SUCCESS`. Seuls deux tests ont été ajoutés. Aucun MongoDB, nouveau test HTTP, build global ou traitement asynchrone. Les transitions retournent une copie et ne réalisent ni sauvegarde ni prise en charge atomique.
+**Statut : réalisé techniquement.** [Cours — Insertion et persistance MongoDB](../../notes/sprint-03/INT-10-insertion-et-persistance-mongodb.md).
 
-### INT-10 — Persister avant d'accepter
-**Statut : terminée sur feu vert « commit la 9 & go INT-10 », confirmé ensuite par « ok continue ».** INT-09 commitée au préalable : `185bdd7`, sans push. [Cours et preuves INT-10](../../notes/sprint-03/INT-10-persister-avant-d-accepter.md).
+En tant que développeur, je veux enregistrer la demande avant son acceptation et la retrouver après redémarrage de l'application, afin que son suivi ne dépende plus de la mémoire de la JVM.
 
-En tant que client de l'API, je veux que ma demande soit enregistrée avant son acceptation, afin de pouvoir la retrouver si l'application redémarre.
+**Résultat livré :** MongoDB remplace la mémoire de production ; insertion acquittée avant `202`, UUID unique sans remplacement, consultation des métadonnées et preuve HTTP sur deux JVM successives du même JAR. Failsafe exécute les IT après le packaging.
 
-**À faire :**
-- Remplacer la mémoire par un repository MongoDB dans Capability.
-- Attendre la confirmation d'écriture avant de renvoyer `202`.
+**Critères observables, vérifiés historiquement :**
 
-**Terminé quand :**
-- [x] Un POST réel via MVC insère dans MongoDB ; le test relit le même UUID, payload et dates. Une seconde insertion du même `_id` est refusée sans écrasement par l'index unique natif.
-- [x] Une erreur d'insertion simulée sur le store, avec le vrai service et le BFF, renvoie `500` générique sans `Location` ni reçu `202`.
+- [x] Une demande valide est insérée avant le retour d'acceptation ; UUID, payload et dates sont ensuite relus dans MongoDB. Une collision de `_id` échoue sans écrasement ni fallback mémoire.
+- [x] Une exception d'insertion simulée avec le vrai service et le BFF donne `500` générique sans `Location` ni reçu. Ce n'est pas une coupure réseau après écriture.
+- [x] Le GET lit sans modifier et n'expose que `requestId`, `status`, `createdAt`. Une absence devient `404` ; un état métier `FAILED` connu reste consultable en `200`.
+- [x] Après arrêt de la première JVM et relance du même JAR dans une nouvelle JVM, avec la même base maintenue en fonctionnement, le GET retrouve les mêmes métadonnées sans recréer la demande.
+- [x] Les goals Failsafe `integration-test` et `verify` sont réellement observés après packaging. Le passage INT-12 sélectionne **1 cas Surefire + 5 cas Failsafe**, pas toute la suite.
 
-**Preuves :** 2 nouveaux tests et 1 test de suivi POST/GET réutilisé, tous réussis avec un MongoDB standalone Testcontainers `mongo:8.0.16`. Le service attend l'insertion acquittée (`majority` + journal) avant le reçu. Aucun fallback mémoire de production. Testcontainers est épinglé en 1.21.4 après reproduction d'une incompatibilité API Docker en 1.21.3 ; conteneurs temporaires supprimés. À l'issue d'INT-10, suite globale, JAR et redémarrage non exécutés ; INT-11/12 n'étaient pas encore commencées. Leurs résultats ultérieurs figurent ci-dessous.
+## IDs, statuts et preuves historiques
 
-**Complément documentaire, sans changement de périmètre :** [MongoDB standalone ou replica set](../../notes/sprint-03/INT-10-complement-mongodb-replica-set.md), lié à INT-10 ; aucune topologie répliquée créée ou testée.
+| ID | Incrément et statut technique | Preuve datée et portée |
+|---|---|---|
+| **INT-09** | Modèle/transitions — terminée | **2026-10-21 : 3 cas ciblés réussis**, 2 tests du modèle ajoutés + 1 acceptation existante. Stockage encore en mémoire, pas de MongoDB à cette étape |
+| **INT-10** | Insertion/persistance — terminée | **2026-10-21 : 3 cas ciblés réussis**, 2 nouveaux + 1 suivi réutilisé. Insertion/relecture/collision réelles sur standalone ; panne d'insertion simulée sans faux reçu |
+| **INT-11** | Modèle/transitions — terminée | **2026-10-22 : 4 cas ciblés réussis**, 2 nouveaux MongoDB + 2 modèle réutilisés. Un seul gagnant, dates/statuts périmés refusés, états finaux protégés |
+| **INT-12** | Insertion/persistance — terminée | **2026-10-22 : 1 cas Surefire + 5 cas Failsafe réussis**, `BUILD SUCCESS`, aucun échec/erreur/ignoré. Quatre cas MongoDB réutilisés + un nouveau redémarrage : UUID, `PENDING` et `createdAt` conservés |
 
-### INT-11 — Sécuriser les mises à jour
-**Statut : terminée sur feu vert « commit ça & push puis go INT-11 ».** Le complément théorique INT-10 a été commité et poussé auparavant : `66e0ade`. [Cours et preuves INT-11](../../notes/sprint-03/INT-11-securiser-les-mises-a-jour.md).
+Les vérifications MongoDB utilisent `mongo:8.0.16` standalone via Testcontainers `1.21.4`. Les processus et conteneurs temporaires ont été nettoyés à l'issue des preuves historiques. Les critères cochés ci-dessus ne signalent aucune nouvelle exécution lors de cette révision documentaire.
 
-En tant que développeur, je veux empêcher deux traitements de prendre la même demande en charge simultanément, afin d'éviter des exécutions concurrentes incohérentes.
+## Complément de lecture — replica set, théorie uniquement
 
-**À faire :**
-- Modifier un état seulement si sa valeur actuelle permet la transition demandée.
-- Conserver des dates et erreurs cohérentes, sans écraser un résultat final.
+[INT-10 — Standalone ou replica set](../../notes/sprint-03/INT-10-complement-mongodb-replica-set.md) distingue deux ou trois membres, quorum électoral, acquittement, découverte, délais et reprises du driver. **Ce complément n'est ni une nouvelle tâche ni un troisième incrément. Aucun cluster n'est créé ou testé.**
 
-**Terminé quand :**
-- [x] Deux appelants libérés ensemble tentent la prise en charge sur MongoDB réel ; un seul `findAndModify` correspond au statut `PENDING` et retourne le document passé à `PROCESSING`.
-- [x] Graphe interdit, date antérieure, statut attendu périmé et écrasement des deux états finaux sont refusés ; dates et données restent cohérentes. Le suivi HTTP n'expose pas le diagnostic fictif conservé dans la fixture.
+## Lecture historique et limites
 
-**Preuves :** 2 nouveaux tests MongoDB + 2 tests du modèle existants, tous réussis (`BUILD SUCCESS`), sans suite globale. Mise à jour conditionnelle en une commande, sans upsert, préservant payload et dates d'origine. Le diagnostic du test ne constitue pas un nouveau schéma d'erreur métier ; `error`/`result` restent différés. Aucun appelant de production n'exécute encore de traitement et aucune route de transition n'est créée. À l'issue d'INT-11, INT-12 n'était pas commencée ; sa preuve ultérieure figure ci-dessous.
+À la fin d'INT-12, les demandes restaient normalement **`PENDING`**. Depuis INT-14, la publication après insertion et le listener peuvent les passer à **`PROCESSING`** ; le scénario actuel de redémarrage attend cet état puis vérifie sa conservation. Le reçu POST garde son statut initial, même si le GET voit déjà `PROCESSING` ; le worker peut démarrer avant réception du `202`.
 
-### INT-12 — Vérifier la persistance
-**Statut : terminée sur feu vert « commit 11 & go 12 ».** INT-11 commitée localement au préalable : `af3f215`, sans push. [Cours et preuves INT-12](../../notes/sprint-03/INT-12-verifier-la-persistance.md).
+Les cours répartissent les limites selon leur sujet :
 
-En tant que développeur, je veux tester la conservation des demandes avec un vrai MongoDB isolé, afin de vérifier autre chose qu'une simulation en mémoire.
+- **Modèle et CAS :** atomicité d'un document, pas d'exactly-once, de propriétaire/bail ou de transaction MongoDB + HTTP partenaire. Les transitions finales sont protégées, mais aucun parcours métier finalisant la demande n'est actuellement raccordé.
+- **Insertion et persistance :** UUID unique n'est pas idempotence ; dates BSON à la milliseconde ; timeout/déconnexion peuvent masquer une écriture réussie. `wtimeout` ne borne ni tout le journal ni toute la requête HTTP. Le redémarrage conserve MongoDB vivant, sans preuve de récupération après perte du disque.
+- **Vérifications :** `-Dtest` sélectionne Surefire, pas Failsafe. Le `verify` INT-12 compile et package le réacteur mais n'exécute pas toute la suite Surefire : les six cas ne prouvent pas une suite complète verte ou une CI exécutée.
 
-**À faire :**
-- Exécuter les tests MongoDB via Testcontainers avec des données isolées.
-- Relancer l'application avec la même base pour démontrer la relecture ; raccorder les tests `*IT` à Maven Failsafe.
+## Clôture pédagogique
 
-**Terminé quand :**
-- [x] Un seul nouveau test démarre le JAR réel, crée et consulte une demande, arrête la première JVM puis relance le même JAR avec la même base temporaire : UUID, statut `PENDING` et `createdAt` identiques après redémarrage.
-- [x] Failsafe est raccordé aux phases `integration-test`/`verify` et exécute 5 cas dans 3 classes `*IT`. Le passage `clean verify` observé sélectionne un seul contrôle Surefire de frontière Experience/Capability ; les rapports attestent 6 réussites au total. La commande sans filtre est configurée mais n'a pas été exécutée telle quelle.
+- [x] Deux résultats techniques documentés avec leurs cours, fragments expliqués, critères et preuves datées ; complément théorique distinct.
+- [ ] Compréhension de l'apprenant, restitution du refus de faux `202` et clôture pédagogique : **non confirmées**. La réalisation technique ne vaut pas évaluation orale.
 
-**Preuves :** JAR packagé et exécuté dans les PID `591557`, puis `591651`, arrêtés à l'issue du test. Même demande `3bfc5530-6199-402c-ace1-c54f18d6c9ae` relue depuis le même MongoDB `localhost:32773`. Les 4 cas MongoDB INT-10/11 sont réutilisés après renommage `*IT` ; seul le test de redémarrage est nouveau. `BUILD SUCCESS`, aucun échec/erreur/ignoré, conteneurs temporaires supprimés. Pas de suite Surefire complète, de redémarrage MongoDB, de CI ou d'asynchronisme.
-
-## Limites et hors périmètre
-
-Il n'y a pas encore de traitement en arrière-plan : les demandes restent normalement `PENDING`. Les autres transitions sont appelées dans les tests, pas simulées comme un parcours métier réussi.
-
-Le UUID ne suffit pas à empêcher deux créations métier identiques. MongoDB et un partenaire HTTP ne partagent pas de transaction qui annulerait tout ensemble. Pas de reprise automatique, événement durable ou transaction distribuée.
-
-## Démo et clôture
-
-- [x] Enregistrer une demande, redémarrer l'application avec la même base et retrouver son état : démonstration automatisée du JAR dans INT-12.
-- [ ] Montrer le test d'échec de stockage et expliquer pourquoi il interdit un faux `202` : le test a été réexécuté avec succès sous Failsafe ; la restitution de l'apprenant reste non évaluée.
-
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les prérequis Docker, tests et preuve de relecture réellement observés.
+**Aucun code, test, build ou commit exécuté pour cette révision.**

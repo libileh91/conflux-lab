@@ -1,90 +1,64 @@
-# Sprint 04 — Spring Events locaux et traitement asynchrone
+# Sprint 04 — Prise en charge asynchrone et maîtrise de l'exécution
 
-**Statut : INT-13 à INT-16 terminées dans leur périmètre technique ; clôture pédagogique du sprint 04 à confirmer.** INT-14 et le plan allégé sont dans `bdb93f8`, INT-15 et les notes enrichies dans `59c881c`. INT-16 consolide ces preuves sur feu vert « go 16 », sans modification Java ni réexécution des tests. La clôture pédagogique du sprint 03 reste également à confirmer.
+**Statut : deux incréments réalisés dans leur périmètre technique.** La prise en charge s'arrête à `PROCESSING` ; le parcours de création d'une famille de bout en bout n'est pas réalisé par ce flux. Restitution orale non évaluée et clôture pédagogique à confirmer.
 
-## Objectif
+**[Simulation ConfluxLab]** Le sprint classe deux résultats distincts : il n'impose ni une seule tâche ni une seule note par sprint. Les IDs restent stables ; cette réorganisation ne change ni leurs preuves ni leur chronologie.
 
-Répondre au client sans attendre la fin du travail, tout en comprenant les erreurs possibles entre acceptation et traitement.
+| Incrément | Résultat livré | Cours |
+|---|---|---|
+| **INT-13 + INT-14 + INT-16** | Prendre en charge les demandes en arrière-plan | [Insertion, publication, proxy, claim, suivi et fenêtres de panne](../../notes/sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md) |
+| **INT-15** | Borner et diagnostiquer l'exécution | [Pool borné, paramètres, rejet et erreurs async](../../notes/sprint-04/INT-15-pool-borne-et-erreurs-async.md) |
 
-## Repères
+**Prérequis réalisés :** acceptation persistée et suivi MongoDB d'INT-10/12, transition atomique d'INT-11. Une application Spring Boot ; Experience appelle l'interface publique de Capability en Java, sans accès au store interne. Le parcours réel nécessite MongoDB ; les tests historiques utilisent Testcontainers.
 
-- Un **événement Spring local** transmet une information dans l'application ; il n'est pas conservé pour survivre à un arrêt.
-- Un **listener** reçoit cet événement ; `@Async` lui permet de travailler sur un autre thread.
-- Un **executor** fournit les threads et une file d'attente dont les capacités doivent être limitées.
+## INT-13 + INT-14 + INT-16 — Prendre en charge les demandes en arrière-plan
 
-## Stories — un feu vert par tâche
+En tant que développeur, je veux détacher la prise en charge de la requête HTTP et consulter son état, afin de suivre les demandes sans attendre leur traitement ni promettre une exécution durable.
 
-### INT-13 — Dessiner les fenêtres de panne
-**Statut : terminée sur feu vert « go 13 » ; documentation uniquement.** Point de départ : INT-12 commitée et poussée (`470494b`). [Cours, schémas et limites INT-13](../../notes/sprint-04/INT-13-dessiner-les-fenetres-de-panne.md).
+**Périmètre réalisé :** insertion confirmée de `PENDING`, publication locale de l'UUID, listener via proxy async, claim atomique et suivi courant. Les trois fenêtres de panne et les preuves de concurrence sont expliquées dans le [cours de prise en charge](../../notes/sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md).
 
-En tant que développeur débutant, je veux repérer où une demande peut rester bloquée, afin de comprendre ce que le client peut attendre après son acceptation.
+**Critères observables réalisés, selon les preuves historiques :**
 
-**À faire :**
-- Dessiner l'écriture en base, la publication, la mise en file, la prise en charge et la réponse HTTP.
-- Décrire les conséquences d'un arrêt ou du refus d'une tâche par l'executor.
+- [x] Publication seulement après insertion confirmée ; échec de sauvegarde sans publication ni reçu d'acceptation.
+- [x] POST `202 PENDING` possible pendant que le test bloque les claims ; le worker est distinct du thread HTTP, sans ordre imposé autour de la réception du `202`.
+- [x] Deux réceptions du même UUID peuvent lire `PENDING`, mais la commande conditionnelle atomique MongoDB ne laisse qu'un gagnant.
+- [x] GET limité aux métadonnées, pouvant lire `PENDING` ou `PROCESSING` ; UUID et date de création stables, sans payload exposé.
+- [x] Insertion non confirmée, demande enregistrée sans prise en charge et interruption après claim expliquées ; attentes bornées et nettoyage des tests relus dans INT-16, sans nouveau scénario ou run.
 
-**Terminé quand :**
-- [x] Le schéma cible sépare les branches HTTP et worker après soumission ; la prise en charge peut précéder ou suivre le `202`, sans ordre artificiel.
-- [x] Trois situations expliquent les réponses HTTP et états possibles : insertion non confirmée ; demande enregistrée mais pas prise en charge (arrêt ou rejet inclus) ; traitement pris en charge puis interrompu.
+**Repère de lecture :** INT-14 utilisait `applicationTaskExecutor`, auto-configuré par Boot. INT-15 a ensuite ajouté le pool dédié `familyRequestExecutor` ; INT-16 a relu ce câblage final depuis `59c881c`. Rattacher cette relecture au premier incrément ne lui attribue pas la réalisation du bornage.
 
-**Preuves :** analyse statique initiale du code à l'issue d'INT-12, puis réécriture documentaire simplifiée. Le [DAT §7.1](../dat/ConfluxLab.md#71-fenêtres-de-panne-documentées--int-13) en conserve la synthèse. Un schéma et trois cas suffisent ; aucune panne exécutée, aucune reprise automatique ajoutée. La révision ne touche pas à l'ébauche INT-14.
+## INT-15 — Borner et diagnostiquer l'exécution
 
-### INT-14 — Publier et consommer
-**Statut : terminée sur reprise « commit la 13 et reprends la 14 ».** Après la pause et le commit local `6081781`, le périmètre retenu reste publication, listener et prise en charge ; bornage dédié et erreurs restent dans INT-15. [Cours et preuves INT-14](../../notes/sprint-04/INT-14-publier-et-consommer.md).
+En tant que développeur, je veux limiter les tâches en cours et en attente et identifier leurs erreurs sans données privées, afin de rendre les saturations visibles sans bloquer le thread HTTP par un travail de secours.
 
-En tant que client de l'API, je veux que le travail soit pris en charge séparément de ma requête HTTP, afin de ne pas attendre sa réalisation complète.
+**Périmètre réalisé :** pool dédié nommé par `@Async`, trois propriétés configurables, rejet `AbortPolicy`, handler d'exceptions async `void` et attente de fermeture bornée. Les réglages et leurs conséquences sont expliqués dans le [cours de maîtrise de l'exécution](../../notes/sprint-04/INT-15-pool-borne-et-erreurs-async.md).
 
-**À faire :**
-- Publier un événement avec le `requestId` uniquement après écriture confirmée en base.
-- Faire relire la demande par le listener `@Async`, puis la passer de `PENDING` à `PROCESSING` une seule fois.
+**Critères observables réalisés, selon les preuves historiques :**
 
-**Terminé quand :**
-- [x] Deux tests unitaires existants vérifient la publication après sauvegarde et son absence en cas d'échec ; le test événementiel soumet deux réceptions et observe un seul gagnant sur MongoDB réel.
-- [x] Le POST répond `202` alors que le listener reste bloqué par un signal de test ; deux workers atteignent la prise en charge avant libération, sur des threads distincts du thread HTTP. Aucun ordre après le `202` n'est imposé.
+- [x] Pool fixe et file bornée : défauts de 2 workers, 16 places et 5 s d'attente à la destruction du bean ; valeurs invalides refusées au démarrage par le code.
+- [x] Avec 2 workers/1 place occupés dans le test, la soumission suivante produit `500` sans reçu ni `Location`, sans exécution sur le thread HTTP ; l'insertion reste `PENDING`.
+- [x] Erreur de lecture async injectée : journal `ERROR` avec UUID/type, sans message privé ; le handler ne change pas le document et n'invente pas `FAILED`.
+- [x] Attente de fermeture configurée, sans la présenter comme un timeout de tâche ou un arrêt forcé ; aucun test d'arrêt prolongé revendiqué.
 
-**Preuves :** `verify` ciblé réussi, 5 cas Surefire + 4 cas Failsafe, aucun échec/erreur/ignoré. Un seul scénario ajouté ; tests de suivi, insertion et redémarrage réutilisés et adaptés. Le JAR réel conserve `PROCESSING` après redémarrage. Le listener s'arrête à cette transition : aucun métier, état final, reprise ou pool dédié borné ajouté. La suite complète et les scénarios d'INT-15/16 n'ont pas été exécutés.
+## Traçabilité des IDs et des preuves
 
-### INT-15 — Borner l'exécution
-**Statut : terminée sur feu vert « ok commit ça & go 15 ».** Périmètre allégé respecté, commit préalable `bdb93f8`. [Cours et preuves INT-15](../../notes/sprint-04/INT-15-borner-l-execution.md).
+Les IDs historiques restent stables. Les comptes décrivent les passages du **2026-10-22**, pas une validation renouvelée.
 
-En tant que développeur, je veux limiter les tâches en cours et en attente, afin d'éviter une accumulation sans limite et de rendre les refus visibles.
+| ID stable | Incrément de rattachement | Contribution et preuve historique |
+|---|---|---|
+| **INT-13** | Prise en charge | [Fenêtres de panne](../../notes/sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md#5-trois-fenêtres-de-panne-utiles) : analyse documentaire, un schéma et trois situations, aucune panne exécutée |
+| **INT-14** | Prise en charge | [Preuves INT-14](../../notes/sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md#6-preuves-historiques), repère `bdb93f8` : **5 cas Surefire + 4 cas Failsafe** réussis, aucun échec/erreur/ignoré ; un seul scénario ajouté, suivi/insertion/redémarrage réutilisés |
+| **INT-15** | Bornage et diagnostic | [Preuves INT-15](../../notes/sprint-04/INT-15-pool-borne-et-erreurs-async.md#6-preuves-historiques-int-15), repère `59c881c` : **1 cas Surefire + 3 cas Failsafe** réussis, aucun échec/erreur/ignoré ; deux cas ajoutés, concurrence réutilisée |
+| **INT-16** | Prise en charge, relecture après INT-15 | [Consolidation des preuves](../../notes/sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md#6-preuves-historiques) : code et deux rapports ciblés INT-15 relus, aucune adaptation nécessaire pour les critères ; **aucun build ou test réexécuté** |
 
-**À faire :**
-- Brancher le listener sur un seul executor dédié : threads et file bornés, rejet explicite, attente d'arrêt bornée.
-- Journaliser les exceptions du listener `@Async void` avec le `requestId`, sans payload personnel ni nouveau champ public de diagnostic.
+Les sélections se recouvrent : **ne pas additionner leurs comptes ni en déduire une suite globale actuelle**. La présente rédaction ne relit/actualise pas les rapports générés, ne lance aucun test et ne redémarre pas le JAR.
 
-**Terminé quand :**
-- [x] Executor dédié configuré à 2 workers, 16 places et 5 s d'attente à la destruction du bean, valeurs modifiables. Le test à 2 workers/1 place remplit ces capacités puis vérifie le quatrième POST refusé en `500`, sans exécution sur le thread HTTP ni faux `202` ; son document reste `PENDING`.
-- [x] Une erreur de lecture simulée du listener produit un journal `ERROR` avec UUID et type, sans le message privé de l'exception. Le document reste `PENDING`, sans écriture de `FAILED`.
+## Limites communes et bilan
 
-**Preuves :** `verify` ciblé, 1 cas Surefire + 3 cas Failsafe réussis, aucun échec/erreur/ignoré. Deux cas ajoutés, un cas événementiel existant réutilisé. L'attente de fermeture est configurée, pas expérimentée avec un worker durablement bloqué ; elle ne force pas la fin d'une tâche. Suite complète et redémarrage du JAR non exécutés dans INT-15.
+L'événement Spring reste local et non durable, pas un broker. Le `202` ne signifie ni fin du traitement ni garantie de reprise ; l'UUID corrèle, sans rendre les POST idempotents. Un document peut survivre sans tâche ou worker vivant.
 
-**Limite volontaire :** pas de stockage de diagnostics, de nouvel état, de reprise ou de simulation de crash. Les états finaux seront gérés avec le travail métier réel.
+Le listener termine après la tentative de claim. **Même après INT-20, l'orchestration Java n'est pas raccordée au listener : aucun appel partenaire ni état final `SUCCEEDED`/`FAILED` n'est produit par ce chemin.** Aucun mécanisme de reprise ou stockage de diagnostics n'est ajouté.
 
-### INT-16 — Tester avec un traitement contrôlé
-**Statut : terminée sur feu vert « go 16 ».** Consolidation du code de `59c881c` et des preuves INT-14/15, sans nouveau scénario ni réexécution. [Bilan et lecture guidée INT-16](../../notes/sprint-04/INT-16-tester-avec-un-traitement-controle.md).
+La conservation de `PROCESSING` après redémarrage du vrai JAR reste une preuve INT-14, pas une reprise de traitement. Pas de suite complète, crash forcé, mesure de performance ou CI verte revendiqués. Les deux résultats techniques sont documentés séparément ; la clôture pédagogique reste à confirmer, sans maîtrise orale inventée ni exercice imposé.
 
-En tant que développeur, je veux disposer de tests fiables et de preuves lisibles du flux asynchrone, afin de le vérifier sans dépendre du hasard ni multiplier les tests.
-
-**À faire :**
-- Réutiliser le test événementiel d'INT-14 et les vérifications d'INT-15 ; adapter leur instrumentation au câblage final si nécessaire, sans créer de faux métier de production.
-- Vérifier les attentes bornées, la libération des signaux de test et les preuves obtenues ; compléter seulement un manque concret.
-
-**Terminé quand :**
-- [x] Les trois cas existants couvrent `202` indépendant du worker, un seul gagnant, rejet à saturation et erreur async journalisée. Câblage sur `familyRequestExecutor`, attentes bornées et nettoyage dans les `finally` relus ; pas de doublon ni de `Thread.sleep` comme preuve.
-- [x] Le bilan distingue les résultats historiques d'INT-14/15 de la revue INT-16, sans exécution supplémentaire. La limite d'abandon d'INT-13 est rappelée ; aucun nouveau test, redémarrage du JAR ou crash forcé n'est nécessaire aux critères.
-
-**Preuves :** revue du test et de son câblage ; relecture des deux rapports ciblés d'INT-15 (1 cas Surefire et 3 cas Failsafe, aucun échec/erreur/ignoré). Ces quatre réussites ne sont pas une nouvelle exécution INT-16. Aucune adaptation de code n'a été nécessaire.
-
-## Limites et hors périmètre
-
-Le `202` n'assure ni réussite finale ni exécution durable. Un arrêt peut abandonner une demande `PENDING` ou `PROCESSING` ; l'événement Spring local n'est pas une file de messages durable.
-
-Les blocages et erreurs contrôlés restent dans les tests : pas de nouveau faux traitement métier dans l'application. Pas de broker, de reprise automatique, de stockage de diagnostics ou d'orchestration A–F dans ce sprint.
-
-## Démo et clôture
-
-- [ ] Présenter les preuves réutilisées d'INT-14/15 : réponse HTTP indépendante, prise en charge unique, rejet et erreur journalisée avec l'UUID.
-- [ ] Expliquer, sans imposer une nouvelle simulation, pourquoi un événement local peut être perdu et laisser une demande abandonnée.
-
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les résultats et limites réellement observés.
+Cette réorganisation n'autorise aucun développement suivant. Suivi existant : [repères de prise en charge](../../notes/sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md#7-repères-et-suivi) et [repères de bornage/diagnostic](../../notes/sprint-04/INT-15-pool-borne-et-erreurs-async.md#7-repères-et-suivi).

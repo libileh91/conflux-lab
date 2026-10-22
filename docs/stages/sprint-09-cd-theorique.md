@@ -1,78 +1,47 @@
-# Sprint 09 — Atelier CD et restitution d'entretien
+# Sprint 09 — Expliquer le projet et la livraison
 
-**Statut : planifié — théorie uniquement.** Prérequis : comprendre le parcours et la CI ; accord pour cet atelier. Un accès GitHub bloqué n'empêche pas l'atelier, mais la CI ne doit pas être présentée comme validée.
+**Statut : non commencé — théorie / atelier uniquement, feu vert requis pour l'incrément complet INT-33 à INT-36.**
+Prérequis : parcours et résultats de CI disponibles pour discussion ; une CI bloquée n'empêche pas l'atelier, mais doit être présentée comme telle.
+Une seule séance, un seul feu vert et une seule note pour l'ensemble ; aucun des quatre IDs ne constitue une séance à autoriser séparément.
 
-## Objectif
+## Objectif / story
 
-Expliquer comment une version pourrait être livrée et présenter le parcours en entretien, sans créer de pipeline de livraison ni déployer quoi que ce soit.
-Ce sprint est un objectif pédagogique : chaque séance attend son feu vert individuel ; le plan ne lance rien. Les vérifications sont documentaires et orales, sans test exécutable requis.
+En tant que développeur préparant un entretien, je veux présenter le projet puis raisonner sur sa livraison, afin de défendre ses choix et ses limites sans revendiquer une expérience non confirmée.
 
-## Repères
+## Déroulé de la séance
 
-- Un **artefact immuable** est une version construite une fois, conservée sans modification entre les environnements.
-- La **CD** désigne la livraison ou le déploiement continus, deux pratiques à distinguer et étudiées ici seulement en théorie.
-- Un **rollback** est un retour à une version précédente ; il n'annule pas automatiquement les données modifiées ni les actions d'un partenaire.
+- Présenter d'abord le parcours et dessiner le graphe A–F : A précède B/C/D, E attend B et C, F attend B et D ; distinguer acceptation HTTP, traitement asynchrone et concurrence.
+- Situer BFF mince et Capability dans la même JVM, avec appels Java internes, MongoDB et événement local ; Feign/Resilience4j reste réservé au partenaire fictif WireMock.
+- Expliquer les limites utiles : événement non durable après crash, UUID de corrélation sans idempotence, échecs partiels sans transaction globale ni garantie exactly-once ; citer une preuve existante sans relancer de test.
+- Dessiner ensuite une livraison conceptuelle : construire une fois, promouvoir le **même artefact immuable** entre environnements, séparer configuration/secrets et prévoir contrôles et approbation avant mise en service.
+- Distinguer CI, livraison continue (version prête à livrer) et déploiement continu (mise en service automatique après validations), sans installer ni exécuter de pipeline.
+- Sur un incident fictif après mise en service, expliquer les signaux de détection, la décision d'arrêter ou poursuivre et le rollback ; revenir à une version précédente n'annule ni les données modifiées ni une action partenaire.
+- Avancer **une question à la fois** : attendre la réponse, corriger puis proposer une formulation orale de 30–60 secondes avant la suivante, dans cette même séance.
+- Séparer **[AXA rapporté]**, **[Simulation ConfluxLab]**, **[Proposition]** et **[Non confirmé]** ; ne pas attribuer à AXA les mesures du labo, la stack pédagogique ou la conception intégrale à l'utilisateur.
 
-## Tâches — un feu vert par séance
+## Critères observables et preuves minimum
 
-### INT-33 — Dessiner la livraison conceptuelle
-**Statut : à faire — feu vert requis.**
+- [ ] La présentation restitue les responsabilités et dépendances A–F ; elle explique pourquoi `202` ne signifie pas travail terminé et pourquoi asynchrone ne signifie pas automatiquement plus rapide.
+- [ ] Un dessin du parcours et un schéma de livraison conceptuelle permettent de suivre le même artefact, la configuration externe, les contrôles et l'approbation.
+- [ ] Une réponse discutée sur l'incident explique quand envisager un rollback et ce qu'il ne répare pas, sans promettre de rollback distribué.
+- [ ] Les réponses distinguent faits AXA confirmés, simulation, propositions et inconnues ; tests prévus, preuves réellement disponibles et éventuelle CI bloquée ne sont pas confondus.
+- [ ] La séance traite notamment : « Pourquoi une CI verte ne prouve-t-elle ni un déploiement ni le bon fonctionnement en production ? » ; les réponses réellement données et les points à retravailler sont consignés brièvement.
 
-En tant que développeur débutant, je veux visualiser les étapes d'une livraison, afin de distinguer une version vérifiée d'une application réellement déployée.
+## Limites nécessaires
 
-**À faire :**
-- Dessiner la promotion du même artefact entre environnements, avec configuration externe, contrôles et approbations.
-- Expliquer la livraison continue (version prête à livrer) et le déploiement continu (mise en service automatique après validation).
+Aucun test, build, workflow CD, secret, publication d'image, SSH, infrastructure ou déploiement opérationnel : les contrôles de livraison restent discutés, jamais exécutés.
+La présence de cette fiche ou d'un schéma ne prouve pas une connaissance acquise ; les critères ne se cochent qu'après les échanges réellement observés.
+Ne pas inventer de chiffres, versions, réglages ou responsabilités historiques AXA ; une mesure ConfluxLab reste une mesure de simulation.
+Pas de catalogue de stratégies de déploiement ni de nouvelle plateforme : un scénario de livraison et un incident suffisent à l'atelier.
 
-**Terminé quand :**
-- [ ] Le schéma montre le même artefact, les environnements et les contrôles, sans workflow exécutable.
-- [ ] La restitution distingue CI, livraison continue et déploiement continu, sans affirmer qu'une CI verte prouve un déploiement.
+## Traçabilité des IDs conservés
 
-### INT-34 — Analyser un incident
-**Statut : à faire — feu vert requis.**
+| ID | Ancien sujet intégré |
+|---|---|
+| INT-33 | Dessiner la livraison conceptuelle |
+| INT-34 | Analyser un incident |
+| INT-35 | Restituer le parcours |
+| INT-36 | Simuler l'entretien |
 
-En tant que développeur, je veux raisonner sur un incident après livraison, afin d'expliquer les contrôles utiles et les limites d'un retour en arrière.
-
-**À faire :**
-- Relier les contrôles rapides, l'aptitude à recevoir du trafic, la mise en service et la surveillance à un incident fictif.
-- Expliquer quand revenir à une version précédente et ce que ce retour ne répare pas.
-
-**Terminé quand :**
-- [ ] Le scénario explique comment détecter le problème et décider de poursuivre ou d'arrêter la mise en service.
-- [ ] L'explication précise les limites du rollback après un changement de données ou une action partenaire, sans promettre de rollback distribué.
-
-### INT-35 — Restituer le parcours
-**Statut : à faire — feu vert requis.**
-
-En tant que développeur débutant, je veux présenter le parcours sans lire le code, afin de montrer que je comprends ses responsabilités et ses limites.
-
-**À faire :**
-- Dessiner de mémoire les modules, l'acceptation HTTP, le suivi et le graphe A–F.
-- Expliquer une panne et le test qui la révèle, en distinguant tests prévus et réellement exécutés.
-
-**Terminé quand :**
-- [ ] Le dessin respecte le monolithe modulaire : BFF mince et Capability métier dans la même JVM, appels Java internes et Feign/Resilience4j uniquement vers WireMock ; l'ordre A–F est expliqué.
-- [ ] La restitution distingue acceptation, traitement et concurrence, puis explique les événements locaux non durables, l'UUID de corrélation sans garantie d'idempotence et les échecs partiels sans exactly-once.
-
-### INT-36 — Simuler l'entretien
-**Statut : à faire — feu vert requis.**
-
-En tant que développeur préparant un entretien, je veux m'entraîner à répondre clairement et honnêtement, afin de défendre ce que je comprends sans m'attribuer des faits non confirmés.
-
-**À faire :**
-- Poser une question, attendre la réponse, puis proposer une correction et une formulation orale en 30–60 secondes avant la question suivante.
-- Distinguer **[AXA rapporté]**, **[Simulation ConfluxLab]**, **[Proposition]** et **[Non confirmé]**.
-
-**Terminé quand :**
-- [ ] La séance avance une question à la fois et sépare la contribution AXA rapportée, la simulation et les recommandations actuelles ; les inconnues restent signalées.
-- [ ] Une courte restitution et les points à retravailler sont consignés après la séance, sans attribuer à AXA les mesures du laboratoire.
-
-## Interdits pratiques
-
-Aucun workflow `deploy`, aucun secret, aucune publication d'image, aucun SSH, VPS, cloud, Kubernetes ni déploiement effectif. Une option peut être expliquée sans être installée.
-
-## Démo et clôture
-
-- [ ] Présenter le schéma conceptuel, puis répondre à la question de départ : « La CI est verte : pourquoi cela ne prouve-t-il ni que l'application est déployée, ni qu'elle fonctionnera correctement en production ? »
-
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les documents produits et les réponses réellement discutées ; aucun test ou déploiement n'est requis pour cet atelier théorique.
+**Clôture future :** une seule note synthétique pour INT-33 à INT-36, avec les dessins, les réponses réellement discutées et les limites de compréhension observées ; pas quatre comptes rendus ni feux verts.
+Cette réécriture ne lance pas la séance et ne crée aucune note de réussite ni validation de connaissances.

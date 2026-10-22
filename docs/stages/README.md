@@ -1,121 +1,65 @@
-# ConfluxLab — Stories et sprints
+# ConfluxLab — Tâches et sprints
 
-**[Simulation ConfluxLab]** Ce plan sert à apprendre progressivement. Il ne décrit pas le déroulement historique d'un projet AXA.
-
-Le [DAT](../dat/ConfluxLab.md) explique l'architecture ; les fiches ci-dessous décrivent le travail à faire ; les [notes](../../notes/README.md) conservent ce qui a réellement été réalisé et vérifié.
-
-## Comment lire une story ?
-
-Une story répond à trois questions : **pour qui ? quel besoin ? pourquoi ?**
-
-> En tant que client de l'API, je veux consulter l'état de ma demande avec son identifiant, afin de savoir où elle en est.
-
-Chaque tâche `INT-XX` garde le même format :
-
-1. **Statut et prérequis** : ce qui est fait, ce qui manque et ce qui doit venir avant.
-2. **Story** : « En tant que…, je veux…, afin de… ».
-3. **À faire** : les petites actions nécessaires, sans cours technique complet.
-4. **Terminé quand** : les résultats observables qui permettent de vérifier le travail.
-
-Certaines stories sont techniques : leur bénéficiaire est alors le développeur. Par exemple, un build reproductible sert à construire le projet avec les outils prévus. On ne transforme pas artificiellement chaque tâche d'outillage en besoin du client final.
-
-**Une case de critère cochée ne signifie pas que toute la story est terminée.** Son statut et l'ensemble de ses critères font foi. Une réécriture de fiche n'est jamais une preuve de réalisation.
-
-## Quelques mots utiles
-
-| Mot | Sens dans ce projet |
-|---|---|
-| API | Interface par laquelle un client ou un module demande un service |
-| BFF / Experience | Partie qui reçoit les requêtes HTTP et adapte les réponses ; elle ne porte pas le métier |
-| Capability | Partie qui porte les règles métier, les états, le stockage et le traitement |
-| Monolithe modulaire | Une application, avec des parties de code séparées et des appels Java entre elles |
-| Contrat / DTO | Description des données échangées / objet Java qui transporte ces données |
-| Build | Étapes qui compilent, testent et préparent les fichiers produits par le projet |
-| Test unitaire / d'intégration | Vérification d'un comportement isolé / de plusieurs composants qui travaillent ensemble |
-| UUID / corrélation | Identifiant utilisé pour retrouver une demande dans les données et les logs, pas pour garantir l'absence de doublon métier |
-
-Les autres termes indispensables sont expliqués dans chaque sprint au moment où ils apparaissent.
+**[Simulation ConfluxLab]** Ce plan pédagogique ne décrit pas le déroulement historique d'un projet AXA. Le [DAT](../dat/ConfluxLab.md) porte l'architecture ; les [cours](../../notes/README.md) expliquent le code et les preuves ; le [registre](../../notes/todos.md) garde le suivi utile.
 
 ## Notre façon de travailler
 
-1. Choisir **une seule story** et présenter son périmètre et ses vérifications.
-2. **Attendre ton feu vert pour cette story.** Un accord sur un sprint ou la story précédente n'autorise pas les suivantes ; une demande explicite de développer cette story constitue le feu vert.
-3. Réaliser uniquement le périmètre autorisé, avec ses tests, sans te redemander une confirmation pour chaque modification déjà prévue.
-4. Écrire la note de fin, montrer les résultats et signaler tout test non exécuté ou blocage.
-5. **S'arrêter avant la story suivante**, même dans le même sprint. La clôture d'un sprint exige ses critères remplis et un point ensemble.
+**Un incrément correspond à un résultat cohérent, pas à une classe, une méthode ou une notion isolée.** Il n'y a pas davantage de règle imposant une seule tâche ou une seule note par sprint : séparer les sujets autonomes, réunir les étapes qui ne prennent sens qu'ensemble.
 
-Les tests accompagnent chaque story : ils ne sont pas reportés au sprint 07. **Préférence utilisateur : strict minimum de scénarios utiles, réutilisation de l'existant et exécution ciblée par défaut ; pas de course à la couverture ni de matrices exhaustives.** Les sprints n'ont pas de durée imposée ; chacun vise un résultat pédagogique vérifiable. La CD reste uniquement théorique.
+1. Présenter le résultat attendu, les IDs couverts, le périmètre, les fichiers et les vérifications utiles.
+2. Obtenir un feu vert pour cet ensemble. Il couvre ses étapes internes, pas le prochain lot ni une publication distante non autorisée.
+3. Réaliser le code et le raccordement prévus. Contrats, câblage, succès et échec nécessaire ne deviennent pas automatiquement quatre tâches.
+4. Vérifier les comportements utiles en réutilisant l'existant, sans suite par couche ni matrice exhaustive par défaut. Les IT restent nécessaires lorsqu'ils portent la preuve du nouveau raccordement ; la CI prévoit une vérification globale.
+5. Expliquer le flux avec les principaux fragments de code, les schémas et tableaux utiles, puis fournir un bilan bref. Le détail des tests dans les notes est facultatif ; leurs résultats ne sont jamais inventés. S'arrêter avant le prochain incrément.
+
+Les IDs `INT-XX` restent uniques et stables. Leur regroupement documentaire ne change ni les autorisations passées ni les preuves. Les fiches indiquent **statut, story, périmètre et critères observables** ; une réécriture ne termine aucune fonctionnalité et ne valide pas la compréhension orale.
 
 ## Roadmap
 
-| Sprint | Ce que tu sauras faire à la fin | Stories | État actuel |
-|---|---|---|---|
-| [01 — Socle modulaire](sprint-01-socle.md) | Construire et démarrer une application aux modules séparés | INT-01 à INT-04 ; INT-37 | Clôturé techniquement et documenté sur demande utilisateur (2026-10-21) ; restitution orale non évaluée |
-| [02 — Contrat REST](sprint-02-rest.md) | Accepter une demande et consulter son état | INT-05 à INT-08 | INT-05 à INT-08 terminées techniquement ; passage à INT-09 demandé, restitution orale non évaluée |
-| [03 — MongoDB](sprint-03-mongodb.md) | Conserver une demande après redémarrage | INT-09 à INT-12 | INT-09 à INT-12 terminées techniquement ; clôture et restitution pédagogique à confirmer |
-| [04 — Asynchronisme](sprint-04-async.md) | Séparer la réponse HTTP du travail en arrière-plan | INT-13 à INT-16 | INT-13 à INT-16 terminées techniquement ; clôture pédagogique à confirmer |
-| [05 — Orchestration](sprint-05-orchestration.md) | Faire avancer les six opérations selon leurs dépendances | INT-17 à INT-20 | INT-17/18 et composition Java INT-19 réalisées ; INT-20 non commencée |
-| [06 — Partenaire et résilience](sprint-06-partenaire.md) | Appeler un partenaire simulé et traiter ses pannes sans retry aveugle | INT-21 à INT-24 | Planifié |
-| [07 — Validation et mesures](sprint-07-validation.md) | Démontrer le parcours, expliquer un échec et mesurer le labo | INT-25 à INT-28 | Planifié |
-| [08 — CI](sprint-08-ci.md) | Faire compiler et tester automatiquement le projet par GitHub Actions | INT-29 à INT-32 | Planifié |
-| [09 — CD et entretien](sprint-09-cd-theorique.md) | Expliquer la livraison et défendre les choix à l'oral, sans déployer | INT-33 à INT-36 | Planifié — théorie |
+| Sprint | Résultats cohérents et IDs conservés | État réel |
+|---|---|---|
+| [01 — Socle](sprint-01-socle.md) | Architecture/assemblage/frontières : INT-01 + INT-03 + INT-04 ; build/versionnement : INT-02 + INT-37 | Deux ensembles réalisés ; clôture technique/documentaire du 2026-10-21, oral non évalué |
+| [02 — REST](sprint-02-rest.md) | Accepter et consulter une demande : INT-05 à INT-08 | Réalisé au stade mémoire ; passage à MongoDB demandé ensuite, oral non évalué |
+| [03 — MongoDB](sprint-03-mongodb.md) | Modèle/transitions : INT-09 + INT-11 ; insertion/persistance : INT-10 + INT-12 | Deux ensembles réalisés ; complément replica set théorique, clôture pédagogique non confirmée |
+| [04 — Asynchronisme](sprint-04-async.md) | Prise en charge async : INT-13 + INT-14 + INT-16 ; ressources/erreurs : INT-15 | Deux ensembles réalisés jusqu'à `PROCESSING` ; clôture pédagogique non confirmée |
+| [05 — Orchestration](sprint-05-orchestration.md) | Graphe, échecs et soumission : INT-17 à INT-20 | Réalisé en Java, non raccordé au listener ; clôture pédagogique non confirmée |
+| [06 — Parcours partenaire](sprint-06-partenaire.md) | Parcours complet : INT-21 + INT-22 ; pannes : INT-23 + INT-24 | Deux lots à autoriser |
+| [07 — Démonstration et mesures](sprint-07-validation.md) | Montrer, diagnostiquer et mesurer le parcours : INT-25 à INT-28 | Un lot à autoriser ; réutiliser les preuves existantes au bon niveau |
+| [08 — CI exploitable](sprint-08-ci.md) | Vérification et pipeline réellement observé : INT-29 à INT-32 | Un lot à autoriser ; opérations distantes sur accord distinct |
+| [09 — Atelier projet et livraison](sprint-09-cd-theorique.md) | Restitution et livraison conceptuelle : INT-33 à INT-36 | Un atelier à autoriser, sans déploiement |
 
-### Ordre de travail après les contrats initiaux
+Les numéros de sprint sont des repères de classement, pas une durée ou un quota. La suite prévue comprend cinq lots, dont deux dans le sprint 06 ; ce découpage découle de leur contenu, pas d'un objectif de nombre.
 
-Les identifiants ne changent pas ; ils ne sont pas un ordre de développement obligatoire.
+**Prochain résultat : [INT-21 + INT-22 — Créer une famille de bout en bout](sprint-06-partenaire.md).** WireMock, Feign, raccordement du listener/orchestrateur et suivi final sont réalisés ensemble lorsque ce lot sera autorisé.
 
-- **Réalisé sur feu vert :** INT-05 a défini les types manquants et leurs tests ; le `clean verify` global a réussi et clôt le blocage d'INT-02.
-- **Réalisé ensuite sur feu vert INT-03 :** assemblage unique, appel Java et indisponibilité explicite (`503`) vérifiés, sans acceptation réelle.
-- **Réalisé ensuite sur feu vert INT-04 :** frontières et détection de violations vérifiées dans le build global (76 tests), sans modification du métier.
-- **Clôture demandée le 2026-10-21 :** [bilan technique et synthèse documentaire du sprint 01](sprint-01-socle.md#journal-de-clôture--2026-10-21), sans évaluation orale de l'apprenant.
-- **Réalisé ensuite sur feu vert INT-06 :** validation directe, UUID et conservation mémoire avant `202`, sans suivi ni traitement.
-- **Réalisé ensuite sur feu vert INT-07 :** suivi des métadonnées en lecture seule, UUID inconnu `404`, identifiant mal formé `400` ; perte au redémarrage démontrée.
-- **Réalisé ensuite sur feu vert INT-08 :** refus sans enregistrement, confidentialité des réponses et isolation vérifiés ; 181 tests globaux, correctif d'écho du chemin dans `instance`.
-- **Passage demandé ensuite :** commit local INT-08 `fedb8b7`, puis INT-09 réalisée sur demande « commit la 08 & passer 09 » ; modèle/dates et transitions locales, 2 tests ajoutés et 3 tests ciblés réussis. La restitution pédagogique du sprint 02 reste non évaluée.
-- **Réalisé ensuite sur feu vert INT-10 :** commit INT-09 `185bdd7`, remplacement de la mémoire de production par MongoDB, insertion acquittée avant `202`, UUID unique et refus sans faux reçu ; 2 nouveaux tests et 1 test POST/GET réutilisé réussis.
-- **Réalisé ensuite sur feu vert INT-11 :** complément théorique INT-10 commité et poussé (`66e0ade`), puis transitions MongoDB atomiques avec filtre de statut/date, protection des états finaux et suivi confidentiel ; 2 nouveaux tests et 2 tests du modèle réutilisés réussis.
-- **Réalisé ensuite sur feu vert INT-12 :** commit local INT-11 `af3f215`, raccordement Failsafe, réutilisation de 4 cas MongoDB et ajout d'un seul test redémarrant le JAR sur la même base ; 1 contrôle Surefire ciblé et 5 cas Failsafe réussis.
-- **INT-13 réalisée puis simplifiée :** analyse documentaire du flux, ramenée sur demande utilisateur à un schéma et trois situations essentielles, sans mécanisme de reprise ni test de panne ajouté ; première version commitée localement dans `f12c97d`.
-- **INT-14 reprise et réalisée :** simplification d'INT-13 et consigne d'équilibre commitées localement (`6081781`), puis publication après insertion et listener `@Async` utilisant la prise en charge atomique ; un seul scénario ajouté, 9 cas ciblés réussis. Le JAR conserve `PROCESSING` au redémarrage, sans reprise de travail implémentée.
-- **INT-15 réalisée sur feu vert :** commit local préalable `bdb93f8`, executor dédié borné, rejet explicite et erreur async journalisée avec l'UUID sans message privé. Deux cas ajoutés, un cas événementiel réutilisé et un contrôle de frontière : 4 réussites ciblées, pas de reprise ou d'état final ajouté.
-- **INT-16 réalisée sur feu vert « go 16 » :** code de `59c881c` et preuves INT-14/15 consolidés, attentes et nettoyage relus, deux rapports ciblés existants inspectés. Aucun ajout ou réexécution de test ; pas de manque identifié pour les critères.
-- **INT-17 réalisée sur feu vert « go 17 » :** six contrats internes, trois types d'identifiants et une fixture de test à futures pilotables. `test-compile` ciblé réussi, sans test exécuté ni orchestration ajoutée.
-- **INT-18 réalisée sur feu vert « commit 17 & go 18 » :** INT-17 commitée localement dans `d6f0e86`, puis graphe nominal composé et vérifié par un scénario paramétré sur les deux ordres C/D. Deux cas ciblés réussis, sans HTTP, Spring ou MongoDB ; aucun branchement au listener ni état final.
-- **INT-19 réalisée pour la composition sur feu vert « commit 18 & passe à 19 » :** INT-18 commitée localement dans `516ea0e`, attente finale explicite des branches et un cas d'échec B ajouté. Trois cas ciblés réussis ; pas de raccordement au listener ni d'état final persisté.
-- **Suite :** clôture pédagogique des sprints 03/04 à confirmer ; INT-20 attend son propre feu vert. Le suivi de bout en bout reste à raccorder.
-- La préparation avancée d'INT-05 ne lance ni l'assemblage ni les autres stories du sprint 02.
+## Lire l'historique
+
+Les tableaux des fiches et des cours regroupés conservent les IDs, statuts et preuves des étapes passées. Ne pas prendre les regroupements actuels pour l'ordre exact de réalisation : INT-05 a notamment été préparée pour débloquer le build d'INT-02 avant l'assemblage INT-03.
+
+Le socle a d'abord exposé des opérations indisponibles, puis le REST a utilisé la mémoire, MongoDB l'a remplacée et l'async a ajouté la prise en charge `PROCESSING`. Le graphe A–F reste indépendant du listener à l'étape INT-20. Un ancien `503`, une perte mémoire ou un résultat de test daté ne décrit donc pas nécessairement le code actuel.
+
+Le [journal de clôture du sprint 01](sprint-01-socle.md#journal-de-clôture--2026-10-21) est conservé. Aucun autre bilan oral n'est créé par la présente condensation.
 
 ## Architecture à conserver
 
-Une application Spring Boot et un seul JAR exécutable. BFF et Capability restent séparés : le BFF gère l'HTTP ; Capability protège le métier et possède son stockage. La communication interne est un appel Java via l'interface publique de Capability. Feign/Resilience4j servira uniquement au partenaire externe fictif.
+Une application Spring Boot, une JVM et un JAR exécutable. Experience/BFF reçoit l'HTTP, valide sa forme et adapte les réponses ; Capability possède métier, invariants, stockage et traitement. Les modules se parlent en Java par leurs API publiques, sans cycle ni accès du BFF aux détails de stockage. Feign/Resilience4j est réservé au partenaire fictif externe.
 
-Le dernier passage non filtré observé, lors d'INT-08, réussit avec 181 tests : 59 contrats, 43 Capability, 4 BFF et 75 assemblage/HTTP/architecture. INT-06 conserve le payload avant `202` ; INT-07 consulte les seules métadonnées en `200`, avec `404` pour l'absence et `400` pour les formats invalides testés. À cette étape historique, deux POST/GET indépendants et la perte après redémarrage ont été démontrés sur le JAR réel, sans stockage durable ni traitement. INT-08 a complété les refus et corrigé l'écho de données rejetées dans les erreurs ; le passage à INT-09 a ensuite été demandé sans évaluer la restitution orale. INT-09 ajoute le modèle de dates et les transitions internes, vérifiés par 3 tests ciblés. INT-10 branche ensuite MongoDB et vérifie l'insertion avant acceptation, l'unicité et le suivi avec 3 tests ciblés. INT-11 sécurise ensuite les transitions par une mise à jour conditionnelle atomique, vérifiée par 4 tests ciblés. INT-12 démontre la relecture après redémarrage du JAR avec la même base, dans un `clean verify` du réacteur complet : 1 contrôle Surefire sélectionné + 5 cas Failsafe réussis, sans exécuter la suite Surefire complète. Voir le [README du projet](../../README.md) pour les commandes et les limites.
+`202` signifie acceptation, pas réussite métier ; un événement Spring est local et non durable ; l'UUID corrèle sans garantir l'idempotence. La CD reste strictement théorique.
 
-## Notes de fin de tâche
+## Notes de fin d'incrément
 
-- **Dossier** : `notes/sprint-XX/` à la racine, pas sous `docs/stages/`.
-- **Fichier** : `INT-YY-<nom-de-la-tache-en-kebab-case>.md` ; **titre** : `# INT-YY — <Nom de la tâche>`.
-- **Exemple** : `notes/sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md`.
-- **Contenu** : cours/tutoriel junior selon le [guide des notes](../../notes/README.md), avec problème, étapes réalisées, code/config important et commandes expliqués, preuves et limites. Distinguer résultats historiques, vérifications actuelles et exemples non exécutés.
-- **Suivi** : centraliser les actions restantes et points à retenir dans [notes/todos.md](../../notes/todos.md), puis les lier depuis le tutoriel ; ne pas maintenir une seconde liste de TODO dans chaque note.
-- **Liens** : depuis la fiche du sprint et `notes/README.md`. Une note partielle ou rétrospective ne prouve pas une story terminée.
-
-Les IDs INT-01 à INT-37 restent uniques et stables, même après cette réécriture. Toute nouvelle tâche recevra un identifiant disponible, sans renuméroter les existantes.
+- Classer sous `notes/sprint-XX/`, nommer les IDs couverts et lier la note depuis la fiche et [l'index](../../notes/README.md). Plusieurs notes restent possibles pour des sujets réellement distincts, sans répéter le même flux.
+- Expliquer le code **par fragments**, pas en bloc ; conserver/améliorer les schémas et tableaux utiles. Omettre les harnais de test, rappels Maven et détails d'exécution qui n'aident pas à comprendre.
+- Conserver un bilan compact des preuves historiques ou nouvelles, sans les additionner ou les présenter comme des exécutions actuelles. Mettre à jour le suivi existant plutôt que créer une liste concurrente.
+- Les notes remplacées sont fusionnées sur demande, avec migration des liens ; une note rétrospective ou partielle ne prouve pas une nouvelle réussite.
 
 ## Définition de fin commune
 
-- [ ] Les critères de la story sont remplis et ses vérifications sont réellement observées.
-- [ ] La démonstration est reproductible, avec ses prérequis et ses limites.
-- [ ] La note est écrite et liée ; aucune donnée réelle ni aucun secret n'est ajouté.
-- [ ] Tu peux expliquer le résultat et un cas d'échec avant d'autoriser la suite.
+- [ ] Le résultat prévu est réellement atteint et ses preuves sont disponibles ; les blocages et parties non vérifiées sont signalés.
+- [ ] Le flux et les choix importants sont expliqués, sans prétendre une maîtrise orale non évaluée.
+- [ ] La documentation est liée, proportionnée et sans données réelles ni secrets.
+- [ ] Le prochain lot reste soumis à son propre accord ; aucun déploiement n'est ajouté.
 
 ## Journal à compléter en clôture de chaque sprint
 
-| Élément | À renseigner après réalisation |
-|---|---|
-| Date et stories terminées | Identifiants et résultats réels |
-| Fichiers concernés | Liens vers les fichiers et notes |
-| Vérifications | Commandes, résultats et tests non exécutés |
-| Démonstration | Ce qui a été observé, pas seulement prévu |
-| Limites / blocages | Ce qui reste à faire et pourquoi |
-| Accord pour le sprint suivant | À demander explicitement |
+Renvoyer aux notes et preuves existantes : résultats, dates, limites et accord pour la suite. Ce journal ne nécessite pas un second compte rendu détaillé ni une cérémonie après chaque modification.

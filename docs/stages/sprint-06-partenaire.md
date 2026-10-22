@@ -1,81 +1,61 @@
-# Sprint 06 — Partenaire fictif et résilience proportionnée
+# Sprint 06 — Faire fonctionner le parcours partenaire
 
-**Statut : planifié.** Prérequis : sprint 05 clos et accord pour ouvrir ce sprint.
+**Statut : planifié, aucun développement autorisé par cette réorganisation.** Deux incréments complets remplacent les quatre micro-tâches. Un feu vert et une note par incrément ; les IDs existants restent des repères de traçabilité.
 
-## Objectif
+## INT-21 + INT-22 — Créer une famille de bout en bout
 
-Appeler un partenaire fictif pour les six opérations, puis gérer ses pannes sans répéter les créations à l’aveugle ni masquer les échecs.
-Ce sprint est un objectif pédagogique : chaque tâche attend son feu vert individuel ; le plan ne lance rien et les tests accompagnent chaque tâche.
+**Prérequis :** orchestration INT-17 à INT-20 disponible, accord pour ouvrir ce lot et Docker disponible pour les tests MongoDB. La clôture pédagogique du sprint 05 n'est pas revendiquée par ce plan.
 
-## Repères
+**Story :** en tant que client de l'API, je veux que ma demande acceptée aboutisse à une famille créée chez le partenaire fictif, afin de suivre un vrai traitement jusqu'à son résultat.
 
-- **WireMock** simule une API HTTP avec des réponses et des erreurs choisies pour les tests.
-- **Feign** est le client HTTP qui appelle ce partenaire ; ses appels restent bloquants, même dans une future.
-- Un **retry** est une nouvelle tentative, permise seulement si l'erreur est transitoire et si répéter l'opération est sûr.
+**À réaliser ensemble :**
+- Définir les échanges A–F dans WireMock et implémenter le client Feign derrière `FamilyOperations`, sans HTTP interne ni métier dans le BFF.
+- Brancher le listener à l'orchestrateur uniquement après une prise en charge atomique gagnante, avec le bean borné `familyRequestExecutor`, sans `join/get` dans le pool.
+- Finaliser dans MongoDB après la terminaison du graphe : `SUCCEEDED` en succès, `FAILED` en échec, sans oublier les erreurs de finalisation ni exposer d'exception brute.
+- Configurer les délais de connexion/lecture et désactiver les retries implicites. Les six appels restent des I/O bloquantes exécutées dans les tâches soumises.
 
-## Tâches — un feu vert par tâche
-
-### INT-21 — Définir le partenaire
-**Statut : à faire — feu vert requis.**
-
-En tant que développeur, je veux un partenaire fictif au comportement connu, afin de tester les six opérations sans dépendre d'un service réel.
-
-**À faire :**
-- Décrire les requêtes, réponses, identifiants et erreurs A–F dans WireMock, sans prétendre reproduire les endpoints GFP/Open historiques.
-- Garder l'adaptateur HTTP derrière les contrats de l'orchestrateur, hors du BFF.
+**Fichiers concernés :** configuration, listener et contrats internes existants de Capability ; client Feign, DTO et stubs partenaires à créer ; POM et configuration d'assemblage à adapter selon les dépendances retenues.
 
 **Terminé quand :**
-- [ ] Les tests WireMock vérifient les échanges A–F et leurs identifiants attendus.
-- [ ] Feign/Resilience4j restent réservés au partenaire WireMock ; Experience appelle Capability en Java, jamais en HTTP.
+- [ ] Le même parcours HTTP public effectue POST `202`, appelle A–F avec les bons identifiants et expose ensuite `SUCCEEDED` au GET.
+- [ ] Un échec partenaire représentatif ne produit pas de faux succès : les branches déjà lancées sont attendues puis le GET expose `FAILED`, sans trace privée. Une panne de l'écriture finale est signalée, pas déclarée persistée à tort.
+- [ ] Les appels passent par le pool explicite, les délais sont configurés et aucune répétition automatique n'est active.
 
-### INT-22 — Brancher Feign sans retry
-**Statut : à faire — feu vert requis.**
+**Preuves au minimum utile :** réutiliser les tests de composition ; ajouter le parcours intégré nominal et un échec nécessaire au nouveau raccordement, avec MongoDB Testcontainers et WireMock. Vérifier les échanges et les statuts dans ces scénarios, pas dans une nouvelle suite par couche ou par endpoint.
 
-En tant que développeur, je veux vérifier les appels HTTP sans répétition automatique, afin de comprendre le comportement de départ avant d'ajouter la résilience.
+**Livrable pédagogique :** une note qui suit le flux réel POST → listener → orchestrateur → Feign → état final. Expliquer les principaux extraits du code, pas le montage complet des tests.
 
-**À faire :**
-- Brancher Feign sur WireMock : vérifier un appel, puis le parcours complet.
-- Fixer les délais maximaux de connexion et de lecture, puis neutraliser les retries implicites.
+## INT-23 + INT-24 — Terminer proprement malgré une panne partenaire
 
-**Terminé quand :**
-- [ ] Un test atteint `SUCCEEDED` avec les bons identifiants transmis entre les six opérations.
-- [ ] Les tests vérifient les délais configurés et l'absence de tentatives automatiques supplémentaires.
+**Prérequis :** premier incrément réalisé et feu vert pour ce lot.
 
-### INT-23 — Écrire la matrice d'erreurs
-**Statut : à faire — feu vert requis.**
+**Story :** en tant que client de l'API, je veux connaître l'échec d'un traitement et éviter les répétitions dangereuses, afin qu'une panne ne soit ni masquée ni aggravée par des doublons.
 
-En tant que développeur, je veux distinguer les pannes et les risques de répétition, afin de choisir une réponse adaptée à chaque opération.
-
-**À faire :**
-- Lister refus métier, `4xx`, `5xx`, connexion refusée et dépassement de délai (timeout).
-- Préciser pour chaque opération si sa répétition est sûre et pourquoi ; après un timeout de création, le résultat partenaire peut rester inconnu.
+**À réaliser ensemble :**
+- Distinguer refus définitif, erreur transitoire et timeout dans une politique courte, liée aux opérations fictives réellement implémentées.
+- Vérifier les délais en panne, rendre le diagnostic corrélable par UUID et opération sans données personnelles, et conserver la finalisation après les branches lancées.
+- Ajouter un retry Resilience4j borné seulement pour une erreur transitoire **et** une répétition sûre. Si aucune garantie partenaire ne permet cette répétition, conserver explicitement l'absence de retry ; ne pas inventer une garantie pour placer un outil.
 
 **Terminé quand :**
-- [ ] Le tableau distingue ces erreurs et justifie la possibilité ou l'interdiction de répéter chaque opération.
-- [ ] Les tests de `4xx`, timeout et erreur persistante exposent un échec explicite dans le suivi après le `202`, sans présenter un timeout comme une preuve d'absence de création.
+- [ ] Un timeout de création termine en échec observable, sans nouvelle tentative aveugle ni affirmation que le partenaire n'a rien créé.
+- [ ] La politique choisie est vérifiée par le nombre de tentatives : refus définitif non rejoué et, si une opération est réellement répétable, répétition transitoire bornée.
+- [ ] Un échec partiel laisse visibles les appels déjà réussis et ne déclenche ni rollback global promis ni fallback de réussite artificielle.
 
-### INT-24 — Ajouter la résilience ciblée
-**Statut : à faire — feu vert requis.**
+**Preuves au minimum utile :** enrichir les scénarios du premier lot pour couvrir le timeout et la décision de répétition ; réutiliser son échec si celui-ci prouve déjà le refus définitif ou l'échec partiel. Pas de matrice exhaustive A–F × pannes.
 
-En tant que consommateur de l'API, je veux que seules les tentatives sûres soient répétées, afin de mieux supporter une panne temporaire sans provoquer de doublon.
+**Fichiers concernés :** adaptateur partenaire, configuration de délais/résilience et tests du parcours créés dans le premier lot. Une seule note pour la politique et les modifications réellement utiles.
 
-**À faire :**
-- Ajouter avec Resilience4j un retry borné seulement pour une erreur transitoire et une répétition sûre ; pour une création, simuler et tester une garantie partenaire contre les doublons, ou ne pas réessayer.
-- Étudier un coupe-circuit (circuit breaker) sur un scénario concret avant tout ajout ; ne jamais remplacer un échec par une réussite fictive.
+## Traçabilité du regroupement
 
-**Terminé quand :**
-- [ ] Les tests comptent exactement les tentatives, y compris l'absence de retry d'une création non sûre et la garantie partenaire si elle est retenue.
-- [ ] Un test d'échec partiel montre les appels déjà réussis et l'absence de rollback global, sans réussite artificielle.
+| ID conservé | Ancien sujet | Incrément actuel |
+|---|---|---|
+| INT-21 | Définir le partenaire | Parcours complet, avec INT-22 |
+| INT-22 | Brancher Feign sans retry | Parcours complet, avec INT-21 |
+| INT-23 | Écrire la matrice d'erreurs | Gestion des pannes, avec INT-24 ; politique courte plutôt que catalogue |
+| INT-24 | Ajouter la résilience ciblée | Gestion des pannes, avec INT-23 |
 
-## Limites et hors périmètre
+Aucun de ces IDs n'est déclaré terminé par la fusion. La règle de travail et de note commune est dans le [plan général](README.md#notre-façon-de-travailler).
 
-Le monolithe modulaire conserve Experience/BFF mince et Capability métier dans la même JVM ; le BFF ne porte ni métier ni persistance.
-L'UUID local sert à corréler une demande, pas à garantir l'idempotence, c'est-à-dire empêcher un effet supplémentaire lors d'une répétition.
-Aucun exactly-once, retry aveugle de `POST`, rollback distribué ou compensation automatique : `FAILED` ne signifie pas « aucune ressource externe créée ».
-Pas de partenaire réel, de broker, de service mesh ni de coupe-circuit sans scénario justifié.
+## Bornes
 
-## Démo et clôture
-
-- [ ] Montrer le succès puis une panne WireMock ; expliquer les tentatives observées et pourquoi un timeout de création peut cacher une création réussie chez le partenaire.
-
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec la matrice d'erreurs, les journaux WireMock des tentatives et les résultats réellement observés.
+**[Simulation ConfluxLab]** Les échanges ne reproduisent pas les endpoints historiques GFP/Open. Une seule application : Experience appelle Capability en Java ; Feign/Resilience4j ne visent que WireMock. L'UUID corrèle sans rendre une création idempotente. Pas de broker, de reprise automatique, de compensation distribuée ou de circuit breaker sans besoin démontré.

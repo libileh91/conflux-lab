@@ -46,7 +46,7 @@ Utiliser quatre étiquettes dès qu'une ambiguïté historique pourrait apparaî
 ### `BUILD` — Implémentation (seulement sur demande explicite)
 
 - Inspecter l'existant, définir le changement minimal et les tests attendus.
-- Avancer par couches : API/contrats → persistance/statuts → événement local → orchestration → client HTTP/résilience → CI.
+- Avancer par incréments utilisables : contrats, persistance, événement, orchestration et client sont des étapes internes du résultat autorisé, pas automatiquement des tâches séparées. Ne pas livrer seulement une brique déconnectée si le lot prévoit son raccordement.
 - Préserver la séparation logique Experience/BFF et Capability **dans un monolithe modulaire** : un seul processus Spring Boot et un seul artefact exécutable ; appels Java via les interfaces publiques des modules, pas de HTTP interne. Garder les dépendances métier explicites.
 - Exécuter les tests disponibles et rapporter exactement commandes, sorties, limites ; ne jamais cocher une tâche par anticipation.
 - Ne jamais déployer.
@@ -64,27 +64,25 @@ Utiliser quatre étiquettes dès qu'une ambiguïté historique pourrait apparaî
 - Exiger la distinction **« ce que j'ai fait chez AXA » / « ce que je ferais aujourd'hui »**.
 - Ne pas attribuer à l'utilisateur des décisions ou outils simplement recommandés dans ConfluxLab.
 
-### Travail par sprint — feu vert et note de tâche
+### Travail par incrément — feu vert et note commune
 
-- Lire `docs/stages/README.md`, la fiche du sprint concerné, les notes existantes dans `notes/` et le registre `notes/todos.md`. Une tâche correspond à un incrément de la fiche identifié par **`INT-XX`**, par exemple `INT-01`. La numérotation est unique à l'échelle du projet, continue entre les sprints et stable après attribution ; ne pas la recommencer à chaque sprint ni réutiliser un identifiant.
-- **Avant chaque tâche de développement**, présenter son numéro, son nom, le périmètre, les fichiers concernés et les vérifications prévues, puis **attendre le feu vert explicite de l'utilisateur pour cette tâche**. L'accord sur un sprint, un plan ou la tâche précédente ne vaut pas autorisation pour les autres tâches.
-- Une fois le feu vert reçu, réaliser uniquement cette tâche avec ses tests et sa note ; ne pas redemander une confirmation pour chaque modification déjà comprise dans ce périmètre. Une demande explicite et non ambiguë de développer la tâche concernée constitue le feu vert.
-- **Après chaque tâche terminée**, créer une note Markdown dans le dossier **`notes/` à la racine**, sous un répertoire par sprint : `notes/sprint-XX/INT-YY-<nom-de-la-tache-en-kebab-case>.md`. Ne pas utiliser `docs/stages/notes/`. Conserver l'identifiant exact de la fiche et le nom dans le titre : `# INT-YY — <Nom de la tâche>`.
-- Exemple : `notes/sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md`, titre `# INT-01 — Inspecter et fixer les frontières`. Le numéro du sprint et l'identifiant de tâche sont distincts ; les tirets rendent le nom de fichier portable.
-- Rédiger la note comme un **cours/tutoriel explicatif pour un développeur junior**, selon le guide `notes/README.md` : contexte et vocabulaire, problème, travail réalisé pas à pas, extraits importants expliqués, commandes commentées, preuves et limites. Distinguer explicitement les résultats historiques, les vérifications de la session et les exemples non exécutés. Centraliser les points à retenir et actions restantes dans `notes/todos.md` ; la note se termine par des liens vers les entrées concernées, pas par une seconde liste de TODO.
-- Lier la note depuis la fiche du sprint et l'index `notes/README.md`. Ne cocher la tâche que si ses critères sont réellement remplis ; si elle est bloquée ou partielle, le préciser sans la déclarer terminée. Sur demande, documenter rétrospectivement les travaux déjà amorcés en distinguant code présent, décisions ultérieures, tests réellement exécutés et reste à faire. Une note rétrospective n'est ni un feu vert pour continuer, ni une preuve de tâche terminée ; ne pas créer de notes de réussite anticipées.
-- Après la note et le bilan, **s'arrêter et attendre un nouveau feu vert avant de développer la tâche suivante**, même dans le même sprint. Cette règle ne bloque pas une demande explicite de documentation ou de rangement, comme la mise à jour de ces consignes.
+- Lire le plan `docs/stages/README.md`, la fiche concernée, les notes utiles et `notes/todos.md`. **Préférence utilisateur du 2026-10-22 : un incrément livre un comportement complet, pas une classe ou une notion isolée.** Les sprints servent de classement, sans quota de micro-tâches **ni obligation d'une seule tâche ou note par sprint**. Réunir les étapes qui prennent sens ensemble et séparer les sujets réellement autonomes.
+- Conserver les IDs `INT-XX`, uniques et stables. Le plan peut regrouper explicitement plusieurs IDs existants dans un même lot sans les renuméroter ni modifier leurs preuves historiques.
+- Avant le développement, présenter le résultat, les IDs couverts, le périmètre, les fichiers concernés et les vérifications utiles ; attendre **un feu vert pour cet ensemble**. Cet accord couvre ses étapes internes et une seule note, pas le lot suivant ni une opération distante non autorisée. Une demande explicite de développer le lot suffit.
+- Après réalisation, écrire **une note par incrément** dans `notes/sprint-XX/`, centrée sur le flux et les principaux extraits de code selon `notes/README.md`. Pour un lot regroupé, employer le premier ID dans le fichier et tous les IDs dans le titre/contexte : `INT-21-creer-une-famille-de-bout-en-bout.md`, titre `# INT-21 + INT-22 — Créer une famille de bout en bout`. Ne pas créer automatiquement une note par ancien ID, ni fusionner tout un sprint par principe. Plusieurs notes sont possibles si elles traitent des sujets distincts et se renvoient sans répétition.
+- Lier la note depuis la fiche et l'index ; actualiser les entrées utiles du registre sans créer un TODO ou un repère par sous-étape. Ne déclarer terminé que ce qui est prouvé ; signaler les parties bloquées ou non vérifiées. Une note rétrospective ne vaut ni réussite ni feu vert.
+- S'arrêter avant le prochain incrément. Ne pas imposer questionnaire d'entretien, nouveau bilan ou clôture pédagogique formelle après chaque changement ; ne pas déclarer pour autant une compréhension orale non évaluée. Une réorganisation documentaire n'autorise aucun développement.
 
 ### Rédaction pédagogique — stories, cours et suivi
 
 - **Stories courtes et compréhensibles** : « En tant que…, je veux…, afin de… », puis statut/prérequis, actions simples et critères observables. Pour une story technique, le bénéficiaire peut être le développeur ; ne pas inventer un besoin utilisateur artificiel.
-- **Notes détaillées mais organisées** : garder le titre `INT-XX`, préciser le statut réel et la source des preuves, définir le jargon au premier usage, expliquer le pourquoi avant le comment. Privilégier des sections numérotées et ajouter un sommaire si la longueur le justifie.
+- **Notes centrées sur le code livré** : préciser les IDs, le statut et les preuves, puis expliquer le flux avec les extraits importants et le vocabulaire utile. Éviter le long cours systématique, les rappels déjà expliqués et la description exhaustive des tests. Un approfondissement se fait sur demande, pas automatiquement.
 - **Code expliqué bout par bout — préférence durable de l'utilisateur** : présenter de courts extraits utiles, chacun suivi de son explication et de sa place dans le flux. Ne pas coller une classe entière ni la reconstituer exhaustivement en plusieurs blocs ; omettre imports, packages, constructeurs et câblage Spring répétitifs. Conserver les tableaux utiles pour les beans, annotations et propriétés, et renvoyer aux sources pour le code complet. Prendre les extraits dans les fichiers réellement inspectés, indiquer le chemin, le caractère partiel et la version de référence si nécessaire. Étiqueter toute cible non implémentée ; ne pas inventer une réalisation.
-- **Tests dans les notes** : ne montrer que l'instrumentation ou les assertions qui portent la preuve, avec le contexte nécessaire pour les comprendre. Ne pas recopier la classe de test, les injections, les fixtures ou la préparation banale. Expliquer ce que l'extrait prouve et ne prouve pas ; une note détaillée ne justifie ni une matrice exhaustive de tests ni leur réexécution.
-- **Commandes expliquées** : fournir le répertoire de départ, les prérequis, le rôle des options, les effets (lecture, suppression de sorties générées, écriture locale, publication distante) et le résultat réellement observé. Présenter distinctement commandes historiques, nouvelles vérifications et exercices non exécutés. Ne pas relancer un build, une publication ou une commande destructive pour le seul besoin d'une réécriture documentaire.
-- **Registre central unique** : mettre les actions restantes dans les entrées `TD-B001`, `TD-B002`, etc., et les repères de cours dans `TD-R001`, `TD-R002`, etc., de `notes/todos.md`. Les identifiants sont uniques et stables dans leur catégorie ; vérifier l'existant avant d'ajouter et ne pas dupliquer une action déjà rattachée à une story `INT-XX`.
-- **Une entrée = un tableau descriptif** : source (« Créé dans »), story liée, dépendances, fichiers réels ou explicitement à créer, action ou notion à retenir, validation attendue et statut honnête. Distinguer action bloquée, à autoriser, manuelle, optionnelle, terminée avec preuve et repère documentaire. Un repère n'est pas une tâche terminée ni une connaissance de l'utilisateur évaluée.
-- **Liens plutôt que listes concurrentes** : les notes expliquent le travail et ses limites ; leurs points de synthèse et prochains travaux renvoient aux ancres stables du registre central. L'index `notes/README.md` relie les tutoriels et `notes/todos.md`. Le registre ne remplace pas les critères des stories ni le DAT.
+- **Tests dans les notes — facultatifs** : le code et le montage des tests peuvent être entièrement omis lorsqu'ils n'aident pas à comprendre le sujet. Garder un bilan compact et honnête des preuves disponibles et des limites ; si un extrait est utile, ne montrer que l'assertion ou le signal décisif. Ne pas modifier/supprimer les tests applicatifs ou les relancer pour une condensation documentaire.
+- **Commandes expliquées sans répétition** : donner la commande exacte, son répertoire, les prérequis/effets utiles et le résultat réel. Expliquer les options nouvelles ou risquées ; renvoyer aux explications existantes pour Maven et les montages déjà connus. Distinguer preuves historiques, session et exemples non exécutés ; ne relancer aucune commande pour rédiger une note.
+- **Registre central unique** : maintenir les actions utiles `TD-Bxxx` et repères durables `TD-Rxxx` dans `notes/todos.md`, sans entrée automatique par tâche, notion ou test. Conserver les IDs ; mettre à jour l'existant sans dupliquer les critères déjà portés par le plan.
+- **Une entrée = un petit tableau descriptif** : les champs source/IDs/fichiers, action ou notion/preuve, statut/dépendances peuvent être regroupés pour éviter de recopier le cours. Distinguer action bloquée, à autoriser, manuelle, optionnelle, terminée avec preuve et repère documentaire. Un repère n'est pas une tâche terminée ni une connaissance de l'utilisateur évaluée.
+- **Consolidation rétrospective autorisée sur demande** : fusionner ou répartir les notes selon le sujet, conserver les IDs, schémas/tableaux utiles et preuves situées, puis remplacer les fichiers devenus redondants et migrer leurs liens. Ne pas imposer leur conservation en doublon. Les notes expliquent le travail et ses limites ; leur suivi renvoie aux ancres stables du registre central. L'index `notes/README.md` relie les tutoriels et `notes/todos.md`. Le registre ne remplace pas les critères des stories ni le DAT.
 - **Périmètre inchangé** : documenter un TODO, un extrait ou une commande ne donne aucun feu vert pour l'exécuter. Ne pas ajouter les fonctionnalités métier de l'exemple de format fourni par l'utilisateur.
 
 ## 4. Architecture du laboratoire (borne supérieure, pas catalogue à enrichir)
@@ -144,7 +142,9 @@ Ne pas générer de workflow YAML ni revendiquer une CI verte tant que l'utilisa
 
 Être capable d'expliquer : promotion d'un artefact immuable, environnements de staging/prod, variables/secrets, approbation, smoke tests, stratégie de rollout, rollback, traceabilité. Comparer un push-based GitHub Actions à un GitOps pull-based **si l'utilisateur le demande**. **Aucune création de secrets, publication d'image, SSH, VPS, cloud ou pipeline de livraison.**
 
-## 6. Déroulé recommandé par sujet
+## 6. Repères disponibles pour approfondir
+
+Utiliser les éléments utiles à la demande, pas ce déroulé comme formulaire obligatoire. La préparation d'entretien reste optionnelle hors mode `INTERVIEW`.
 
 1. **Problème** concret (ex. 6 appels, dont 3 indépendants).
 2. **Modèle mental** et distinction avec les mécanismes voisins.
@@ -165,9 +165,7 @@ Exemples de questions :
 
 ## 7. Format de réponse préféré
 
-Pour les sujets significatifs, garder cet ordre :
-
-**Diagnostic / recommandation → mécanique technique → compromis → validation/test → formulation d'entretien → décision à documenter.**
+Privilégier **résultat attendu → flux du code → choix importants → preuves et limites**. Adapter la forme au besoin ; ni long cours ni formulation d'entretien systématique. Réserver les questions/corrections orales au mode `INTERVIEW` ou à une demande de l'utilisateur.
 
 - Rédiger en **français**, les identifiants techniques en anglais.
 - Être concret : exemples simples, peu de jargon non expliqué.

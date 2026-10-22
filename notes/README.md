@@ -1,109 +1,47 @@
 # Notes de travail — ConfluxLab
 
-Les fiches de sprint et les tâches à réaliser sont dans [docs/stages](../docs/stages/README.md). Le [DAT](../docs/dat/ConfluxLab.md) porte les décisions d'architecture. Ce dossier rassemble les cours/tutoriels issus du travail réalisé, sous un répertoire par sprint. Le registre [todos.md](todos.md) centralise leurs points à retenir et leurs actions restantes.
+Ces cours expliquent le code du laboratoire, **par sujets cohérents et par fragments**, pas selon un quota de notes par sprint. Le [plan des tâches](../docs/stages/README.md) indique les résultats et leur statut ; le [DAT](../docs/dat/ConfluxLab.md) porte les choix d'architecture ; le [registre](todos.md) garde les actions ouvertes et les repères utiles.
 
-## Convention
+## Parcours de lecture
 
-- Identifiant de tâche : **`INT-XX`**, unique à l'échelle du projet et conservé après attribution. La séquence continue entre les sprints ; ne pas réutiliser un identifiant.
-- Chemin : `notes/sprint-XX/INT-YY-<nom-de-la-tache-en-kebab-case>.md`.
-- Titre : `# INT-YY — <Nom de la tâche>`.
-- Une note est un **tutoriel pour junior**, pas seulement un journal de commandes : elle explique le vocabulaire, le problème, les décisions, les étapes et le code réellement présent.
-- Les extraits importants indiquent le fichier source et leur caractère partiel ; chaque commande précise sa racine de lancement, ses options, ses effets et son résultat observé. Une commande documentée n'est pas exécutée automatiquement.
-- Les preuves historiques, les vérifications de la session et les exercices non exécutés sont présentés séparément. L'état propre d'un ancien commit ne décrit pas le travail courant.
-- Les points à retenir et prochains travaux sont enregistrés dans [todos.md](todos.md) ; la dernière section de chaque cours pointe vers les entrées concernées, sans deuxième liste de TODO.
-- Une note partielle ou rétrospective ne prouve pas que la tâche est terminée. Elle ne déclenche pas de développement : **le feu vert reste requis pour chaque tâche**.
-- Les notes sont liées depuis cet index et la fiche du sprint concerné. Les tâches restent décochées tant que leurs critères ne sont pas vérifiés.
-
-## Plan d'un tutoriel
-
-| Section | Ce que le lecteur doit comprendre |
-|---|---|
-| **Contexte** | Story, statut réel, périmètre et origine des preuves |
-| **1. Objectif et vocabulaire** | Ce que le cours explique et le sens des mots nouveaux |
-| **2. Comprendre le problème** | Ce qui ne fonctionnait pas et pourquoi |
-| **3. Travail réalisé pas à pas** | Décisions, fichiers et extraits de code/config commentés ; cible future clairement distinguée |
-| **4. Commandes expliquées** | Où les lancer, ce qu'elles font, leurs options, effets et résultats réels |
-| **5. Vérifications et limites** | Ce qui est prouvé, historique ou non testé ; pas de succès inventé |
-| **6. Suivi centralisé** | Liens vers les actions et repères de `todos.md` |
-
-**Format durable demandé par l'utilisateur — modèle des notes INT-14/15/16 révisées :**
-
-- Expliquer le code **bout par bout** : un court extrait utile, puis son rôle, son enchaînement et ses limites. Ne pas coller une classe entière ni la reconstituer exhaustivement en plusieurs blocs.
-- Omettre les imports, packages, constructeurs, injections et autres éléments Spring répétitifs ; renvoyer au fichier source pour le code complet. Identifier les extraits partiels et la version historique si elle diffère du code actuel.
-- Pour les tests, ne garder que les signaux, interceptions ou assertions qui portent la preuve. Expliquer le montage nécessaire en quelques phrases ou dans un tableau, sans recopier fixtures, injections ou préparation banale.
-- Conserver les tableaux utiles de **beans, annotations et propriétés**. Expliquer le pourquoi, le flux et les pièges concrets ; ajouter un schéma ou une alternative seulement si cela aide, sans catalogue systématique.
-- Garder les commandes compréhensibles, les preuves historiques distinctes des vérifications de session et les illustrations non exécutées explicitement étiquetées.
-
-Un cours long comporte un sommaire et un parcours de lecture. La profondeur vient de l'explication, pas du volume de code recopié. **Documentation approfondie ne signifie pas davantage de tests** : conserver la sélection minimale adaptée au risque, réutiliser l'existant et ne pas relancer des commandes pour le seul besoin d'illustrer le texte.
-
-## Lire le registre central
-
-- **`TD-Bxxx`** : action restante ou vérification à effectuer, avec dépendances et statut ; elle ne crée pas un nouveau feu vert.
-- **`TD-Rxxx`** : notion à retenir, avec sa source et une question de vérification pédagogique ; sa présence ne signifie pas que l'apprenant la maîtrise déjà.
-- Chaque entrée a un tableau descriptif : source, story liée, dépendances, fichiers, action/notion, validation et statut. Une action déjà liée à une story n'est pas recréée en doublon.
-- Les IDs sont stables ; les ancres `#td-b001`, etc., restent utilisables lorsque le libellé descriptif évolue.
-
-## Répertoires par sprint
-
-| Dossier | Tâches planifiées | Sujet |
+| Sprint | Cours regroupé | IDs couverts et portée |
 |---|---|---|
-| [sprint-01](sprint-01/) | INT-01 à INT-04 ; INT-37 ajoutée sur demande | Socle modulaire et initialisation Git |
-| [sprint-02](sprint-02/) | INT-05 à INT-08 | Contrat REST |
-| [sprint-03](sprint-03/) | INT-09 à INT-12 | MongoDB et statuts |
-| [sprint-04](sprint-04/) | INT-13 à INT-16 | Asynchronisme |
-| [sprint-05](sprint-05/) | INT-17 à INT-20 | Orchestration |
-| [sprint-06](sprint-06/) | INT-21 à INT-24 | Partenaire et résilience |
-| [sprint-07](sprint-07/) | INT-25 à INT-28 | Validation et observabilité |
-| [sprint-08](sprint-08/) | INT-29 à INT-32 | CI |
-| [sprint-09](sprint-09/) | INT-33 à INT-36 | CD théorique et entretien |
+| 01 — Socle | [Architecture, assemblage et frontières](sprint-01/INT-01-socle-modulaire.md) | INT-01 + INT-03 + INT-04 : une application, des modules séparés et des appels Java |
+| 01 — Outillage | [Build reproductible et versionnement](sprint-01/INT-02-build-et-versionnement.md) | INT-02 + INT-37 : Maven, Wrapper, configuration utile et Git |
+| 02 — REST | [Accepter et consulter une demande](sprint-02/INT-05-accepter-et-consulter-une-demande.md) | INT-05 à INT-08 : contrat, validation, POST/GET et confidentialité au stade mémoire |
+| 03 — Cycle de vie | [Modèle et transitions atomiques](sprint-03/INT-09-modele-et-transitions-atomiques.md) | INT-09 + INT-11 : états, dates, copie locale et arbitrage MongoDB |
+| 03 — Stockage | [Insertion et persistance MongoDB](sprint-03/INT-10-insertion-et-persistance-mongodb.md) | INT-10 + INT-12 : insertion avant acceptation, acquittement, suivi et redémarrage |
+| 04 — Prise en charge | [Traiter les demandes en arrière-plan](sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md) | INT-13 + INT-14 + INT-16 : événement, proxy async, claim et fenêtres de panne |
+| 04 — Ressources | [Pool borné et erreurs async](sprint-04/INT-15-pool-borne-et-erreurs-async.md) | INT-15 : paramètres, rejet explicite et journalisation confidentielle |
+| 05 — Orchestration | [Orchestrer les six opérations](sprint-05/INT-17-orchestrer-les-six-operations.md) | INT-17 à INT-20 : contrats, dépendances, échecs et executor ; graphe non raccordé au listener |
 
-Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par ces identifiants, dans l'ordre des tâches. Une nouvelle tâche recevra un identifiant disponible sans renuméroter les existantes.
+**Complément au sprint 03 :** [MongoDB standalone ou replica set](sprint-03/INT-10-complement-mongodb-replica-set.md), théorie condensée avec schéma et tableau de quorum. Ce n'est ni une nouvelle tâche ni un cluster implémenté.
 
-## Comptes rendus existants
+Les résultats techniques sont documentés ; une compréhension orale non évaluée ne devient pas acquise par cette réécriture. Le [journal historique de clôture du sprint 01](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) reste accessible.
 
-| Tâche | Note | État constaté |
-|---|---|---|
-| INT-01 | [Inspecter et fixer les frontières](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) | Cadrage terminé : frontières, rôle de contracts, graphe cible et prérequis vérifiés ; historique initial conservé |
-| INT-02 | [Rendre le build reproductible](sprint-01/INT-02-rendre-le-build-reproductible.md) | Terminée pour le build : blocage levé dans INT-05, `clean verify` global réussi ; historique Maven/JDTLS conservé |
-| INT-03 | [Assembler les modules](sprint-01/INT-03-assembler-les-modules.md) | Terminée : seul JAR Boot démarré, appel Java et indisponibilité explicite ; 64 tests globaux, sans acceptation métier |
-| INT-04 | [Vérifier les frontières](sprint-01/INT-04-verifier-les-frontieres.md) | Terminée : 5 règles testées sur la production, 7 tests de détection, contexte réutilisé ; 76 tests globaux, métier inchangé |
-| INT-05 | [Définir les contrats](sprint-02/INT-05-definir-les-contrats.md) | Terminée : cinq types, exemples JSON et 59 cas de test ; pas de service ni de test HTTP |
-| INT-06 | [Accepter une demande](sprint-02/INT-06-accepter-une-demande.md) | Terminée : conservation mémoire UUID/`PENDING` avant `202`, copie du payload, refus sans acquittement ; 96 tests globaux à cette étape, GET encore `503` avant INT-07 |
-| INT-07 | [Consulter la demande](sprint-02/INT-07-consulter-la-demande.md) | Terminée : POST/GET réel, lecture seule des métadonnées, erreurs `404`/`400`, perte après redémarrage ; 108 tests globaux |
-| INT-08 | [Tester les refus](sprint-02/INT-08-tester-les-refus.md) | Terminée : refus HTTP/Java sans enregistrement, erreurs génériques, correction d'`instance`, isolation ; 181 tests globaux |
-| INT-09 | [Définir les données et transitions](sprint-03/INT-09-definir-les-donnees-et-transitions.md) | Terminée : modèle interne, dates et transitions locales ; 2 tests ajoutés, 3 tests ciblés réussis à cette étape ; MongoDB branché ensuite dans INT-10 |
-| INT-10 | [Persister avant d'accepter](sprint-03/INT-10-persister-avant-d-accepter.md) | Terminée : insertion MongoDB acquittée avant `202`, UUID unique, relecture et erreur sans faux reçu ; 2 nouveaux tests + 1 test existant réussis |
-| INT-11 | [Sécuriser les mises à jour](sprint-03/INT-11-securiser-les-mises-a-jour.md) | Terminée : transitions conditionnelles atomiques, un seul gagnant, dates et états finaux protégés ; 2 nouveaux tests + 2 tests du modèle réussis |
-| INT-12 | [Vérifier la persistance](sprint-03/INT-12-verifier-la-persistance.md) | Terminée : Failsafe branché à `verify`, JAR redémarré sur la même base, métadonnées conservées ; 1 test ajouté, 6 cas sélectionnés réussis |
-| INT-13 | [Dessiner les fenêtres de panne](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) | Terminée, simplifiée : un schéma, trois situations de panne et les nuances indispensables ; documentation uniquement, aucune panne exécutée |
-| INT-14 | [Publier et consommer](sprint-04/INT-14-publier-et-consommer.md) | Terminée : événement après sauvegarde, listener async, prise en charge atomique ; 1 scénario ajouté, 9 cas ciblés réussis ; pas de métier ni d'état final |
-| INT-15 | [Borner l'exécution](sprint-04/INT-15-borner-l-execution.md) | Terminée : executor dédié borné, rejet explicite et erreur async journalisée sans message privé ; 2 cas ajoutés, 4 cas ciblés réussis ; aucune reprise |
-| INT-16 | [Tester avec un traitement contrôlé](sprint-04/INT-16-tester-avec-un-traitement-controle.md) | Terminée : quatre comportements couverts par trois cas existants, attentes/nettoyage relus et rapports INT-15 inspectés ; aucun code, test ou réglage modifié, aucune réexécution |
-| INT-17 | [Écrire les contrats des opérations](sprint-05/INT-17-ecrire-les-contrats-des-operations.md) | Terminée : six contrats internes, identifiants typés et fixture à futures pilotables ; production et tests compilés, aucun test exécuté ni orchestration ajoutée |
-| INT-18 | [Composer le succès](sprint-05/INT-18-composer-le-succes.md) | Terminée : graphe nominal sans barrière globale avant E/F, fin effective des rattachements suivie ; 2 cas paramétrés réussis, sans branchement au listener ou état final |
-| INT-19 | [Composer les échecs](sprint-05/INT-19-composer-les-echecs.md) | Composition Java réalisée : B en échec sans E/F, branches lancées attendues, cause préservée ; 1 cas ajouté et 3 cas ciblés réussis, sans état final persisté |
-| INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
+## Lire les versions sans mélanger les étapes
 
-Les preuves historiques restent datées : INT-01 conserve le cadrage initial ; le cours INT-06 explique désormais l'acceptation réalisée et renvoie à la version publiée de sa rétrospective pour l'ébauche antérieure. Les autres dossiers n'ont pas de compte rendu de réussite anticipé.
+- Le cours REST montre l'étape historique **en mémoire**, avec les extraits situés dans leur version Git. Ce stockage n'est plus utilisé en production.
+- MongoDB a ensuite remplacé la mémoire. Depuis le raccordement async, le reçu POST reste `PENDING`, mais le GET peut déjà lire `PROCESSING`.
+- Le cours d'orchestration décrit le code d'INT-20 dans l'arbre de travail : le graphe existe, sans listener raccordé, appels partenaires ou état final de production.
+- Les tableaux de preuves reprennent les résultats réellement observés à l'époque. **Aucun test, build ou démarrage n'a été relancé pour cette consolidation.** Les sélections successives ne s'additionnent pas et ne constituent pas une suite globale actuelle.
 
-**INT-13** ouvre le sprint 04 par une explication courte des limites du flux Spring Event/`@Async`, sans clôture pédagogique automatique du sprint 03. La [note simplifiée](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) n'impose pas une matrice exhaustive de tests. Après sa pause, INT-14 est reprise sur demande explicite et validée avec 9 cas ciblés ; le cours distingue cette prise en charge du métier encore absent. INT-15 a ensuite livré le bornage dédié et la journalisation avec 4 cas ciblés réussis, sans replay du JAR ni suite complète. INT-16 consolide ces preuves et relit le contrôle des workers sans ajouter ni réexécuter de test ; la clôture pédagogique du sprint 04 reste à confirmer. [Repère TD-R020](todos.md#td-r020).
+## Comment les notes sont organisées
 
-## Compléments théoriques
+1. **Résultat et flux** : où l'on entre, quelles classes collaborent, où le travail s'arrête.
+2. **Code expliqué par parties** : courts extraits réels, immédiatement suivis de leur rôle et du choix qu'ils illustrent ; pas une classe complète livrée sans explication.
+3. **Schémas et tableaux utiles** : responsabilités, données, étapes, annotations ou propriétés, quand ils rendent le parcours plus lisible.
+4. **Preuves et limites** : bilan compact, commandes essentielles contextualisées et liens vers le suivi. Le code des tests et leur montage peuvent être omis ; les résultats conservés restent honnêtes et datés.
 
-Ces notes approfondissent une story existante sans ajouter de tâche, modifier l'architecture implémentée ou autoriser une expérimentation.
+Le nombre de tâches et de notes dépend du sujet : ne pas tout fusionner pour raccourcir, ni créer un cours par méthode. Des sujets autonomes peuvent rester séparés dans un même sprint. Une note peut renvoyer à une autre pour éviter de répéter Maven, la configuration du pool ou l'historique entier.
 
-- **INT-10 — [MongoDB standalone ou replica set](sprint-03/INT-10-complement-mongodb-replica-set.md)** : deux ou trois membres, quorum, acquittement, URI, délais et limites des reprises ; théorie uniquement. [Repère TD-R017](todos.md#td-r017).
+## Convention et suivi
 
-## Clôtures de sprint
+- Les IDs `INT-XX` restent stables. Une note regroupée nomme les IDs couverts ; le fichier utilise le premier ID du groupe, sous `notes/sprint-XX/`.
+- Les anciennes notes remplacées sont condensées dans les cours ci-dessus, avec leurs preuves et limites ; les liens du dépôt sont migrés. L'historique Git conserve les anciennes versions suivies.
+- Les ancres `TD-B001`, etc., de [todos.md](todos.md) restent stables : `TD-Bxxx` suit une action ; `TD-Rxxx` désigne une notion, pas une connaissance évaluée. Les petits tableaux regroupent les champs source, périmètre, preuve et statut sans recopier le cours.
+- La fiche de sprint porte les critères ; ne pas créer un TODO ou un repère par sous-étape. Une consolidation documentaire ne vaut pas feu vert de développement.
 
-- [Sprint 01 — Bilan technique et synthèse documentaire](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) : clôturé sur demande explicite le 2026-10-21 ; 76 tests globaux au moment de la clôture, restitution orale non évaluée ; le feu vert INT-06 a été donné ensuite, séparément.
+## Suite
 
-## Documentation déjà produite
-
-- Le DAT décrit le cas d'usage fictif, le graphe A–F, les statuts et les limites de l'événement local.
-- Neuf fiches de sprint définissent incréments, exclusions, tests et critères de fin.
-- Les règles du skill imposent le BFF mince, le métier dans Capability, les appels Java internes et le feu vert avant chaque tâche.
-- Le plan a été déplacé dans `docs/stages/` ; ses liens locaux ont été vérifiés lors du déplacement.
-- La demande initiale d'organisation des notes et des identifiants n'a modifié ni les sources Java, ni le POM existant, ni la configuration applicative. La réparation Maven autorisée ultérieurement est décrite dans la note INT-02.
-
-Lors d'INT-08, le dernier `clean verify` non filtré observé réussit : 181 tests (59 contrats, 43 Capability, 4 BFF, 75 assemblage/HTTP/architecture). Les refus sont vérifiés aux deux frontières et un écho de chemin dans `instance` a été reproduit puis corrigé ; le [cours INT-08](sprint-02/INT-08-tester-les-refus.md) distingue les cas essentiels de la matrice plus large de non-régression. Les preuves de redémarrage suivantes restent celles d'INT-07 : Le JAR réel a répondu `202` puis `200 PENDING` pour deux demandes distinctes, avec des métadonnées stables ; UUID inconnu `404`, format invalide `400`, puis ancien UUID `404` après redémarrage. Les deux processus ont été arrêtés. L'acceptation et le suivi sont réalisés en mémoire, sans traitement de création de famille. La démonstration INT-08 confirme aussi les refus sans marqueur et les vues stables de deux demandes ; les contrôles de frontières restent verts. La résolution des dépendances et la navigation Java/Spring côté JDTLS restent des preuves historiques d'INT-02, pas une nouvelle validation GUI. INT-09 a ensuite défini les dates et transitions du modèle interne avec 3 tests ciblés réussis, sans relancer ce build global. À cette étape INT-09, aucun stockage durable n'était revendiqué. **Depuis INT-10**, le service utilise MongoDB et 3 tests ciblés réussissent avec une base temporaire réelle ; la panne d'insertion est simulée et les conteneurs sont supprimés. À l'étape INT-10, la suite complète et le JAR n'avaient pas été relancés ; aucun redémarrage n'avait été démontré. INT-11 a ensuite ajouté les transitions conditionnelles atomiques et leur validation par 4 tests ciblés, sans déclencher de traitement réel. **INT-12** a depuis exécuté `clean verify` avec 1 cas Surefire sélectionné et 5 cas Failsafe réussis : le JAR réel est redémarré sur la même base et retrouve les mêmes métadonnées. Ce n'est pas un nouveau passage de toutes les suites. Aucun traitement de création de famille, CI verte ou mesure de performance n'est revendiqué.
+Les sprints 06 à 09 sont [planifiés](../docs/stages/README.md#roadmap), sans note de réussite anticipée. Le prochain lot est **INT-21 + INT-22 — Créer une famille de bout en bout**. Un accord porte sur le lot présenté, pas automatiquement sur tous les travaux du sprint.

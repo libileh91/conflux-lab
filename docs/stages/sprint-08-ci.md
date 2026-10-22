@@ -1,80 +1,46 @@
-# Sprint 08 — CI réellement exécutée
+# Sprint 08 — Obtenir une CI exploitable
 
-**Statut : planifié.** Prérequis : sprint 07 clos, accord explicite pour la CI, dépôt Git/GitHub et runner avec Docker disponibles. Ce plan ne crée aucun dépôt distant.
+**Statut : non commencé — feu vert requis pour l'incrément complet INT-29 à INT-32.**
+Prérequis : sprint 07 clos, dépôt Git/GitHub accessible et Docker disponible localement et sur le runner.
+Un seul feu vert couvre l'incrément ; un **accord distinct reste obligatoire avant tout push, PR ou autre opération distante**.
 
-## Objectif
+## Objectif / story
 
-Faire exécuter les vérifications par GitHub Actions pour détecter une régression avant fusion, sans livrer ni déployer l'application.
-Ce sprint prévoit une CI pratique : chaque tâche attend son feu vert individuel et toute opération distante un accord préalable ; le plan ne lance rien.
+En tant que développeur, je veux une CI qui vérifie réellement le projet et rend ses échecs lisibles, afin de détecter une régression avant fusion, sans déployer.
 
-## Repères
+## Périmètre et actions
 
-- La **CI** (intégration continue) compile le projet et lance ses tests après un changement de code.
-- Un **runner** est la machine qui exécute les étapes GitHub Actions ; Docker y sert aux tests, pas au déploiement.
-- **Failsafe** est le plugin Maven qui doit raccorder les tests d'intégration `*IT` au cycle `verify`.
+- Depuis la racine, exécuter réellement `./mvnw -B -ntp verify` en local, sans filtre de tests, exclusion ni option de saut ; vérifier les versions et Docker.
+- Vérifier dans les rapports que Surefire exécute les tests unitaires et Failsafe les tests d'intégration `*IT`, sans partenaire réel ; corriger uniquement le raccordement manquant si nécessaire.
+- Confirmer le nom réel de la branche principale avant de configurer les déclencheurs `pull_request` et `push` vers cette branche.
+- Après autorisation de réaliser l'incrément, créer le workflow minimal : récupération du code, JDK 21, cache Maven, même `verify` non filtré et permissions minimales (`contents: read` pour le code).
+- Utiliser un runner disposant de Docker pour MongoDB Testcontainers et les tests isolés avec WireMock ; Docker ne sert pas à déployer.
+- Publier les rapports Surefire et Failsafe disponibles, y compris si la vérification échoue, avec une étape de collecte exécutée même en échec ; vérifier l'absence de secrets et données privées.
+- Après l'accord distant distinct, observer un run vert et un run rouge sur une régression contrôlée en PR de test ; retirer cette régression sans laisser la branche principale volontairement cassée.
 
-## Tâches — un feu vert par tâche
+## Critères observables et preuves minimum
 
-### INT-29 — Vérifier la reproductibilité locale
-**Statut : à faire — feu vert requis.**
+- [ ] Le `verify` local non filtré réussit ; sa commande, l'environnement et les rapports prouvent l'exécution des tests unitaires et d'intégration, sans tests sautés pour obtenir le vert.
+- [ ] Le workflow utilise la branche principale confirmée, les deux déclencheurs, JDK 21, cache Maven, permissions minimales et un runner avec Docker.
+- [ ] Un lien ou identifiant de run GitHub Actions réellement vert est conservé ; ses rapports Surefire/Failsafe confirment que les deux niveaux de tests ont tourné.
+- [ ] Un lien ou identifiant de run réellement rouge identifie le test volontairement cassé ; les rapports disponibles restent consultables malgré l'échec.
+- [ ] Les preuves indiquent le retour à une version sans régression volontaire ; logs et pièces jointes ne contiennent ni secret réel ni donnée privée.
 
-En tant que développeur, je veux lancer les mêmes vérifications sur une installation neuve, afin de ne pas dépendre de réglages cachés sur ma machine.
+## Limites nécessaires
 
-**À faire :**
-- Vérifier depuis la racine `./mvnw -B -ntp verify`, les versions requises et le raccordement des `*IT` à Failsafe.
-- Vérifier Git et le nom réel de la branche principale avant de définir les déclencheurs.
+Un YAML présent ou un succès local ne prouve pas une CI verte ; un échec de configuration ne remplace pas la preuve rouge d'une régression détectée.
+Si Docker, GitHub, les droits ou le runner manquent, marquer l'incrément **partiel ou bloqué**, préciser les preuves manquantes et ne pas déclarer la CI verte ou validée.
+Pas de déploiement, publication d'image, secret de production ni infrastructure distante à créer. Aucun outil de couverture, lint ou analyse supplémentaire imposé.
+La procédure minimale pour un clone neuf tient aux prérequis, à la commande et aux accès aux rapports : pas de cours CI séparé.
 
-**Terminé quand :**
-- [ ] La commande exécute les tests unitaires et d'intégration, avec des rapports qui le prouvent, sans service partenaire réel.
-- [ ] Une procédure pour un clone neuf indique les versions, Docker et la commande ; le nom réel de la branche principale est confirmé.
+## Traçabilité des IDs conservés
 
-### INT-30 — Créer la CI minimale
-**Statut : à faire — feu vert requis.**
+| ID | Ancien sujet intégré |
+|---|---|
+| INT-29 | Vérifier la reproductibilité locale |
+| INT-30 | Créer la CI minimale |
+| INT-31 | Rendre les échecs lisibles |
+| INT-32 | Observer les preuves |
 
-En tant que développeur, je veux automatiser les vérifications à chaque changement proposé, afin de détecter un problème avant son intégration à la branche principale.
-
-**À faire :**
-- Prévoir `pull_request` et `push` sur la branche principale réelle, puis récupération du code, JDK 21, cache Maven et `./mvnw -B -ntp verify`.
-- Donner seulement les permissions nécessaires et utiliser un runner capable d'exécuter Testcontainers.
-
-**Terminé quand :**
-- [ ] Le workflow décrit les déclencheurs attendus et les étapes minimales avec des permissions limitées.
-- [ ] Le runner dispose de Docker pour les tests ; le workflow ne contient ni livraison, ni déploiement, ni publication d'image.
-
-### INT-31 — Rendre les échecs lisibles
-**Statut : à faire — feu vert requis.**
-
-En tant que développeur, je veux consulter les rapports quand la CI échoue, afin de trouver le test responsable sans devoir deviner la cause.
-
-**À faire :**
-- Rendre disponibles les rapports des tests unitaires (Surefire) et d'intégration (Failsafe), même en échec.
-- Vérifier que les logs et fichiers joints ne contiennent ni secret réel ni donnée personnelle.
-
-**Terminé quand :**
-- [ ] Sur un échec de test, les rapports utiles restent accessibles et permettent d'identifier la cause.
-- [ ] La revue des logs et fichiers joints ne révèle aucun secret réel ni contenu personnel.
-
-### INT-32 — Observer les preuves
-**Statut : à faire — feu vert requis.**
-
-En tant que développeur, je veux observer une CI verte et une régression détectée en rouge, afin de vérifier que l'automatisation teste réellement le projet.
-
-**À faire :**
-- Avec accord avant les opérations distantes, observer un run réussi puis une régression contrôlée sur une demande de fusion de test.
-- Enregistrer les preuves et ne pas laisser volontairement la branche principale cassée.
-
-**Terminé quand :**
-- [ ] Un lien ou identifiant de run réellement réussi est consigné ; ses rapports montrent les tests unitaires et d'intégration.
-- [ ] Un run réellement rouge révèle le test volontairement cassé, avec ses rapports ; la branche principale n'est pas laissée en échec volontaire.
-
-## Limites et hors périmètre
-
-Ne pas lancer Testcontainers avant disponibilité de Docker. Si GitHub ou le runner manque, consigner le blocage sans déclarer la CI validée.
-Un fichier YAML ne prouve ni une CI verte ni l'exécution des `*IT` : `verify` doit être relié à Failsafe, puis les runs réellement observés.
-JaCoCo, lint et analyse des dépendances restent des améliorations éventuelles, pas des ajouts par défaut. Aucun secret de déploiement ni CD opérationnelle.
-
-## Démo et clôture
-
-- [ ] Présenter les runs vert et rouge et leurs rapports ; expliquer pourquoi Docker pour les tests ne signifie pas déploiement.
-
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les commandes locales, liens des runs, rapports et limites de l'environnement réellement observés.
+**Clôture future :** une seule note synthétique pour INT-29 à INT-32, avec résultat local, liens des runs, rapports et blocages réels ; pas quatre notes ni validations indépendantes.
+Cette réécriture ne crée aucun workflow et n'autorise aucun test, build, push, PR ou lancement distant.

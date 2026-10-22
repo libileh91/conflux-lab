@@ -1,81 +1,51 @@
-# Sprint 07 — Parcours complet, observabilité et mesures
+# Sprint 07 — Démontrer et mesurer le parcours
 
-**Statut : planifié.** Prérequis : sprint 06 clos et accord pour ouvrir ce sprint ; Docker disponible avant tout test Testcontainers, sinon consigner le blocage.
+**Statut : non commencé — feu vert requis pour l'incrément complet INT-25 à INT-28.**
+Prérequis : sprint 06 clos et parcours raccordé ; Docker disponible si le montage utilise Testcontainers, sinon signaler le blocage.
+Un seul feu vert couvre cet incrément ; les anciens IDs sont des repères de traçabilité, pas quatre tâches à autoriser.
 
-## Objectif
+## Objectif / story
 
-Montrer le parcours complet, retrouver la cause d'un échec et mesurer ce qui change réellement. Ce sprint consolide les tests écrits dans les sprints précédents ; il ne démarre pas les tests.
-Ce sprint est un objectif pédagogique : chaque tâche attend son feu vert individuel ; le plan ne lance rien.
+En tant que développeur, je veux démontrer le parcours, diagnostiquer un échec et mesurer le traitement, afin d'expliquer ce que le laboratoire fait réellement.
 
-## Repères
+## Périmètre et actions
 
-- La **latence HTTP** va de la réception du POST à la réponse `202`.
-- La **durée métier** va de l'acceptation de la demande à son état final.
-- Le **taux de réussite** est la part des demandes réussies parmi les demandes terminées dans un échantillon défini.
+- Réutiliser les cas et preuves de succès, d'échec et de concurrence des sprints précédents ; compléter seulement une preuve manquante du parcours raccordé, sans réécrire les scénarios ni lancer une seconde campagne exhaustive.
+- Préparer une courte démonstration locale : requête fictive, `202`, suivi jusqu'à l'état final, puis diagnostic d'un échec ; conserver les commandes de lancement et d'arrêt utiles.
+- Compléter seulement les logs utiles avec UUID de demande, opération et statut, y compris en arrière-plan, sans payload, donnée privée ni secret.
+- Ne pas imposer de MDC : s'il est déjà nécessaire à la corrélation, assurer sa transmission et son nettoyage entre threads.
+- Relever les trois mesures ci-dessous par des horodatages et un tableau simple ; préciser l'environnement, l'échantillon et les bornes de mesure.
+- Comparer séquentiel et concurrent dans un montage expérimental local, avec les mêmes opérations, données fictives, délais partenaires contrôlés et ressources ; ne pas créer un second parcours de production.
 
-## Tâches — un feu vert par tâche
+## Mesures à distinguer
 
-### INT-25 — Corréler le parcours
-**Statut : à faire — feu vert requis.**
+| Mesure | Définition |
+|---|---|
+| Latence HTTP `202` | Réception du POST → réponse `202` |
+| Durée métier | Acceptation de la demande → état final, sans supposer que le traitement commence après le retour HTTP |
+| Taux de réussite | Demandes réussies / demandes terminées dans un échantillon et une fenêtre définis ; dénombrer séparément celles encore en cours |
 
-En tant que développeur, je veux retrouver les étapes d'une demande dans les logs, afin de comprendre son parcours même quand plusieurs demandes avancent ensemble.
+## Critères observables et preuves minimum
 
-**À faire :**
-- Associer `requestId`, opération et changement d'état aux logs, y compris sur les threads asynchrones.
-- Si un contexte de logs lié au thread (MDC) est utilisé, le transmettre puis le nettoyer.
+- [ ] La démonstration montre une acceptation puis une fin de traitement, et un échec après acceptation reste visible dans le suivi.
+- [ ] Quelques lignes de logs permettent de retrouver UUID, opérations et statuts d'un échec ; un contrôle de deux demandes raccordées démontre l'absence de mélange d'états et de résultats. Réutiliser un scénario existant s'il porte déjà cette preuve.
+- [ ] Le relevé distingue les trois mesures, avec effectifs et conditions ; un `202` ne vaut ni traitement terminé ni réussite métier.
+- [ ] Le tableau séquentiel/concurrent indique le protocole reproductible, quelques relevés et leur variation, sans seuil chronométrique fragile comme critère de test.
+- [ ] Les rapports existants cités gardent leur date et leur périmètre ; les nouvelles observations ne sont pas présentées comme une nouvelle campagne de tests.
 
-**Terminé quand :**
-- [ ] Un test permet de retrouver les opérations et changements d'état d'une demande avec son `requestId`, y compris en arrière-plan.
-- [ ] Un test de demandes concurrentes vérifie que leurs contextes de logs ne se mélangent pas.
+## Limites nécessaires
 
-### INT-26 — Consolider les scénarios
-**Statut : à faire — feu vert requis.**
+Monolithe modulaire inchangé : BFF mince → Capability en Java dans la même JVM ; Feign/Resilience4j vers WireMock uniquement.
+L'événement local n'est pas durable : un crash peut abandonner une demande ; aucune reprise automatique n'est promise.
+Aucune plateforme de métriques ni extension Actuator imposée sans besoin démontré. Les chiffres sont des **mesures ConfluxLab**, pas des résultats AXA ni une garantie de performance générale.
 
-En tant que consommateur de l'API, je veux pouvoir suivre une demande jusqu'à son résultat, afin de connaître aussi les erreurs survenues après son acceptation.
+## Traçabilité des IDs conservés
 
-**À faire :**
-- Consolider le parcours HTTP public → Capability → MongoDB → événement local → orchestration → WireMock → suivi final.
-- Décrire le lancement local, une requête fictive, le suivi, le diagnostic et l'arrêt.
+| ID | Ancien sujet intégré |
+|---|---|
+| INT-25 | Corréler le parcours |
+| INT-26 | Consolider les scénarios |
+| INT-27 | Séparer les métriques |
+| INT-28 | Comparer et documenter |
 
-**Terminé quand :**
-- [ ] Les tests isolés avec MongoDB Testcontainers et WireMock couvrent succès, partenaire lent, échec définitif, échec partiel et demandes concurrentes sans mélange d'états ni de résultats.
-- [ ] Les tests interrogent le suivi avec une échéance bornée et vérifient qu'une erreur après le `202` devient visible avec un diagnostic adapté.
-- [ ] La procédure locale permet de reproduire le parcours sans partenaire réel ni donnée personnelle.
-
-### INT-27 — Séparer les métriques
-**Statut : à faire — feu vert requis.**
-
-En tant que développeur, je veux mesurer séparément l'attente HTTP, le traitement métier et la réussite, afin de ne pas confondre réponse rapide et travail terminé.
-
-**À faire :**
-- Préciser le début, la fin et la population de chaque mesure.
-- Ajouter seulement les mesures et points de consultation Actuator nécessaires.
-
-**Terminé quand :**
-- [ ] Les vérifications distinguent les trois mesures, notamment une réponse `202` obtenue alors que le traitement continue.
-- [ ] Les mesures exposées ne contiennent ni données personnelles ni UUID comme étiquette de métrique.
-
-### INT-28 — Comparer et documenter
-**Statut : à faire — feu vert requis.**
-
-En tant que développeur débutant, je veux comparer les parcours séquentiel et parallèle dans les mêmes conditions, afin d'expliquer les gains observés sans promettre une performance générale.
-
-**À faire :**
-- Mesurer les deux parcours avec les mêmes délais partenaires contrôlés et les mêmes ressources.
-- Décrire l'environnement, l'échantillon, la variation des résultats et les limites constatées, dont la saturation et le risque d'abandon après crash.
-
-**Terminé quand :**
-- [ ] Le protocole permet de reproduire la comparaison ; les tests de concurrence gardent des futures/latches et des attentes bornées, pas des `sleep` ou un seuil chronométrique fragile comme preuve.
-- [ ] Le compte rendu étiquette les résultats « mesures ConfluxLab », explique leurs limites et ne les attribue pas à AXA.
-
-## Limites et hors périmètre
-
-Le parcours reste un monolithe modulaire : Experience/BFF mince appelle Capability métier en Java dans la même JVM ; Feign/Resilience4j ne visent que WireMock.
-Un événement local n'est pas durable : après un crash, une demande peut rester abandonnée ; ce sprint ne promet pas une reprise automatique.
-Pas de plateforme d'observabilité de production, de benchmark commercial, de garantie absolue ni de cloud ; les chiffres historiques rapportés ne sont pas une cible à reproduire.
-
-## Démo et clôture
-
-- [ ] Montrer une demande acceptée puis terminée, retrouver un échec par son UUID et expliquer pourquoi la latence HTTP ne prouve pas la durée métier.
-
-Compléter le [journal commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint) avec les rapports de tests, le protocole de mesure et les résultats réellement observés.
+**Clôture future :** une seule note synthétique pour INT-25 à INT-28, avec démonstration, liens vers les preuves réutilisées, relevés et limites réelles. Cette réécriture ne commence pas l'incrément et ne crée aucune note de réussite.

@@ -1,135 +1,71 @@
 # Sprint 01 — Socle du monolithe modulaire
 
-**Statut : clôturé sur décision explicite de l'utilisateur le 2026-10-21 — volets technique et documentaire.** INT-01, INT-02, INT-03, INT-04 et INT-37 sont terminées dans leur périmètre ; les contrats d'INT-05 ont levé le blocage du build. Le bilan et la synthèse de clôture figurent ci-dessous. La restitution orale de l'apprenant n'a pas été évaluée : cette clôture n'est pas une attestation de maîtrise.
+**Deux résultats réalisés, regroupés par sujet :** architecture/assemblage/frontières (INT-01/03/04) et build/versionnement (INT-02/37). Le sprint est un repère de classement, **pas l'obligation d'une tâche ou d'une note unique**. Les IDs et leurs preuves restent inchangés.
 
-## Objectif
+**Clôture technique et documentaire demandée le 2026-10-21 ; restitution orale non évaluée.** La réorganisation documentaire du 2026-10-22 ne lance aucun code, test, build, démarrage, commit ou push. Les critères cochés décrivent les vérifications historiques, pas une nouvelle validation des sources actuelles.
 
-Pouvoir construire une seule application Java, avec deux parties bien séparées : le BFF reçoit les requêtes et Capability porte le métier. Ce sprint ne crée pas encore de famille.
+## INT-01 + INT-03 + INT-04 — Architecture, assemblage et frontières
 
-## Repères
+**Statut : réalisé pour le cadrage, l'assemblage et ses garde-fous.** [Cours — Architecture, assemblage et frontières](../../notes/sprint-01/INT-01-socle-modulaire.md).
 
-- Un **module** est une partie du code avec une responsabilité précise ; plusieurs modules peuvent fonctionner dans une seule application.
-- Le **Maven Wrapper** (`mvnw`) utilise la version de Maven prévue par le projet, même sans Maven préinstallé.
-- Un **JAR** est une archive Java ; seul le module `application` produit le JAR Spring Boot exécutable.
+**Story :** en tant que développeur, je veux démarrer un monolithe aux responsabilités séparées, afin de faire évoluer l'HTTP et le métier sans créer plusieurs applications ni coupler le BFF au stockage.
 
-**Dépendance résolue :** INT-05 a défini les types Java manquants et le `clean verify` global réussit avec 59 cas de test. INT-02 est donc clôturée pour le build. INT-03 a ensuite réalisé l'assemblage et INT-04 a vérifié les frontières, chacune sur feu vert distinct.
+**Périmètre livré :** trois bibliothèques et un seul assemblage Boot ; BFF mince, API Java publique de Capability, contrats indépendants et absence d'HTTP interne. Les contrôles de frontières complètent le test de contexte, sans modifier le métier.
 
-## Stories — un feu vert par tâche
+**Critères techniques vérifiés historiquement :**
+- [x] Rôles et dépendances autorisées documentés ; un seul JAR Boot construit/démarré et trois bibliothèques ordinaires inspectées.
+- [x] Délégation Java et assemblage testés, sans faire passer les réponses d'un double pour une acceptation réelle.
+- [x] Cinq règles protègent cycles intermodules, sens Capability/BFF, API publique, indépendance des contrats et absence de retour vers l'assemblage.
+- [x] Les mêmes règles rejettent les exemples fautifs et acceptent le graphe autorisé ; contexte réutilisé, outil/fixtures absents du JAR livré.
 
-### INT-01 — Inspecter et fixer les frontières
-**Statut : terminée pour le cadrage.** [Note INT-01](../../notes/sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md).
+**Dépendance historique :** le socle Maven et les contrats d'INT-05 devaient être disponibles avant l'assemblage. INT-05 reste rattachée au sprint 02. Son déblocage ne prouvait pas encore le démarrage Boot.
 
-En tant que développeur débutant, je veux savoir où placer chaque responsabilité, afin de ne pas mélanger le traitement HTTP, le métier et le stockage.
+## INT-02 + INT-37 — Build reproductible et versionnement
 
-**À faire :**
-- Examiner l'existant et vérifier Java, Maven, le réseau et Docker.
-- Décrire les rôles des modules et leurs dépendances autorisées dans le DAT.
+**Statut : réalisé pour le socle de build et l'initialisation/publication Git.** [Cours — Build reproductible et versionnement](../../notes/sprint-01/INT-02-build-et-versionnement.md).
 
-**Terminé quand :**
-- [x] Les rôles du BFF, de Capability et de `contracts` ainsi que le graphe cible sont documentés.
-- [x] Les prérequis disponibles et les limites constatées figurent dans la note ; aucun fonctionnement métier n'est prétendu.
+**Story :** en tant que développeur, je veux construire le projet avec des outils explicites et conserver des versions identifiables, afin de partager un état du code sans dépendre d'un Maven choisi au hasard.
 
-### INT-02 — Rendre le build reproductible
-**Statut : terminée pour le socle et la compilation.** Déblocage constaté pendant les vérifications d'INT-05, pas un assemblage applicatif. [Note INT-02](../../notes/sprint-01/INT-02-rendre-le-build-reproductible.md).
+**Périmètre livré :** parent/agrégateur Maven, Java 21, Wrapper épinglé avec empreinte, réglages réseau/fins de ligne et commandes documentées ; exclusions Git, initialisation de `main` et premiers push HTTPS sans force ni changement de configuration globale.
 
-En tant que développeur, je veux construire le projet avec une commande documentée, afin d'utiliser les mêmes versions d'outils et de détecter les erreurs de compilation.
+**Critères techniques vérifiés historiquement :**
+- [x] Wrapper démarré sous Linux depuis un cache de distribution neuf ; versions et limites documentées.
+- [x] Après INT-05, `clean verify` global réussi sans exclure les sources en échec : 59 cas de contrats ; blocage INT-02 levé.
+- [x] Dépôt initialisé, fichiers prévus versionnés et premier push HTTPS de `main` confirmé dans les preuves INT-37.
 
-**À faire :**
-- Configurer le parent Maven, les modules, Java 21 et le Wrapper avec une version épinglée.
-- Documenter la commande globale et son résultat, sans exclure les sources qui échouent.
+« Reproductible » signifie ici outils et commandes explicités : aucun build depuis un clone vierge ni aucune identité des archives octet pour octet entre machines n'est démontré. Le versionnement ne prouve pas que l'application fonctionne. Les autorisations historiques étaient distinctes ; ce regroupement par sujet ne les modifie pas.
 
-**Terminé quand :**
-- [x] Le Wrapper démarre depuis un cache de distribution neuf et les versions sont documentées.
-- [x] `./mvnw -B -ntp clean verify` réussit pour tous les modules après INT-05 : 59 cas de test, aucun échec/erreur/ignoré.
+## Traçabilité des IDs
 
-### INT-03 — Assembler les modules
-**Statut : terminée sur feu vert explicite.** Prérequis INT-02 et INT-05 remplis. [Tutoriel et preuves INT-03](../../notes/sprint-01/INT-03-assembler-les-modules.md).
+| ID conservé | Résultat / cours | Statut et preuve historique |
+|---|---|---|
+| **INT-01** | [Architecture](../../notes/sprint-01/INT-01-socle-modulaire.md) | Terminé — responsabilités, graphe cible et prérequis documentés ; aucun métier déduit du schéma |
+| **INT-02** | [Build/versionnement](../../notes/sprint-01/INT-02-build-et-versionnement.md) | Terminé — Wrapper Maven 3.9.16, Java 21 ; blocage levé par INT-05, `clean verify` global : **59 cas**, 0 échec/erreur/ignoré ; pas encore d'assemblage |
+| **INT-03** | [Architecture/assemblage](../../notes/sprint-01/INT-01-socle-modulaire.md) | Terminé — `clean verify` : **64 tests** = 59 contrats + 2 délégation + 3 assemblage/disponibilité ; 0 échec/erreur/ignoré. JAR inspecté/démarré sans base/partenaire à cette étape ; POST/GET valides `503` sans reçu, processus arrêté |
+| **INT-04** | [Frontières](../../notes/sprint-01/INT-01-socle-modulaire.md) | Terminé — `clean verify` : **76 tests** = 64 + 5 frontières + 7 détection ; 0 échec/erreur/ignoré. Contexte revalidé, archive sans ArchUnit/fixtures ; aucun nouveau lancement HTTP du JAR |
+| **INT-37** | [Build/versionnement](../../notes/sprint-01/INT-02-build-et-versionnement.md) | Terminé — `067e6a4`, 36 fichiers, premier push HTTPS de `main` ; `7cfee84`, note/liens publiés ensuite. Aucun succès applicatif ni état distant actuel garanti |
 
-En tant que développeur, je veux démarrer les modules ensemble, afin d'obtenir un monolithe plutôt que deux applications séparées.
+## Limites et lecture de l'état actuel
 
-**À faire :**
-- Créer `application`, y placer le seul démarrage Boot et y assembler les bibliothèques.
-- Remplacer l'appel HTTP BFF → Capability par un appel à son interface publique Java.
-
-**Terminé quand :**
-- [x] Un seul JAR Boot démarre, sans MongoDB ni partenaire requis à ce stade ; les trois autres JAR sont des bibliothèques ordinaires.
-- [x] Deux tests vérifient la délégation Java à l'interface publique ; trois tests d'assemblage/disponibilité passent, sans client HTTP interne ni second démarrage autonome.
-
-**Preuves :** `./mvnw -B -ntp clean verify` réussi (64 tests au total), inspection des archives et démarrage borné du JAR. Un POST valide et un GET avec UUID valide répondent réellement `503` sans `Location` ni `requestId` : aucune acceptation ou consultation métier n'est prétendue.
-
-### INT-04 — Vérifier les frontières
-**Statut : terminée sur feu vert explicite.** Prérequis INT-03 rempli. [Tutoriel et preuves INT-04](../../notes/sprint-01/INT-04-verifier-les-frontieres.md).
-
-En tant que développeur, je veux détecter automatiquement les mauvaises dépendances, afin de conserver la séparation des modules lorsque le code évolue.
-
-**À faire :**
-- Vérifier que le contexte Spring assemble correctement les modules.
-- Ajouter le contrôle de dépendances le plus simple adapté au projet, sans imposer Spring Modulith.
-
-**Terminé quand :**
-- [x] Les tests refusent les cycles, une dépendance Capability → BFF et les accès du BFF à Capability hors de son API publique, y compris les types internes de stockage ; `contracts` et le sens vers l'assemblage sont également protégés.
-- [x] Ces tests et le test de contexte existant passent dans `./mvnw -B -ntp clean verify` : 76 tests, aucun échec/erreur/ignoré.
-
-**Preuves :** 5 tests sur le bytecode de production et 7 tests des mêmes règles (6 violations contrôlées et 1 graphe autorisé). ArchUnit et les fixtures sont limités au test et absents du JAR construit. Le comportement métier n'est pas modifié.
-
-### INT-37 — Initialiser le dépôt Git
-**Statut : terminée — ajoutée sur demande explicite.** [Note INT-37](../../notes/sprint-01/INT-37-initialiser-le-depot-git.md).
-
-En tant que développeur, je veux versionner le projet sur GitHub, afin de conserver son historique et de partager une version identifiable.
-
-**À faire :**
-- Initialiser Git, ignorer les fichiers locaux/générés et conserver les dossiers encore vides.
-- Configurer le dépôt distant, créer le premier commit et le publier sans écraser d'historique.
-
-**Terminé quand :**
-- [x] Le dépôt Git local contient les fichiers prévus et un `.gitignore` adapté.
-- [x] Le premier push de `main` vers `libileh91/conflux-lab` est confirmé dans la note.
-
-## Limites et hors périmètre
-
-INT-03 a réalisé le graphe Maven et l'assemblage Spring ; le démarrage et l'indisponibilité explicite sont vérifiés, pas le parcours métier. INT-04 vérifie désormais les frontières sur le bytecode de production et la capacité des règles à détecter les violations. Les preuves JDTLS du dépannage précédent sont conservées dans la note INT-02.
-
-Pas de parcours métier complet, stockage, événement, appel partenaire, CI ou déploiement. Les types ajoutés dans INT-05 sont de vrais contrats testés, pas des classes vides de dépannage.
-
-## Démo et clôture
-
-- [x] Depuis la racine, montrer un build global réussi, puis le démarrage du seul JAR Boot et un appel Java entre modules : preuves INT-03, avec double explicite pour le succès de délégation.
-- [x] Fournir le bilan technique et la synthèse documentaire de clôture, sur demande explicite de l'utilisateur.
-- [ ] Évaluer la restitution par l'apprenant : pourquoi plusieurs modules ne signifient pas plusieurs applications et pourquoi le BFF ne porte ni métier ni persistance. Cette évaluation n'a pas été réalisée et n'est pas déclarée réussie ; la clôture demandée porte sur le livrable technique et documentaire.
+- **À la clôture, avant INT-06 :** aucune acceptation/consultation métier, persistance, publication d'événement, exécution asynchrone, partenaire ou CI n'était livrée. L'ancien `503` signifiait « opération pas encore disponible », pas une panne MongoDB ni un fallback métier.
+- **Depuis les incréments suivants :** acceptation/suivi, MongoDB et prise en charge async ont été ajoutés. Le parcours actuel exige une base pour POST/GET ; les tests d'assemblage utilisent Testcontainers. Le graphe d'orchestration Java n'est pas encore raccordé au listener. Les deux cours distinguent ces évolutions des preuves du socle.
+- Clone vierge, Wrapper Windows et interaction GUI Zed non vérifiés ; navigation JDTLS historique par protocole seulement. Restitution orale non évaluée : aucune maîtrise pédagogique ni clôture orale déclarée.
+- Ni parcours partenaire complet, CI verte, performance ou déploiement ne sont déduits de ces résultats ; la réorganisation n'autorise aucune suite ni opération distante.
 
 ## Journal de clôture — 2026-10-21
 
-**Repère historique :** le bilan ci-dessous décrit la clôture avant le feu vert ultérieur « ok go 06 ». L'[acceptation INT-06](../../notes/sprint-02/INT-06-accepter-une-demande.md) a depuis été réalisée en mémoire ; ses 96 tests ne remplacent pas les 76 tests constatés à cette clôture. Le [suivi INT-07](../../notes/sprint-02/INT-07-consulter-la-demande.md) a ensuite été réalisé sur une autorisation distincte ; ses 108 tests ne remplacent pas non plus les preuves de cette clôture.
+**Bilan historique :** la clôture précède le feu vert ultérieur pour INT-06 ; les évolutions REST, MongoDB et async ne remplacent pas les preuves ci-dessous.
 
-Ce journal applique le [format commun](README.md#journal-à-compléter-en-clôture-de-chaque-sprint). La demande « oui fait la cloture - then commit l'ensemble & push » autorise la clôture et la publication du travail existant, pas le développement de la story suivante.
-
-| Élément | Résultat constaté |
+| Élément | Bilan consigné |
 |---|---|
-| **Stories terminées** | INT-01 : cadrage ; INT-02 : socle Maven ; INT-03 : assemblage unique et appel Java ; INT-04 : frontières vérifiées ; INT-37 : initialisation Git. INT-05 a été réalisée en préparation du sprint 02 pour débloquer le build, sans être renumérotée |
-| **Fichiers et notes** | [POM racine](../../pom.xml), [assemblage](../../application/pom.xml), [API publique de Capability](../../capability-api/src/main/java/dev/confluxlab/capability/api/FamilyRequests.java), [contrôleur BFF](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java), [règles d'architecture](../../application/src/test/java/dev/confluxlab/ModuleArchitectureRules.java) ; tutoriels INT-01/02/03/04/37 liés dans cette fiche et dans l'[index des notes](../../notes/README.md) |
-| **Vérification globale** | `./mvnw -B -ntp clean verify` exécuté pendant INT-04 : **76 tests**, aucun échec, erreur ou ignoré. Détail : 59 contrats, 2 délégation, 3 assemblage/disponibilité, 5 frontières et 7 détection des règles |
-| **Contrôle avant publication** | `./mvnw -B -ntp verify` réexécuté le 2026-10-21 après la demande de clôture : `BUILD SUCCESS`, 76 tests, aucun échec/erreur/ignoré ; les avertissements Mockito restent non bloquants |
-| **Démonstration réelle** | INT-03 : un seul JAR Boot a démarré sans base ni partenaire ; POST valide et GET avec UUID valide ont répondu `503 application/problem+json`, sans `Location` ni `requestId` ; le processus a été arrêté. INT-04 : contexte revalidé, règles éprouvées et archive inspectée sans nouveau lancement HTTP du JAR |
-| **Frontières et livrable** | Appels Java via l'API publique ; aucun client HTTP interne. Les contrôles refusent cycles et dépendances interdites, y compris l'accès aux types internes de stockage. ArchUnit et les fixtures fautives ne sont pas embarqués |
-| **Point pédagogique fourni** | Synthèse ci-dessous et cours INT-03/04. Restitution de l'apprenant non évaluée, sans case de réussite cochée par anticipation |
-| **Limites** | Aucune acceptation ni consultation métier réelle, aucun stockage, événement, traitement asynchrone, partenaire, CI ou déploiement. Windows et les raccourcis GUI Zed ne sont pas nouvellement validés. Les avertissements Mockito sous Java 21 n'ont pas fait échouer le build |
-| **Décision de clôture** | Clôture technique et documentaire demandée explicitement par l'utilisateur le 2026-10-21 ; commit de l'ensemble et push autorisés séparément du développement |
-| **Accord pour la suite** | **Aucun feu vert pour INT-06.** Le prochain incrément doit conserver son cadrage et son autorisation individuels |
+| Décision | Clôture technique/documentaire demandée explicitement ; commit et push du travail existant autorisés séparément du développement suivant, sans évaluation orale |
+| Vérification avant publication | `./mvnw -B -ntp verify` réexécuté le 2026-10-21 : **BUILD SUCCESS, 76 tests**, 0 échec/erreur/ignoré ; avertissements Mockito/JVM non bloquants sous Java 21 |
+| Démonstration | Démarrage réel et POST/GET `503` : preuve INT-03 ; contexte, frontières et archive : preuves INT-04. Aucun nouveau lancement HTTP du JAR à la clôture n'est revendiqué |
+| Livrables et cours | [Architecture/assemblage/frontières — INT-01/03/04](../../notes/sprint-01/INT-01-socle-modulaire.md) ; [build/versionnement — INT-02/37](../../notes/sprint-01/INT-02-build-et-versionnement.md). Sources : [POM racine](../../pom.xml), [assemblage](../../application/pom.xml), [API Java](../../capability-api/src/main/java/dev/confluxlab/capability/api/FamilyRequests.java), [BFF](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java), [règles](../../application/src/test/java/dev/confluxlab/ModuleArchitectureRules.java) |
+| Limites et suite à cet instant | Pas encore de métier accepté/consulté ni stockage/async ; Windows et GUI non validés, restitution orale non évaluée. La clôture ne donnait pas le feu vert INT-06, reçu ensuite distinctement |
 
-### Synthèse de clôture à retenir
+## Suivi existant
 
-Le dépôt contient **plusieurs modules Maven, mais une seule application**. `application` assemble les bibliothèques et produit le seul JAR Boot exécutable ; il n'est pas un nouveau module métier. Experience reçoit l'HTTP, valide la forme et adapte les réponses. Capability porte la porte d'entrée Java du métier et possédera ses invariants, son stockage et son orchestration. `contracts` transporte les données sans dépendre de ses consommateurs.
-
-Le test de contexte répond à « Spring sait-il relier les objets ? ». Les tests d'architecture répondent à « les dépendances sont-elles autorisées ? ». Les exemples fautifs vérifient que les règles détectent réellement un écart, et le graphe autorisé évite un détecteur qui interdirait tout.
-
-**Piège central :** un `202` obtenu avec un double de test ne prouve pas une acceptation réelle. L'application livrée refuse encore les opérations par `503`, plutôt que d'inventer un identifiant ou de perdre silencieusement une demande. Le socle est prêt pour INT-06, mais cette story n'est pas réalisée.
-
-**Formulation orale proposée, non évaluée :** « Dans ConfluxLab, j'ai construit un monolithe modulaire avec un seul démarrage Spring Boot. Le BFF appelle l'interface publique Java de Capability dans la même JVM, sans HTTP interne. Maven vérifie les contrats, l'assemblage et les frontières ; des exemples interdits et autorisés éprouvent les règles. Le build global passe avec 76 tests. Ce socle ne réalise pas encore l'acceptation métier : les routes répondent explicitement `503`. Ces choix décrivent le laboratoire pédagogique, pas une architecture historique AXA que je prétendrais avoir conçue seul. »
-
-### Suivi centralisé
-
-- [TD-B004 — Frontières réalisées et vérifiées](../../notes/todos.md#td-b004).
-- [TD-B005 — Acceptation, suivi et refus réels, sur feu vert individuel](../../notes/todos.md#td-b005).
-- [TD-R001 — Modules et application unique](../../notes/todos.md#td-r001).
-- [TD-R010 — Assemblage et doubles de test](../../notes/todos.md#td-r010).
-- [TD-R011 — Frontières et détecteurs](../../notes/todos.md#td-r011).
+- Architecture : [TD-B003 — assemblage](../../notes/todos.md#td-b003), [TD-B004 — frontières](../../notes/todos.md#td-b004), [TD-R001 — modules/application](../../notes/todos.md#td-r001), [TD-R010 — assemblage/doubles](../../notes/todos.md#td-r010), [TD-R011 — frontières/détecteurs](../../notes/todos.md#td-r011).
+- Build/versionnement : [TD-B002 — build global](../../notes/todos.md#td-b002), [TD-R002 — Maven](../../notes/todos.md#td-r002), [TD-R007 — Wrapper](../../notes/todos.md#td-r007), [TD-R006 — Git](../../notes/todos.md#td-r006).
+- Limites : [TD-B006 — GUI](../../notes/todos.md#td-b006), [TD-B007 — Windows](../../notes/todos.md#td-b007), [TD-B008 — gh/SSH optionnels](../../notes/todos.md#td-b008).

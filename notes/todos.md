@@ -1,628 +1,403 @@
 # Actions et repères — ConfluxLab
 
-Ce fichier centralise **les actions restantes et les points à retenir issus des notes**. Les [stories](../docs/stages/README.md) décrivent le travail prévu ; les [notes](README.md) expliquent ce qui a été fait et vérifié. Ce registre les relie sans les remplacer.
+Registre de suivi, pas second cours ni journal des stories : le [plan](../docs/stages/README.md) porte les critères, les [cours regroupés](README.md) expliquent le flux et les preuves. **[Simulation ConfluxLab]** : les réalisations et paramètres du laboratoire ne sont pas des faits historiques AXA.
 
-## Mode d'emploi
+- **TD-B** : action ouverte ou archive résolue dans son périmètre ; **TD-R** : référence documentaire, jamais maîtrise de l'apprenant évaluée ni tâche terminée.
+- IDs et ancres stables : actualiser l'existant, sans nouvelle entrée automatique par story, notion ou test. Les noms de fichiers servent à retrouver les sources, pas à inventorier tout le code.
+- **Aucune entrée ne vaut feu vert.** Un accord couvre l'incrément complet annoncé, pas le suivant ni une opération distante non autorisée ; une réorganisation documentaire n'autorise aucun développement.
+- **Preuves historiques uniquement, reprises des cours ci-dessous ; aucune nouvelle exécution pour cette réécriture.** Les sélections se recouvrent : ne pas additionner les comptes, ni les présenter comme une suite actuelle ou une CI verte. Les rapports sous `target/`, ignorés par Git, peuvent avoir disparu.
+- Les cibles « à créer » restent futures. Aucun endpoint d'authentification ni autre fonctionnalité d'un exemple de format n'entre dans le périmètre ; aucun secret dans le dépôt ou le chat.
 
-- **`TD-B001`, etc.** : actions de suivi. Chaque action indique sa source, ses dépendances et la preuve attendue.
-- **`TD-R001`, etc.** : repères de cours. Leur statut « Référence » ne signifie pas que l'apprenant les maîtrise déjà, ni qu'un développement est terminé.
-- Les IDs sont uniques et stables dans leur catégorie. Mettre à jour une entrée existante plutôt que recopier la même action dans plusieurs notes ; ne pas réutiliser un identifiant.
-- **Aucune entrée n'autorise une exécution.** Le feu vert reste requis pour chaque story `INT-XX` et pour toute action externe non déjà autorisée.
-- Les statuts reflètent les preuves disponibles : à autoriser, bloqué, manuel, optionnel, terminé avec preuve. Un fichier ou un exemple de commande ne suffit pas à déclarer un succès.
-- Les chemins marqués « à créer » sont des cibles futures, pas des fichiers présentés comme existants. Aucun endpoint d'authentification ou autre fonctionnalité de l'exemple de format n'est ajouté au projet.
+**Sources :** [Architecture — INT-01/03/04][C1] · [Build et versionnement — INT-02/37][C1-build] · [REST — INT-05 à INT-08][C2] · [Modèle et transitions — INT-09/11][C3] · [Insertion et persistance — INT-10/12][C3-mongo] · [Replica set — complément théorique INT-10][C3-replica] · [Prise en charge async — INT-13/14/16][C4] · [Pool et erreurs async — INT-15][C4-pool] · [Orchestration — INT-17 à INT-20][C5].
 
-## Vue d'ensemble des actions
+## À regarder maintenant
 
-| Action | Sujet | Story liée | Situation |
-|---|---|---|---|
-| [TD-B001](#td-b001) | Définir les types d'échange | INT-05 | Terminée dans INT-05 : types et tests disponibles |
-| [TD-B002](#td-b002) | Réévaluer `verify` global | INT-02 | Terminée : `clean verify` global réussi après INT-05 |
-| [TD-B003](#td-b003) | Assembler l'application et retirer l'HTTP interne | INT-03 | Terminée : seul JAR Boot démarré et appel Java vérifié |
-| [TD-B004](#td-b004) | Contrôler les frontières | INT-04 | Terminée : règles de production et détection de violations vérifiées |
-| [TD-B005](#td-b005) | Valider le parcours REST | INT-06/07/08 | Terminée : acceptation, suivi et refus mémoire vérifiés dans INT-06/07/08 |
-| [TD-B006](#td-b006) | Vérifier les raccourcis dans l'interface Zed | INT-02 | Vérification manuelle non constatée |
-| [TD-B007](#td-b007) | Vérifier le Wrapper sous Windows | INT-02 | Optionnel ; environnement Windows requis |
-| [TD-B008](#td-b008) | Revoir `gh` ou SSH si nécessaire | INT-37 | Non prioritaire : Git HTTPS a fonctionné |
-| [TD-B009](#td-b009) | Remplacer la mémoire par MongoDB | INT-10 | Terminée : insertion/relecture et unicité réelles, erreur sans faux reçu |
-| [TD-B010](#td-b010) | Sécuriser les mises à jour | INT-11 | Terminée : transitions atomiques, un seul gagnant et états finaux protégés |
-| [TD-B011](#td-b011) | Vérifier la persistance et le raccordement Maven | INT-12 | Terminée : JAR redémarré sur la même base, Failsafe exécuté dans `verify` |
-| [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | Terminée : événement après sauvegarde, listener async, un seul gagnant ; 9 cas ciblés réussis |
-| [TD-B013](#td-b013) | Borner l'exécution et journaliser ses erreurs | INT-15 | Terminée : executor dédié borné, refus en `500`, journal UUID/type ; 4 cas ciblés réussis |
-| [TD-B014](#td-b014) | Consolider les tests contrôlés existants | INT-16 | Terminée : preuves et synchronisation relues, rapports INT-15 inspectés ; aucun ajout ou réexécution de test |
-| [TD-B015](#td-b015) | Composer le parcours réussi | INT-18 | Terminée : deux ordres C/D vérifiés, 2 cas ciblés réussis ; aucun branchement au listener |
-| [TD-B016](#td-b016) | Composer les échecs | INT-19 | Composition Java réalisée : B en échec, C/D attendues, E/F non appelés ; 3 cas ciblés réussis, sans état final persisté |
-| [TD-B017](#td-b017) | Borner les ressources du graphe | INT-20 | À autoriser ; réutiliser les preuves existantes, compléter seulement un risque non couvert |
-
-Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
-
-## Actions restantes
-
-## TD-B001
-
-**Définir les contrats et les trois DTO manquants**
-
-| Champ | Valeur |
+| Action | Situation et condition |
 |---|---|
-| **Créé dans** | [Note INT-02](sprint-01/INT-02-rendre-le-build-reproductible.md), blocage de compilation ; également expliqué dans INT-01/INT-06 |
-| **Story liée** | [INT-05 — Définir les contrats](../docs/stages/sprint-02-rest.md#int-05--définir-les-contrats) |
-| **Dépend de** | Cadrage INT-01 terminé ; accord explicite pour INT-05 |
-| **Fichiers** | Cinq types dans `contracts/src/main/java/dev/confluxlab/contracts/`, tests/fixtures sous `contracts/src/test/`, [contrat HTTP](../docs/dat/http-contracts.md) |
-| **Action** | Définir les données utiles, leurs règles et les types `CreateFamilyRequest`, `RequestAccepted`, `RequestView`, sans classes vides de dépannage ni service métier ajouté |
-| **Validation** | Exemples et types cohérents, tests de données/contrat, puis nouvelle compilation ; ne pas déduire une API fonctionnelle de la seule présence des DTO |
-| **Statut** | ✅ Terminée sur feu vert INT-05 ; [tutoriel et preuves](sprint-02/INT-05-definir-les-contrats.md), 59 cas de test réussis |
+| [TD-B006](#td-b006) — Navigation Zed | **Manuel, non constaté** : interaction GUI à vérifier par l'utilisateur, distincte du diagnostic LSP/build. |
+| [TD-B007](#td-b007) — Wrapper Windows | **Optionnel, non testé** : nécessite Windows, JDK 21 et réseau. |
+| [TD-B008](#td-b008) — `gh` ou SSH | **Seulement si nécessaire, non bloquant** : le push Git HTTPS historique a réussi. |
+| [TD-B018](#td-b018) — Partenaire et finalisation | **À autoriser : lot complet INT-21 + INT-22**, pas deux autorisations successives. |
 
-## TD-B002
+## Actions ouvertes — manuelles, optionnelles ou futures
 
-**Réévaluer le build complet après définition des types**
+### TD-B006
 
-| Champ | Valeur |
+| Suivi | **Confirmer la navigation dans l'interface Zed** |
 |---|---|
-| **Créé dans** | [Note INT-02](sprint-01/INT-02-rendre-le-build-reproductible.md) |
-| **Story liée** | INT-02 — Rendre le build reproductible |
-| **Dépend de** | [TD-B001](#td-b001) ; ne pas masquer d'autres erreurs qui seraient révélées ensuite |
-| **Fichiers** | `pom.xml`, POM des modules, `contracts/src/`, `experience-api/src/` |
-| **Action** | Relancer `./mvnw -B -ntp verify` depuis la racine et analyser le résultat réel, sans exclure Experience ou sa compilation |
-| **Validation** | Réacteur global réussi et résultats enregistrés ; distinguer compilation, tests réellement exécutés et bibliothèques vides |
-| **Statut** | ✅ Terminée : `./mvnw -B -ntp clean verify` global réussi dans INT-05, 59 cas, aucun échec/erreur/ignoré ; INT-02 clôturée pour le build |
+| Source · IDs · fichiers | [Build et versionnement][C1-build], diagnostic éditeur INT-02 ; `FamilyController.java`, raccourcis/réglages utilisateur Zed hors dépôt. |
+| Action · preuve attendue | Sur `FamilyRequests` (remplace l'ancien `CapabilityClient` depuis INT-03), `UUID` puis `ResponseEntity`, essayer F12 ou Ctrl + Shift + B, et la palette si nécessaire. Constater visuellement la bonne définition ; distinguer reconnaissance du raccourci et navigation effective. |
+| Statut · dépendance | 🧭 **Manuel — non constaté** ; JDTLS opérationnel et disponibilité de l'utilisateur nécessaires. Les réponses LSP historiques ne prouvent ni pression de touche ni ouverture d'onglet ; ce contrôle est distinct du build global. |
 
-## TD-B003
+### TD-B007
 
-**Assembler le monolithe et remplacer l'appel HTTP interne**
-
-| Champ | Valeur |
+| Suivi | **Vérifier le Wrapper dans un environnement Windows** |
 |---|---|
-| **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md), écart aussi décrit dans INT-06 |
-| **Story liée** | [INT-03 — Assembler les modules](../docs/stages/sprint-01-socle.md#int-03--assembler-les-modules) |
-| **Dépend de** | [TD-B002](#td-b002), terminée ; feu vert INT-03 reçu et exécuté |
-| **Fichiers** | [POM d'application](../application/pom.xml), [ConfluxLabApplication.java](../application/src/main/java/dev/confluxlab/ConfluxLabApplication.java), [FamilyRequests.java](../capability-api/src/main/java/dev/confluxlab/capability/api/FamilyRequests.java), [FamilyController.java](../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java), [configuration unique](../application/src/main/resources/application.yml) et tests d'assemblage/délégation |
-| **Action** | Créer le seul assemblage Boot et une API Java publique de Capability ; remplacer le chemin BFF → Capability par cet appel Java |
-| **Validation** | Un seul JAR Boot démarre sans base/partenaire obligatoire à ce stade ; un test confirme l'appel Java, sans faux parcours métier réussi |
-| **Statut** | ✅ Terminée sur feu vert INT-03 ; [tutoriel et preuves](sprint-01/INT-03-assembler-les-modules.md), 64 tests globaux, JAR réel démarré, POST/GET valides `503` sans faux succès |
+| Source · IDs · fichiers | [Build et versionnement][C1-build], portabilité INT-02 ; `mvnw.cmd`, `.gitattributes`, `.mvn/wrapper/maven-wrapper.properties`. |
+| Action · preuve attendue | Contrôler la version puis `validate` avec le Wrapper Windows ; consigner environnement et résultats. Maven épinglé et POM validés ne signifieraient pas `verify` global réussi. |
+| Statut · dépendance | ⏳ **Optionnel — non testé** ; machine Windows, JDK 21 et réseau requis, environnement absent des preuves fournies. Ni Linux ni les fins de ligne configurées ne simulent cette validation. |
 
-## TD-B004
+### TD-B008
 
-**Tester les frontières entre modules**
-
-| Champ | Valeur |
+| Suivi | **Revoir `gh` ou SSH seulement si un usage le nécessite** |
 |---|---|
-| **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md) |
-| **Story liée** | [INT-04 — Vérifier les frontières](../docs/stages/sprint-01-socle.md#int-04--vérifier-les-frontières) |
-| **Dépend de** | [TD-B003](#td-b003), terminée ; feu vert INT-04 reçu et exécuté |
-| **Fichiers** | `application/pom.xml`, `ModuleArchitectureRules.java`, `ModuleArchitectureTest.java`, `ArchitectureRuleDetectionTest.java` et fixtures sous `application/src/test/java/dev/confluxlab/` ; `ApplicationAssemblyTest.java` existant conservé |
-| **Action** | S'appuyer sur le test de contexte ajouté dans INT-03 et ajouter des contrôles simples contre les cycles, la dépendance Capability → BFF et les accès aux internals/repositories |
-| **Validation** | Les contrôles passent dans `verify` et détectent une violation introduite dans un test contrôlé ; aucune infrastructure imposée sans nécessité |
-| **Statut** | ✅ Terminée sur feu vert INT-04 ; [tutoriel et preuves](sprint-01/INT-04-verifier-les-frontieres.md), 5 tests de production + 7 tests de détection ; `clean verify` global réussi, 76 tests dont le contexte existant |
+| Source · IDs · fichiers | [Build et versionnement][C1-build], complément à INT-37 déjà terminée ; configuration d'authentification utilisateur hors dépôt. |
+| Action · preuve attendue | Si besoin explicite, authentifier le canal choisi par son mécanisme normal, puis réussir une lecture sans exposer token ou clé privée. Ne pas modifier Git HTTPS pour cette seule raison ; accord requis avant changement de configuration/authentification. |
+| Statut · dépendance | ⏳ **Non prioritaire, non bloquant** : erreurs historiques `gh`/SSH, mais push Git HTTPS réussi. Les canaux sont distincts ; leur état actuel n'a pas été revérifié et aucun blocage Git actuel n'est déduit. |
 
-## TD-B005
+### TD-B018
 
-**Démontrer l'acceptation, le suivi et les refus REST**
-
-| Champ | Valeur |
+| Suivi | **Raccorder le parcours partenaire et la finalisation sans attendre dans le pool** |
 |---|---|
-| **Créé dans** | [Note INT-06](sprint-02/INT-06-accepter-une-demande.md), suivi initié dans l'ébauche puis actualisé après réalisation de l'acceptation |
-| **Stories liées** | INT-06, INT-07 et INT-08 ; chaque story conserve son feu vert individuel |
-| **Dépend de** | INT-05 et socle assemblé/vérifié, notamment [TD-B004](#td-b004) |
-| **Fichiers** | `experience-api/src/`, `capability-api/src/`, `contracts/src/` |
-| **Action** | Brancher une acceptation réelle en mémoire dans Capability, puis le GET et les refus, sans HTTP interne ni prétendre que la famille est créée |
-| **Validation** | Tests POST `202`, GET `200`/`404`, entrée invalide `400`, refus sans enregistrement et demandes distinctes ; état `PENDING` et limite de mémoire explicités |
-| **Statut** | ✅ Terminée dans le périmètre REST mémoire INT-06/07/08 ; [preuves INT-08](sprint-02/INT-08-tester-les-refus.md), 181 tests et JAR réel vérifiés, refus sans enregistrement, erreurs génériques et isolation. Ni persistance durable, ni traitement, ni clôture pédagogique automatique ne sont déduits de ce résultat |
+| Source · IDs · fichiers | [Orchestration][C5], issu d'INT-20 ; [lot INT-21 + INT-22](../docs/stages/sprint-06-partenaire.md). Configuration/listener/orchestrateur/store existants ; adaptateur `FamilyOperations` et tests partenaires **à créer**, noms à fixer dans la story. |
+| Action | Fournir explicitement `familyRequestExecutor` à l'orchestrateur ; lancer le graphe uniquement après un claim gagnant, puis observer sa terminaison pour finaliser, sans `join/get` dans le listener. L'adaptateur bloquant doit garder son I/O dans la tâche soumise, sans pool implicite ailleurs. |
+| Preuve attendue | Parcours réel sur WireMock jusqu'au statut final prévu ; pas de finalisation avant la fin des branches lancées, ni de faux succès après erreur. Vérifier câblage et bornage effectifs, pas seulement le type `Executor`. |
+| Statut · dépendance | ⏸ **Toujours à autoriser pour l'ensemble INT-21 + INT-22** ; orchestration INT-17 à INT-20 disponible, Docker requis pour les tests MongoDB. Partenaire et raccordement forment un seul lot. INT-20 n'a produit ni bean d'orchestrateur, ni appel partenaire, ni état final ; la réorganisation ne lance rien. |
 
-## TD-B006
+## Archives résolues — périmètre et preuve historiques
 
-**Confirmer la navigation dans l'interface Zed**
+Les accords mentionnés ci-dessous ont été reçus pour les réalisations passées, sans autoriser la suite. Les anciennes appellations mémoire désignent leur version historique : depuis INT-10, `InMemoryFamilyRequests` / son test sont devenus `FamilyRequestService` / `FamilyRequestServiceTest` ; `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`, sans repli mémoire de production.
 
-| Champ | Valeur |
+### TD-B001
+
+| Archive | **Définir les contrats et les trois DTO manquants** |
 |---|---|
-| **Créé dans** | [Note INT-02](sprint-01/INT-02-rendre-le-build-reproductible.md), limite des preuves JDTLS |
-| **Story liée** | Diagnostic éditeur associé à INT-02, distinct du build global |
-| **Dépend de** | JDTLS opérationnel ; disponibilité de l'utilisateur pour la vérification visuelle |
-| **Fichiers** | `FamilyController.java` ; réglages et raccourcis utilisateur Zed hors dépôt |
-| **Action** | Placer le curseur sur `FamilyRequests` (remplace l'ancien `CapabilityClient` depuis INT-03), `UUID`, puis `ResponseEntity` et essayer F12 ou Ctrl + Shift + B ; comparer avec la commande de navigation de la palette si nécessaire |
-| **Validation** | Constater l'ouverture visuelle de la bonne définition ; noter séparément reconnaissance du raccourci et navigation. Ne pas redéduire ce résultat des réponses LSP historiques |
-| **Statut** | 🧭 Manuel — non constaté ; serveur LSP vérifié historiquement, interaction GUI non vérifiée |
+| Source · IDs · fichiers | [Build et versionnement][C1-build] → [REST][C2], blocage INT-02 résolu par INT-05 après cadrage INT-01 ; `contracts/src/` et [contrat HTTP](../docs/dat/http-contracts.md). |
+| Action · preuve historique | Cinq types réels, dont `CreateFamilyRequest`, `RequestAccepted`, `RequestView`, contraintes et JSON cohérents : 59 cas réussis. Pas de classes vides de dépannage ni de service métier ajouté ; les DTO seuls ne prouvent pas une API fonctionnelle. |
+| Statut · dépendance | ✅ **Archive résolue sur feu vert INT-05** ; contrats disponibles et compilation débloquée. La preuve globale associée est conservée dans [TD-B002](#td-b002). |
 
-## TD-B007
+### TD-B002
 
-**Vérifier le Wrapper dans un environnement Windows**
-
-| Champ | Valeur |
+| Archive | **Réévaluer le build complet après définition des types** |
 |---|---|
-| **Créé dans** | [Note INT-02](sprint-01/INT-02-rendre-le-build-reproductible.md) |
-| **Story liée** | Portabilité d'INT-02 |
-| **Dépend de** | Machine Windows, JDK 21 et accès réseau ; pas de validation Windows simulée sous Linux |
-| **Fichiers** | `mvnw.cmd`, `.gitattributes`, `.mvn/wrapper/maven-wrapper.properties` |
-| **Action** | Exécuter le Wrapper Windows pour sa version et `validate`, puis consigner l'environnement et les résultats |
-| **Validation** | Maven épinglé démarre et les POM sont validés ; ne pas présenter ce contrôle comme un `verify` global réussi |
-| **Statut** | ⏳ Optionnel — non testé, environnement Windows non disponible dans les preuves fournies |
+| Source · IDs · fichiers | [Build et versionnement][C1-build] et [REST][C2], clôture build INT-02 après INT-05 ; POM racine/modules, `contracts/src/`, `experience-api/src/`. |
+| Action · preuve historique | Réacteur entier, Experience comprise : `clean verify` global réussi dans INT-05, 59 cas, aucun échec/erreur/ignoré. Les bibliothèques auparavant vides et les sélections partielles n'étaient pas une preuve globale ; aucune autre erreur n'est masquée par exclusion. |
+| Statut · dépendance | ✅ **Archive résolue**, INT-02 clôturée pour le build après [TD-B001](#td-b001). Compilation, tests réellement exécutés et assemblage applicatif restent des preuves distinctes ; ce résultat n'actualise pas le build courant. |
 
-## TD-B008
+### TD-B003
 
-**Revoir l'authentification `gh` ou SSH seulement si un usage le nécessite**
-
-| Champ | Valeur |
+| Archive | **Assembler le monolithe et remplacer l'appel HTTP interne** |
 |---|---|
-| **Créé dans** | [Note INT-37](sprint-01/INT-37-initialiser-le-depot-git.md) |
-| **Story liée** | Diagnostic complémentaire à INT-37, qui est déjà terminée |
-| **Dépend de** | Besoin explicite de la CLI `gh` ou de Git SSH ; accord avant changement de configuration/authentification |
-| **Fichiers** | Configuration utilisateur d'authentification hors dépôt ; aucun secret à écrire dans le projet ou le chat |
-| **Action** | Si nécessaire, authentifier le canal choisi via son mécanisme normal ; ne pas modifier le HTTPS Git déjà fonctionnel pour cette seule raison |
-| **Validation** | Commande de lecture réussie avec le canal voulu, sans exposition de token ni clé privée |
-| **Statut** | ⏳ Non prioritaire — erreurs historiques `gh`/SSH, mais le push Git HTTPS a réussi ; pas de blocage Git déduit aujourd'hui |
+| Source · IDs · fichiers | [Socle][C1], écart INT-01 traité dans INT-03 ; `application/pom.xml`, `ConfluxLabApplication.java`, `FamilyRequests.java`, `FamilyController.java`, configuration unique `application.yml`. |
+| Action · preuve historique | Un seul assemblage Boot et une API publique Java : 64 tests globaux réussis, JAR inspecté et démarré sans base/partenaire à ce stade. POST/GET valides `503`, sans faux identifiant ni succès métier ; la délégation Java est vérifiée séparément. |
+| Statut · dépendance | ✅ **Archive résolue sur feu vert INT-03**, après [TD-B002](#td-b002). Le démarrage historique sans base ne prouve pas un parcours actuel sans MongoDB ; [TD-R010](#td-r010) distingue doublure et bean réel. |
 
-## TD-B009
+### TD-B004
 
-**Persister la demande avant de l'accepter**
-
-| Champ | Valeur |
+| Archive | **Tester les frontières entre modules** |
 |---|---|
-| **Créé dans** | [Note INT-09](sprint-03/INT-09-definir-les-donnees-et-transitions.md) |
-| **Story liée** | [INT-10 — Persister avant d'accepter](../docs/stages/sprint-03-mongodb.md#int-10--persister-avant-daccepter) |
-| **Dépend de** | INT-09 terminée et commitée `185bdd7` ; feu vert INT-10 reçu, Docker disponible |
-| **Fichiers** | `FamilyRequestService.java`, `FamilyRequestStore.java`, `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `FamilyRequestConfiguration.java`, POM et `application.yml` ; `MongoTestSupport.java` et `MongoFamilyRequestStoreIT.java` sous les tests de l'assemblage |
-| **Action** | Remplacer le stockage mémoire par MongoDB en conservant les frontières ; confirmer l'écriture avant le retour d'acceptation |
-| **Validation** | Enregistrement/relecture du même UUID et payload, unicité en base, échec d'écriture sans faux `202` selon les critères d'INT-10 ; ne pas confondre modèle Java et persistance réelle |
-| **Statut** | ✅ Terminée sur feu vert INT-10 ; [cours et preuves](sprint-03/INT-10-persister-avant-d-accepter.md), 2 nouveaux tests + 1 test existant réussis avec MongoDB réel temporaire. Panne d'écriture simulée ; ni redémarrage ni suite globale revendiqués |
+| Source · IDs · fichiers | [Socle][C1], suivi INT-01 → INT-04 ; `ModuleArchitectureRules.java`, `ModuleArchitectureTest.java`, `ArchitectureRuleDetectionTest.java`, fixtures dans `application/src/test/`. |
+| Action · preuve historique | Cycles, Capability → BFF, accès aux internals/repositories et autres dépendances interdites contrôlés sans infrastructure supplémentaire : 5 contrôles production + 7 de détection réussis, 76 tests globaux avec le contexte INT-03 conservé. Violations contrôlées refusées, graphe autorisé accepté. |
+| Statut · dépendance | ✅ **Archive résolue sur feu vert INT-04**, après [TD-B003](#td-b003). Contrôles raccordés à `verify` ; clôture technique/documentaire du sprint 01 demandée le 2026-10-21, restitution orale non évaluée. |
 
-## TD-B010
+### TD-B005
 
-**Sécuriser les mises à jour de statut en base**
-
-| Champ | Valeur |
+| Archive | **Démontrer l'acceptation, le suivi et les refus REST** |
 |---|---|
-| **Créé dans** | [Note INT-10](sprint-03/INT-10-persister-avant-d-accepter.md) |
-| **Story liée** | [INT-11 — Sécuriser les mises à jour](../docs/stages/sprint-03-mongodb.md#int-11--sécuriser-les-mises-à-jour) |
-| **Dépend de** | INT-10 terminée ; feu vert INT-11 reçu après commit/push du complément `66e0ade` |
-| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionIT.java` ; `StoredFamilyRequestTest.java` réutilisé |
-| **Action** | Faire dépendre la mise à jour atomique du statut actuel autorisé, conserver les dates cohérentes et interdire l'écrasement d'un état final |
-| **Validation** | Une seule prise en charge gagne lors d'un double passage concurrent `PENDING → PROCESSING` ; transitions invalides et écrasement final refusés selon les critères de la story |
-| **Statut** | ✅ Terminée sur feu vert INT-11 ; [cours et preuves](sprint-03/INT-11-securiser-les-mises-a-jour.md), 2 nouveaux tests MongoDB + 2 tests du modèle réussis. Pas de traitement réel, redémarrage ou suite globale |
+| Source · IDs · fichiers | [REST][C2], suivi initié dans INT-06 puis réalisé dans INT-06/07/08 ; sources `experience-api`, `capability-api`, `contracts`. |
+| Action · preuve historique | Acceptation mémoire `202`, GET `200`/`404`, entrées invalides `400`, refus sans enregistrement, isolation et erreurs génériques : 181 tests globaux et JAR réel vérifiés à INT-08. Le reçu reste `PENDING`, sans HTTP interne ni famille effectivement créée. |
+| Statut · dépendance | ✅ **Archive résolue dans le seul périmètre REST mémoire**, après INT-05 et [TD-B004](#td-b004), avec feux verts individuels INT-06/07/08. Ni persistance durable, ni traitement, ni clôture pédagogique automatique ; [TD-R012](#td-r012) à [TD-R014](#td-r014) gardent les distinctions. |
 
-## TD-B011
+### TD-B009
 
-**Démontrer la persistance et raccorder les tests d'intégration à Maven**
-
-| Champ | Valeur |
+| Archive | **Persister la demande avant de l'accepter** |
 |---|---|
-| **Créé dans** | [Note INT-11](sprint-03/INT-11-securiser-les-mises-a-jour.md) |
-| **Story liée** | [INT-12 — Vérifier la persistance](../docs/stages/sprint-03-mongodb.md#int-12--vérifier-la-persistance) |
-| **Dépend de** | INT-09/10/11 terminées ; commit local INT-11 `af3f215`, feu vert INT-12 reçu et Docker disponible |
-| **Fichiers** | POM racine et d'assemblage, `MongoTestSupport.java`, `MongoFamilyRequestStoreIT.java`, `MongoFamilyRequestTransitionIT.java`, nouveau `FamilyRequestPersistenceIT.java` ; logs/rapports générés sous `application/target/`, ignorés par Git |
-| **Action** | Relancer l'application avec la même base conservée et vérifier la relecture ; raccorder explicitement les tests `*IT` au cycle Maven Failsafe |
-| **Validation** | Même demande consultable après redémarrage ; exécution des tests d'intégration réellement observée dans `verify` et rapports exploitables, sans accès d'Experience au stockage |
-| **Statut** | ✅ Terminée sur feu vert INT-12 ; [cours et preuves](sprint-03/INT-12-verifier-la-persistance.md), `clean verify` réussi avec 1 cas Surefire sélectionné et 5 cas Failsafe. Un seul test nouveau ; JAR relancé sur la même base, deux JVM arrêtées et conteneurs temporaires supprimés. Suite Surefire complète et CI non exécutées |
+| Source · IDs · fichiers | [Modèle et transitions][C3] → [Insertion et persistance][C3-mongo], INT-09 → INT-10 ; service, `FamilyRequestStore.java`, `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, configuration, POM et `application.yml`. |
+| Action · preuve historique | MongoDB remplace la mémoire en conservant les frontières ; insertion acquittée avant reçu. Deux cas nouveaux et un réutilisé réussis : UUID/payload relus et unicité réelle sans écrasement ; panne d'insertion simulée sans faux `202`. Modèle Java seul ≠ persistance. |
+| Statut · dépendance | ✅ **Archive résolue sur feu vert INT-10**, INT-09 terminée/commitée et Docker disponible. Base temporaire réelle, pas base utilisateur ; ni redémarrage ni suite globale revendiqués à cette étape. Une erreur peut néanmoins laisser l'issue d'écriture inconnue, voir [TD-R016](#td-r016). |
 
-## TD-B012
+### TD-B010
 
-**Publier et consommer après insertion confirmée**
-
-| Champ | Valeur |
+| Archive | **Sécuriser les mises à jour de statut en base** |
 |---|---|
-| **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
-| **Story liée** | [INT-14 — Publier et consommer](../docs/stages/sprint-04-async.md#int-14--publier-et-consommer) ; suivi de la story existante, pas une nouvelle tâche |
-| **Dépend de** | INT-13 simplifiée et commitée localement `6081781` ; reprise explicite INT-14 reçue |
-| **Fichiers** | `FamilyRequestService.java`, `FamilyRequestConfiguration.java`, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java`, nouveau `FamilyRequestEventsIT.java` ; tests de service, suivi, insertion et persistance adaptés ; store MongoDB réutilisé |
-| **Action** | Publier l'UUID uniquement après insertion confirmée, relire la demande et conditionner le travail à une prise en charge atomique gagnante, sans accès du BFF au stockage |
-| **Validation** | Échec d'écriture sans publication, double réception sans double prise en charge, réponse HTTP possible pendant un travail contrôlé, sans imposer le démarrage après le `202` |
-| **Statut** | ✅ Terminée sur reprise INT-14 ; [cours et preuves](sprint-04/INT-14-publier-et-consommer.md), 5 cas Surefire + 4 cas Failsafe réussis. Un seul scénario ajouté ; arrêt à `PROCESSING`, sans métier ou état final, suite complète non exécutée |
+| Source · IDs · fichiers | [Insertion et persistance][C3-mongo] → [Modèle et transitions][C3], INT-10 → INT-11 ; `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionIT.java`. |
+| Action · preuve historique | Conditionner atomiquement la mise à jour au statut attendu et aux dates cohérentes ; un seul gagnant concurrent `PENDING → PROCESSING`, transitions invalides et écrasement final refusés. Deux nouveaux cas MongoDB et deux cas du modèle réutilisés réussis. |
+| Statut · dépendance | ✅ **Archive résolue sur feu vert INT-11**, après INT-10 et publication autorisée du complément théorique. Ni traitement réel, ni redémarrage, ni suite globale à cette étape ; la portée du CAS est conservée dans [TD-R018](#td-r018). |
 
-## TD-B013
+### TD-B011
 
-**Borner l'exécution et journaliser ses erreurs**
-
-| Champ | Valeur |
+| Archive | **Démontrer la persistance et raccorder les IT à Maven** |
 |---|---|
-| **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
-| **Story liée** | [INT-15 — Borner l'exécution](../docs/stages/sprint-04-async.md#int-15--borner-lexécution) ; suivi de la story existante |
-| **Dépend de** | INT-14 et plan allégé commitées `bdb93f8` ; feu vert INT-15 reçu |
-| **Fichiers** | `FamilyRequestConfiguration.java` (executor et `AsyncConfigurer`), `FamilyRequestListener.java`, `FamilyRequestEventsIT.java` ; aucun nouveau champ MongoDB/HTTP ni dépendance |
-| **Action** | Un seul executor dédié, threads/file bornés, rejet explicite et attente d'arrêt bornée ; journaliser l'UUID et l'erreur du listener `void`, sans payload personnel |
-| **Validation** | Test à 2 workers/1 place : quatrième POST `500` sans reçu ni exécution HTTP, document refusé `PENDING`. Échec async de lecture simulé : UUID/type journalisés sans message privé, pas de `FAILED` forcé. Attente de fermeture configurée à 5 s par défaut, sans test d'arrêt prolongé |
-| **Statut** | ✅ Terminée sur feu vert INT-15 ; [cours et preuves](sprint-04/INT-15-borner-l-execution.md), 1 cas Surefire + 3 cas Failsafe réussis, dont 2 ajoutés. Aucun stockage de diagnostics, état final, crash ou reprise ; suite complète et JAR non rejoués |
+| Source · IDs · fichiers | [Modèle et transitions][C3] → [Insertion et persistance][C3-mongo], INT-11 → INT-12 ; POM racine/application, `MongoTestSupport.java`, `FamilyRequestPersistenceIT.java` et IT MongoDB existants. |
+| Action · preuve historique | Même JAR relancé dans deux JVM, même base conservée : UUID, `PENDING` et date retrouvés. Failsafe observé dans `verify` : 1 cas Surefire sélectionné + 5 Failsafe réussis, dont un seul scénario ajouté ; aucune ouverture du stockage à Experience. |
+| Statut · dépendance | ✅ **Archive résolue sur feu vert INT-12**, INT-09/10/11 réalisées, INT-11 commitée localement, Docker disponible. JVM arrêtées et conteneurs supprimés ; suite Surefire complète et CI non exécutées. Ni redémarrage MongoDB ni récupération disque prouvés ; voir [TD-R019](#td-r019). |
 
-## TD-B014
+### TD-B012
 
-**Consolider les preuves du traitement contrôlé**
-
-| Champ | Valeur |
+| Archive | **Publier et consommer après insertion confirmée** |
 |---|---|
-| **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
-| **Story liée** | [INT-16 — Tester avec un traitement contrôlé](../docs/stages/sprint-04-async.md#int-16--tester-avec-un-traitement-contrôlé) ; suivi de la story existante |
-| **Dépend de** | INT-14/15 commitées, point de départ `59c881c` ; feu vert « go 16 » reçu |
-| **Fichiers** | `FamilyRequestEventsIT.java`, listener/configuration et `MongoTestSupport.java` relus, deux rapports ciblés INT-15 existants ; [note INT-16](sprint-04/INT-16-tester-avec-un-traitement-controle.md) créée, aucun code modifié |
-| **Action** | Réutiliser les preuves d'INT-14/15 ; adapter le contrôle des workers si nécessaire, vérifier les attentes bornées et le nettoyage, compléter seulement un manque concret |
-| **Validation** | Preuves de réponse indépendante, un seul gagnant, rejet et erreur journalisée ; pas de scénario dupliqué ou de relance uniquement pour la note. Bilan honnête rappelant le risque d'abandon, sans crash forcé ou nouvelle démonstration du JAR |
-| **Statut** | ✅ Terminée sur feu vert INT-16 : quatre comportements couverts par trois cas existants, attentes bornées et nettoyage relus, aucun manque identifié pour les critères. Les rapports relus comptent 1 cas Surefire + 3 cas Failsafe sans échec/erreur/ignoré, historiquement exécutés dans INT-15 ; aucune nouvelle exécution INT-16, reprise ou simulation de crash |
+| Source · IDs · fichiers | [Async][C4], INT-13 → INT-14 ; service/configuration, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java`, `FamilyRequestEventsIT.java` ; store réutilisé, suivi/persistance adaptés. |
+| Action · preuve historique | Publication de l'UUID après insertion, aucune publication sur échec ; listener proxifié, relecture et claim atomique unique malgré double réception. Réponse possible pendant le contrôle du worker : 5 cas Surefire + 4 Failsafe réussis, un seul scénario ajouté ; pas d'ordre imposé « après le 202 ». |
+| Statut · dépendance | ✅ **Archive résolue sur reprise explicite INT-14**, après simplification/commit local INT-13. Arrêt à `PROCESSING`, sans métier, état final ou reprise ; suite complète non exécutée. Le BFF reste sans accès au store. |
 
-## TD-B015
+### TD-B013
 
-**Composer le parcours réussi à partir des contrats INT-17**
-
-| Champ | Valeur |
+| Archive | **Borner l'exécution et journaliser ses erreurs** |
 |---|---|
-| **Créé dans** | [Note INT-17](sprint-05/INT-17-ecrire-les-contrats-des-operations.md) |
-| **Story liée** | [INT-18 — Composer le succès](../docs/stages/sprint-05-orchestration.md#int-18--composer-le-succès) ; suivi de la story existante |
-| **Dépend de** | Contrats et fixture INT-17 commitées `d6f0e86` ; feu vert « commit 17 & go 18 » reçu |
-| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java` ajoutés ; `FamilyOperations.java` et `ControlledFamilyOperations.java` réutilisés sans modification |
-| **Action** | Composer A puis B/C/D, E après B/C et F après B/D, sans barrière globale ; réutiliser la fixture pour un parcours de succès piloté |
-| **Validation** | Ordre et chevauchement vérifiés en Java avec attentes bornées ; contrôler les bons identifiants et l'indépendance des branches, sans HTTP, Spring ou MongoDB pour la composition seule |
-| **Statut** | ✅ Terminée sur feu vert INT-18 ; [cours et preuves](sprint-05/INT-18-composer-le-succes.md), 2 cas paramétrés Surefire réussis, aucun échec/erreur/ignoré. Dépendances et identifiants vérifiés, E/F indépendants et fin globale non prématurée ; aucun branchement au listener, état final ou mesure de parallélisme de threads |
+| Source · IDs · fichiers | [Async][C4] → [Pool et erreurs async][C4-pool], INT-13 → INT-15 ; `FamilyRequestConfiguration.java` (executor/`AsyncConfigurer`), `FamilyRequestListener.java`, `FamilyRequestEventsIT.java`. |
+| Action · preuve historique | Executor unique dédié, workers/file bornés, rejet explicite. À 2 workers/1 place, quatrième POST `500` sans reçu ni travail sur HTTP, document `PENDING` ; erreur de lecture async simulée : journal UUID/type, sans message privé ni `FAILED` forcé. 1 cas Surefire + 3 Failsafe réussis, dont deux ajoutés. |
+| Statut · dépendance | ✅ **Archive résolue sur feu vert INT-15**, INT-14 et plan allégé commités. Aucun nouveau champ MongoDB/HTTP, diagnostic stocké ou dépendance. Attente de fermeture par défaut 5 s, arrêt prolongé non testé ; ni crash/reprise, suite complète ou JAR rejoués. |
 
-## TD-B016
+### TD-B014
 
-**Composer les échecs sans succès ni finalisation prématurés**
-
-| Champ | Valeur |
+| Archive | **Consolider les preuves du traitement contrôlé** |
 |---|---|
-| **Créé dans** | [Note INT-18](sprint-05/INT-18-composer-le-succes.md) |
-| **Story liée** | [INT-19 — Composer les échecs](../docs/stages/sprint-05-orchestration.md#int-19--composer-les-échecs) ; suivi de la story existante |
-| **Dépend de** | Composition INT-18 commitée `516ea0e` ; feu vert « commit 18 & passe à 19 » reçu |
-| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java` modifiés ; fixture réutilisée sans changement. Le raccordement au suivi reste non réalisé, limite explicite du périmètre |
-| **Action** | Traiter un échec représentatif, empêcher les descendants concernés de démarrer et attendre les branches déjà lancées avant la finalisation, sans annulation forcée |
-| **Validation** | Réutiliser le scénario piloté pour vérifier l'absence de faux succès et de finalisation avant la fin des branches en cours ; pas de matrice d'erreur A–F |
-| **Statut** | ✅ Composition Java réalisée ; [cours et limites](sprint-05/INT-19-composer-les-echecs.md), 3 cas ciblés réussis dont un seul échec B ajouté. C/D restent en cours jusqu'à leur fin, E/F ne sont pas appelés et la cause est conservée. Pas de `FAILED` persisté ou de preuve sur des écritures MongoDB tardives dans un parcours raccordé |
+| Source · IDs · fichiers | [Async][C4] et [Pool et erreurs async][C4-pool], suivi INT-13 → INT-16 ; IT événementiel, listener/configuration, `MongoTestSupport.java` et deux rapports ciblés INT-15 relus depuis le code commité `59c881c`. |
+| Action · preuve historique | Quatre comportements couverts par trois cas existants : réponse indépendante, gagnant unique, rejet, erreur corrélée. Attentes bornées et nettoyage relus, aucun manque concret identifié pour les critères ; rapports historiques : 1 cas Surefire + 3 Failsafe sans échec/erreur/ignoré. |
+| Statut · dépendance | ✅ **Archive documentaire résolue sur feu vert INT-16**, après INT-14/15 commitées. Aucun code modifié, scénario dupliqué ou test/build/JAR/crash rejoué dans INT-16 ; pas de reprise ajoutée, risque d'abandon maintenu. |
 
-## TD-B017
+### TD-B015
 
-**Borner les ressources sans dupliquer les preuves de saturation**
-
-| Champ | Valeur |
+| Archive | **Composer le parcours réussi à partir des contrats INT-17** |
 |---|---|
-| **Créé dans** | [Note INT-19](sprint-05/INT-19-composer-les-echecs.md) |
-| **Story liée** | [INT-20 — Borner les ressources](../docs/stages/sprint-05-orchestration.md#int-20--borner-les-ressources) ; suivi de la story existante |
-| **Dépend de** | Contrats et composition Java INT-17/18/19 disponibles ; nouveau feu vert INT-20 requis |
-| **Fichiers** | Configuration et listener existants, `FamilyOrchestrator.java`, tests de composition et `FamilyRequestEventsIT.java` ; adaptations d'exécution à préciser après inspection |
-| **Action** | Choisir l'exécution explicite et bornée du graphe, sans attente du listener sur son propre pool ; réutiliser les preuves INT-15 et compléter seulement un risque nouveau |
-| **Validation** | Limites, rejet et absence d'auto-blocage vérifiés au bon niveau ; isolation entre demandes si un état est partagé, sans campagne de charge ni nouvelle suite automatique |
-| **Statut** | ⏸ À autoriser — INT-20 non commencée ; aucun executor ou contrôle de ressources ajouté dans INT-19 |
+| Source · IDs · fichiers | [Orchestration][C5], INT-17 → INT-18 ; `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java`, contrats et fixture `ControlledFamilyOperations.java` réutilisés sans modification. |
+| Action · preuve historique | A puis B/C/D ; E après B/C, F après B/D, sans barrière globale préalable. Deux cas paramétrés réussis : ordres C/D, bons UUID/identifiants, indépendance E/F et fin globale non prématurée, avec attentes bornées en Java seul. |
+| Statut · dépendance | ✅ **Archive résolue sur feu vert INT-18**, contrats/fixture INT-17 commités `d6f0e86`. Aucun raccordement listener, état final, HTTP/Spring/MongoDB ou mesure de parallélisme de threads ; ces 2 cas sont réutilisés ensuite, pas additionnés. |
 
-## Repères de cours
+### TD-B016
 
-## TD-R001
-
-**Séparer les modules sans créer plusieurs applications**
-
-| Champ | Valeur |
+| Archive | **Composer les échecs sans succès ni finalisation prématurés** |
 |---|---|
-| **Créé dans** | [Note INT-01](sprint-01/INT-01-inspecter-et-fixer-les-frontieres.md), illustré par l'[assemblage INT-03](sprint-01/INT-03-assembler-les-modules.md) |
-| **Stories liées** | INT-01, INT-03 et INT-04 |
-| **Dépend de** | Aucune exécution requise pour lire le repère ; assemblage réalisé dans INT-03 et contrôles de frontières réalisés séparément dans INT-04 |
-| **Fichiers** | `docs/dat/ConfluxLab.md`, POM des modules |
-| **À retenir** | Un module organise le code ; un processus exécute l'application. BFF = HTTP ; Capability = métier/stockage ; `contracts` = types. INT-03 assemble trois bibliothèques dans le seul JAR Boot d'application, avec appels Java internes ; cela ne réalise pas encore le métier |
-| **Vérification pédagogique** | Expliquer pourquoi une flèche de dépendance Maven n'est pas un appel HTTP et pourquoi le BFF n'accède pas au repository |
-| **Statut** | 📘 Référence documentée — compréhension de l'apprenant non évaluée par cette réécriture |
+| Source · IDs · fichiers | [Orchestration][C5], INT-18 → INT-19 ; orchestrateur/test modifiés, fixture inchangée. |
+| Action · preuve historique | Un échec représentatif B empêche E/F, conserve la cause et attend C/D déjà lancées sans annulation forcée. **3 cas ciblés réussis = les 2 nominaux réutilisés + 1 ajouté**, pas une matrice d'échecs A–F. |
+| Statut · dépendance | ✅ **Archive résolue pour la composition Java sur feu vert INT-19**, après INT-18 commitée `516ea0e`. Raccordement au suivi absent : aucun `FAILED` persisté ni preuve d'écritures MongoDB tardives dans un parcours raccordé. |
 
-## TD-R002
+### TD-B017
 
-**Distinguer POM, dépendances et étapes Maven**
-
-| Champ | Valeur |
+| Archive | **Borner les ressources sans dupliquer les preuves de saturation** |
 |---|---|
-| **Créé dans** | [Note INT-02](sprint-01/INT-02-rendre-le-build-reproductible.md), illustré aussi dans INT-01 |
-| **Story liée** | INT-02 |
-| **Dépend de** | Aucune ; lire le tutoriel Maven pour les exemples |
-| **Fichiers** | `pom.xml`, POM des modules |
-| **À retenir** | Le parent partage la configuration ; l'agrégateur regroupe des projets ; une dépendance fournit des types. `validate` ne compile pas ; `verify` parcourt le cycle et les tests raccordés ; `install` ajoute l'artefact au dépôt local. Sélectionner un sous-ensemble ne prouve pas le succès du reste |
-| **Vérification pédagogique** | Expliquer comment les POM peuvent être valides alors qu'Experience ne compile pas, et pourquoi une bibliothèque vide peut se construire sans exécuter de test métier |
-| **Statut** | 📘 Référence documentée — pas une preuve de build global vert |
+| Source · IDs · fichiers | [Orchestration][C5], INT-19 → INT-20 ; orchestrateur/test modifiés ; configuration, listener et IT événementiel relus sans modification. |
+| Action · preuve historique | Executor explicite des six invocations, sans `commonPool` implicite ou `join/get`. **6 cas ciblés réussis = 3 réutilisés + rejets A/E + partage/isolation** : à un worker, retour sans attendre les sous-tâches et deux UUID distingués avec succès/échec. Saturation INT-15 réutilisée historiquement, sans nouvel IT. |
+| Statut · dépendance | ✅ **Archive résolue pour le mécanisme Java sur feu vert INT-20**, après INT-19 commitée `eb0dc5a`. **2 → 3 → 6 sont des sélections successives non cumulatives.** Aucun nouveau pool, câblage listener ou état final ; fournir le bean existant reste [TD-B018](#td-b018), à autoriser. |
 
-## TD-R003
+## Repères — socle, outillage et frontières
 
-**Distinguer les JVM et la configuration réseau**
+Tous les repères sont **documentés, compréhension/restitution orale non évaluées**. La clôture technique/documentaire du sprint 01 ne change pas ce statut ; les clôtures pédagogiques suivantes ne sont pas acquises par cette condensation. Aucune exécution n'est requise pour les lire ; les pistes de restitution indiquent ce qu'il faudrait savoir distinguer, pas un questionnaire à lancer.
 
-| Champ | Valeur |
+### TD-R001
+
+| Repère | **Séparer les modules sans créer plusieurs applications** |
 |---|---|
-| **Créé dans** | [Note INT-02](sprint-01/INT-02-rendre-le-build-reproductible.md) |
-| **Story liée** | Diagnostic JDTLS/Maven associé à INT-02 |
-| **Dépend de** | Aucune ; versions tirées du diagnostic historique, pas de la stack AXA |
-| **Fichiers** | `.mvn/jvm.config`, propriétés Java des POM ; réglages JDTLS utilisateur hors dépôt |
-| **À retenir** | JDTLS, Maven et la future application sont des processus distincts. `maven.compiler.release=21` fixe la cible compilée ; `.mvn/jvm.config` configure Maven. Le forçage IPv4 ne règle ni JDTLS ni la future application et doit être réévalué sur un réseau uniquement IPv6 |
-| **Vérification pédagogique** | Dire pourquoi corriger un raccourci ne répare pas un serveur Java incompatible, et pourquoi un import JDTLS réussi ne prouve pas la compilation de l'application |
-| **Statut** | 📘 Référence documentée — diagnostic propre à l'environnement décrit |
+| Source · IDs · fichiers | [Socle][C1], INT-01/03/04 ; [DAT](../docs/dat/ConfluxLab.md), POM des modules. |
+| Notion · preuve | Module = organisation du code, processus = exécution. BFF : HTTP ; Capability : métier/stockage ; `contracts` : types. INT-03 assemble trois bibliothèques dans un seul JAR Boot, appels Java internes ; cela ne réalise pas encore le métier. Distinguer flèche Maven et appel HTTP, expliquer l'interdiction d'accès BFF au repository. |
+| Statut · dépendance | 📘 **Référence** ; assemblage [TD-B003](#td-b003) et contrôles séparés [TD-B004](#td-b004) réalisés historiquement, pas preuve de compréhension de l'apprenant. |
 
-## TD-R004
+### TD-R002
 
-**Ne pas confondre acceptation, suivi et réussite métier**
-
-| Champ | Valeur |
+| Repère | **Distinguer POM, dépendances et étapes Maven** |
 |---|---|
-| **Créé dans** | [Note INT-06](sprint-02/INT-06-accepter-une-demande.md) |
-| **Stories liées** | INT-06 et INT-07 |
-| **Dépend de** | Aucune exécution de l'ébauche requise pour expliquer le contrat |
-| **Fichiers** | `FamilyController.java`, [RequestAccepted.java](../contracts/src/main/java/dev/confluxlab/contracts/RequestAccepted.java), [RequestView.java](../contracts/src/main/java/dev/confluxlab/contracts/RequestView.java) et [contrat initial](../docs/dat/http-contracts.md) |
-| **À retenir** | `202` signifie demande acceptée, pas famille créée ni exécution durable garantie. `Location`/`statusUrl` indiquent où consulter. Le UUID corrèle les étapes ; il ne garantit pas l'idempotence, c'est-à-dire l'absence d'effet supplémentaire si l'on répète la demande |
-| **Vérification pédagogique** | Expliquer ce que le client doit consulter après le POST et pourquoi deux POST identiques peuvent encore produire deux demandes |
-| **Statut** | 📘 Référence illustrée dans INT-06/07 : acceptation `202`, consultation `200 PENDING`, absence `404`, sans traitement ni durabilité ; compréhension de l'apprenant non évaluée |
+| Source · IDs · fichiers | [Build et versionnement][C1-build], INT-02, illustré dès INT-01 ; `pom.xml` et POM des modules. |
+| Notion · preuve | Parent : configuration partagée ; agrégateur : projets regroupés ; dépendance : types disponibles. `validate` ne compile pas ; `verify` atteint les tests raccordés ; `install` ajoute au dépôt local. POM valides ou bibliothèque vide ne prouvent ni compilation d'Experience ni test métier ; un sous-ensemble vert ne valide pas le reste. |
+| Statut · dépendance | 📘 **Référence**, sans prérequis d'exécution ; lire les exemples du cours. La preuve globale historique est [TD-B002](#td-b002), pas ce repère lui-même. |
 
-## TD-R005
+### TD-R003
 
-**Comprendre ce qu'une annotation REST ou `@Valid` ne prouve pas**
-
-| Champ | Valeur |
+| Repère | **Distinguer les JVM et la configuration réseau** |
 |---|---|
-| **Créé dans** | [Note INT-06](sprint-02/INT-06-accepter-une-demande.md) |
-| **Stories liées** | INT-05 à INT-08 |
-| **Dépend de** | Aucune ; DTO réels et tests requis pour prouver le comportement |
-| **Fichiers** | `FamilyController.java`, types `contracts` et tests réalisés dans [INT-05](sprint-02/INT-05-definir-les-contrats.md), `ApiExceptionHandler.java` |
-| **À retenir** | Le contrôleur reçoit des données et délègue ; `@Valid` déclenche les contraintes réellement déclarées, il ne les invente pas. Un DTO transporte des données ; ce n'est pas un document MongoDB. Une annotation et une branche `ResponseEntity` ne prouvent ni compilation, ni démarrage, ni réponse observée |
-| **Vérification pédagogique** | Distinguer lecture du code, test du contrat et requête réellement exécutée ; expliquer pourquoi Capability protège aussi ses invariants |
-| **Statut** | 📘 Référence documentée — DTO testés dans INT-05, acceptation et validation directe réalisées dans INT-06 ; suivi réalisé dans INT-07, matrice de refus INT-08 réalisée, sans prétendre couvrir tous les comportements non spécifiés |
+| Source · IDs · fichiers | [Build et versionnement][C1-build], diagnostic JDTLS/Maven INT-02 ; `.mvn/jvm.config`, propriétés Java des POM, réglages JDTLS hors dépôt. |
+| Notion · preuve | JDTLS, Maven et application sont des processus distincts. `maven.compiler.release=21` fixe la cible compilée, pas le JDK lancé ; `.mvn/jvm.config` configure Maven. Le forçage IPv4 ne règle ni JDTLS ni l'application et doit être réévalué en réseau IPv6 seul. Raccourci corrigé ≠ serveur compatible ; import JDTLS réussi ≠ application compilée. |
+| Statut · dépendance | 📘 **Référence environnementale**, sans exécution requise ; versions issues du diagnostic historique, pas de la stack AXA. La GUI reste [TD-B006](#td-b006), non vérifiée. |
 
-## TD-R006
+### TD-R006
 
-**Distinguer fichier modifié, commit, push et authentification**
-
-| Champ | Valeur |
+| Repère | **Distinguer fichier modifié, commit, push et authentification** |
 |---|---|
-| **Créé dans** | [Note INT-37](sprint-01/INT-37-initialiser-le-depot-git.md) |
-| **Story liée** | INT-37 |
-| **Dépend de** | Aucune nouvelle opération distante pour lire le repère |
-| **Fichiers** | `.gitignore`, `.git/` local et notes de preuve ; jamais de secret dans ces notes |
-| **À retenir** | `add` prépare le contenu, `commit` crée une version locale, `push` la publie. `.gitignore` ne retire pas un fichier déjà suivi. Les authentifications `gh`, SSH et Git HTTPS sont distinctes ; leur état peut différer |
-| **Vérification pédagogique** | Expliquer pourquoi `gh` a pu échouer alors que le push HTTPS réussissait, et pourquoi le dépôt propre constaté après ce push n'est pas une garantie de l'état actuel |
-| **Statut** | 📘 Référence fondée sur le premier push observé — pas une nouvelle vérification distante |
+| Source · IDs · fichiers | [Build et versionnement][C1-build], INT-37 ; `.gitignore`, `.git/` local, preuves historiques du cours, jamais de secret. |
+| Notion · preuve | `add` prépare, `commit` versionne localement, `push` publie ; `.gitignore` ne retire pas un fichier déjà suivi. `gh`, SSH et Git HTTPS ont des authentifications distinctes : échecs des deux premiers compatibles avec un push HTTPS réussi. L'état propre observé après ce push n'est pas une garantie actuelle. |
+| Statut · dépendance | 📘 **Référence fondée sur le premier push observé**, sans nouvelle opération distante ; [TD-B008](#td-b008) n'est utile qu'en cas de besoin explicite. |
 
-## TD-R007
+### TD-R007
 
-**Comprendre la version, l'empreinte et les caches du Wrapper**
-
-| Champ | Valeur |
+| Repère | **Comprendre version, empreinte et caches du Wrapper** |
 |---|---|
-| **Créé dans** | [Note INT-02](sprint-01/INT-02-rendre-le-build-reproductible.md) |
-| **Story liée** | INT-02 |
-| **Dépend de** | Aucune ; réseau nécessaire pour reproduire un premier téléchargement |
-| **Fichiers** | `mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties`, `.gitattributes` |
-| **À retenir** | Le Wrapper épingle Maven 3.9.16 et vérifie l'empreinte configurée lors du téléchargement. Un cache de distribution neuf n'est pas un cache de dépendances neuf. LF/CRLF protège les scripts au checkout ; cela ne remplace pas une exécution Windows |
-| **Vérification pédagogique** | Décrire ce que le test avec `MAVEN_USER_HOME` isolé a démontré et ce qu'il n'a pas validé |
-| **Statut** | 📘 Référence du bootstrap Linux ; build global ensuite vérifié dans INT-05, exécution Windows toujours non testée |
+| Source · IDs · fichiers | [Build et versionnement][C1-build], INT-02 ; `mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties`, `.gitattributes`. |
+| Notion · preuve | Maven 3.9.16 épinglé, empreinte configurée vérifiée au téléchargement. Cache de distribution neuf ≠ cache de dépendances neuf ou clone vierge validé. LF/CRLF protège le checkout des scripts, pas leur exécution Windows ; le bootstrap Linux isolé démontrait le lancement du Wrapper, pas un build complet. |
+| Statut · dépendance | 📘 **Référence du bootstrap Linux** ; réseau requis pour reproduire un premier téléchargement, aucune relance demandée. Build global ensuite vérifié dans INT-05 ; Windows reste [TD-B007](#td-b007), non testé. |
 
-## TD-R008
+### TD-R010
 
-**Tester les dates sans dépendre du jour d'exécution**
-
-| Champ | Valeur |
+| Repère | **Assembler Spring sans confondre double de test et comportement livré** |
 |---|---|
-| **Créé dans** | [Note INT-05](sprint-02/INT-05-definir-les-contrats.md) |
-| **Story liée** | INT-05 — Définir les contrats |
-| **Dépend de** | Aucune nouvelle exécution ; lire les tests à horloge fixe |
-| **Fichiers** | `contracts/src/test/java/dev/confluxlab/contracts/ContractValidationTest.java`, `PersonPayload.java` |
-| **À retenir** | `@PastOrPresent` consulte l'horloge du validateur. Un `Clock` fixe injecté par `clockProvider` rend les cas passé/présent/futur déterministes, sans changer l'horloge de l'ordinateur ou de production |
-| **Vérification pédagogique** | Expliquer pourquoi le 22 octobre 2026 reste une date future pour un test fixé au 21 octobre 2026, même relancé plus tard |
-| **Statut** | 📘 Référence fondée sur les tests réussis d'INT-05 — compréhension de l'apprenant non évaluée |
+| Source · IDs · fichiers | [Socle][C1], INT-03 ; POM application, `ConfluxLabApplication.java`, `FamilyRequests.java`, `ApplicationAssemblyTest.java` ; ancien `UnavailableFamilyRequests.java`, remplacé dans INT-06. |
+| Notion · preuve | Dépendance Maven ≠ bean : le démarrage au-dessus des packages permet de découvrir l'implémentation injectée par interface. Dans INT-03, le double du contrôleur prépare `202`, mais contexte/JAR reflètent l'indisponibilité réelle `503`, sans prise en charge ni faux UUID. MockMvc seul ne prouve pas le démarrage du JAR ; l'acceptation réelle arrive avec INT-06. |
+| Statut · dépendance | 📘 **Référence des deux niveaux de vérification INT-03**, inspection/démarrage réel inclus, voir [TD-B003](#td-b003). Aucun besoin de rejouer pour lire ce repère. |
 
-## TD-R009
+### TD-R011
 
-**Choisir un record pour transporter des données**
-
-| Champ | Valeur |
+| Repère | **Tester une frontière et vérifier son détecteur** |
 |---|---|
-| **Créé dans** | [Note INT-05 — choix des records](sprint-02/INT-05-definir-les-contrats.md#pourquoi-des-records-pour-ces-dto) |
-| **Story liée** | INT-05 — Définir les contrats |
-| **Dépend de** | Aucune nouvelle exécution ; choix des DTO déjà présents |
-| **Fichiers** | `contracts/src/main/java/dev/confluxlab/contracts/PersonPayload.java`, `CreateFamilyRequest.java`, `RequestAccepted.java`, `RequestView.java` |
-| **À retenir** | Un record rend le rôle de transport explicite et génère constructeur, accesseurs, comparaison et représentation textuelle, sans setters. Ses champs sont finaux, mais les objets référencés peuvent rester mutables ; sa construction ne lance pas Bean Validation |
-| **Vérification pédagogique** | Expliquer `firstName()` plutôt que `getFirstName()`, pourquoi la liste peut rester modifiable et quand préférer une classe classique |
-| **Statut** | 📘 Explication ajoutée sur demande — conversion JSON déjà testée dans INT-05 ; aucun nouveau test exécuté pour cet ajout documentaire |
+| Source · IDs · fichiers | [Socle][C1], INT-04 ; règles/tests ArchUnit et fixtures dans `application/src/test/`, test de contexte conservé. |
+| Notion · preuve | ArchUnit lit les dépendances des classes compilées, pas les règles métier. Les mêmes règles refusent les fixtures fautives avec source/cible attendues et acceptent un graphe autorisé ; exclure les tests de l'analyse production sépare simulation et application. Un test négatif vert prouve un refus, pas une dépendance permise ; contexte ≠ contrôle des frontières. |
+| Statut · dépendance | 📘 **Référence**, fondée sur [TD-B004](#td-b004), packages/API publique du DAT. [Clôture technique et documentaire sprint 01](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) demandée ; restitution orale toujours non évaluée. |
 
-## TD-R010
+## Repères — contrat, acceptation et consultation
 
-**Assembler Spring sans confondre double de test et comportement livré**
+### TD-R004
 
-| Champ | Valeur |
+| Repère | **Ne pas confondre acceptation, suivi et réussite métier** |
 |---|---|
-| **Créé dans** | [Note INT-03](sprint-01/INT-03-assembler-les-modules.md) |
-| **Story liée** | INT-03 — Assembler les modules |
-| **Dépend de** | Lire l'assemblage et ses deux niveaux de tests ; aucune nouvelle exécution requise |
-| **Fichiers** | `application/pom.xml`, `ConfluxLabApplication.java`, `FamilyRequests.java`, ancien `UnavailableFamilyRequests.java` (historique INT-03, remplacé dans INT-06), `FamilyControllerTest.java`, `ApplicationAssemblyTest.java` |
-| **À retenir** | Une dépendance Maven fournit des types, pas automatiquement un bean. Le démarrage placé au-dessus des packages découvre l'implémentation, injectée via l'interface publique. Le test unitaire peut retourner un succès préparé ; le contexte réel et le JAR doivent refléter l'indisponibilité des opérations absentes (`503`), sans faux identifiant ni prise en charge |
-| **Vérification pédagogique** | Expliquer pourquoi, dans INT-03, le contrôleur obtenait `202` avec un double mais le JAR répondait `503`, et pourquoi un test MockMvc ne prouve pas à lui seul le démarrage du JAR ; distinguer cette histoire de l'acceptation réelle d'INT-06 |
-| **Statut** | 📘 Référence fondée sur les vérifications INT-03 (64 tests, inspection et démarrage du JAR) — compréhension de l'apprenant non évaluée |
+| Source · IDs · fichiers | [REST][C2], INT-06/07 ; `FamilyController.java`, `RequestAccepted.java`, `RequestView.java`, [contrat initial](../docs/dat/http-contracts.md). |
+| Notion · preuve | `202` = demande acceptée, ni famille créée ni exécution durable garantie. `Location`/`statusUrl` désignent le GET à consulter ; UUID = corrélation, pas idempotence : deux POST identiques peuvent créer deux demandes. Illustration historique : `202`, `200 PENDING`, absence `404`, sans traitement ou durabilité à ce stade. |
+| Statut · dépendance | 📘 **Référence de contrat**, illustrée par [TD-B005](#td-b005) ; aucune exécution de l'ébauche nécessaire pour l'expliquer. |
 
-## TD-R011
+### TD-R005
 
-**Tester une frontière et vérifier que son détecteur fonctionne**
-
-| Champ | Valeur |
+| Repère | **Comprendre ce qu'une annotation REST ou `@Valid` ne prouve pas** |
 |---|---|
-| **Créé dans** | [Note INT-04](sprint-01/INT-04-verifier-les-frontieres.md) |
-| **Story liée** | INT-04 — Vérifier les frontières |
-| **Dépend de** | Packages et API publique définis dans le DAT ; aucune nouvelle exécution requise pour lire le repère |
-| **Fichiers** | `ModuleArchitectureRules.java`, `ModuleArchitectureTest.java`, `ArchitectureRuleDetectionTest.java`, fixtures sous `application/src/test/java/` et `ApplicationAssemblyTest.java` |
-| **À retenir** | ArchUnit lit les dépendances des classes compilées ; les règles ne vérifient pas les règles métier. Des fixtures fautives prouvent que les mêmes règles rejettent effectivement un cycle ou un accès interdit, avec source et cible attendues. Un graphe autorisé vérifie aussi l'absence de rejet abusif. Exclure les tests de l'analyse de production évite de confondre violations simulées et application réelle |
-| **Vérification pédagogique** | Expliquer pourquoi un test négatif qui réussit prouve un refus, pourquoi il faut aussi un cas autorisé et pourquoi le test de contexte ne remplace pas les tests de frontières |
-| **Statut** | 📘 Référence fondée sur 12 nouveaux tests réussis et 76 tests globaux dans INT-04 — [clôture technique et documentaire du sprint 01](../docs/stages/sprint-01-socle.md#journal-de-clôture--2026-10-21) demandée par l'utilisateur ; restitution orale de l'apprenant toujours non évaluée |
+| Source · IDs · fichiers | [REST][C2], initié dans INT-06, INT-05 à INT-08 liés ; contrôleur, types `contracts`, `ApiExceptionHandler.java`. |
+| Notion · preuve | Le contrôleur reçoit et délègue ; `@Valid` déclenche les contraintes déclarées, ne les invente pas. DTO ≠ document MongoDB. Annotation ou branche `ResponseEntity` ne prouvent ni compilation, démarrage ou réponse observée ; distinguer lecture, test du contrat et requête exécutée. Capability protège aussi ses invariants en appel Java direct. |
+| Statut · dépendance | 📘 **Référence illustrée** : DTO testés INT-05, acceptation/validation directe INT-06, suivi INT-07, refus INT-08. DTO réels et preuves nécessaires, sans prétention de couvrir les comportements non spécifiés. |
 
-## TD-R012
+### TD-R008
 
-**Conserver avant d'acquitter, sans promettre la durabilité**
-
-| Champ | Valeur |
+| Repère | **Tester les dates sans dépendre du jour d'exécution** |
 |---|---|
-| **Créé dans** | [Note INT-06](sprint-02/INT-06-accepter-une-demande.md) |
-| **Story liée** | INT-06 — Accepter une demande |
-| **Dépend de** | Contrats et frontières déjà réalisés ; aucune nouvelle exécution requise pour lire le repère |
-| **Fichiers** | `InMemoryFamilyRequests.java`, `InMemoryFamilyRequestStore.java`, `StoredFamilyRequest.java`, `FamilyRequestConfiguration.java`, tests Capability et tests HTTP d'acceptation |
-| **À retenir** | Capability valide un snapshot, génère l'UUID et conserve `PENDING` avant de retourner le reçu. `List.copyOf` protège la liste conservée ; `putIfAbsent` empêche l'écrasement d'une clé mais ne dédoublonne pas les demandes. `202` ne signifie ni famille créée ni durabilité ; la mémoire est perdue au redémarrage et reste non bornée. À l'étape INT-06, le lien GET était préparé mais pas encore fonctionnel ; la consultation est réalisée depuis INT-07 |
-| **Vérification pédagogique** | Expliquer ce qui se passe si `save` échoue, si l'appelant modifie sa liste, si l'application redémarre ou si le client répète le POST ; distinguer le `Clock` d'horodatage de l'horloge de validation |
-| **Statut** | 📘 Référence fondée sur les 96 tests réussis et la démonstration du JAR INT-06 ; compréhension de l'apprenant non évaluée ; INT-07 a depuis été réalisée sur feu vert distinct, INT-08 a depuis été réalisée sur son propre feu vert |
+| Source · IDs · fichiers | [REST][C2], INT-05 ; `ContractValidationTest.java`, `PersonPayload.java` dans `contracts`. |
+| Notion · preuve | `@PastOrPresent` consulte l'horloge du validateur ; `Clock` fixe via `clockProvider` rend passé/présent/futur déterministes sans changer l'ordinateur ou la production. Le 22 octobre 2026 reste futur dans un test fixé au 21 octobre 2026, même exécuté plus tard. |
+| Statut · dépendance | 📘 **Référence fondée sur les cas réussis INT-05**, pas évaluation de maîtrise ; lire l'horloge fixe existante, sans nouvelle exécution. |
 
-## TD-R013
+### TD-R009
 
-**Consulter sans modifier, distinguer absence et format invalide**
-
-| Champ | Valeur |
+| Repère | **Choisir un record pour transporter des données** |
 |---|---|
-| **Créé dans** | [Note INT-07](sprint-02/INT-07-consulter-la-demande.md) |
-| **Story liée** | INT-07 — Consulter la demande |
-| **Dépend de** | Acceptation INT-06 et DTO `RequestView` existants ; aucune nouvelle exécution requise pour lire le repère |
-| **Fichiers** | `InMemoryFamilyRequests.java`, `RequestNotFoundException.java`, `ApiExceptionHandler.java`, `InMemoryFamilyRequestsTest.java`, `FamilyRequestTrackingHttpTest.java` |
-| **À retenir** | Le GET projette l'identifiant, le statut stocké et la date d'origine, sans `save`, nouvel horodatage ou traitement. Capability signale l'absence sans statut HTTP ; le BFF l'adapte en `404`. Le format HTTP invalide est refusé en `400` avant l'appel Java. La vue ne divulgue pas le payload. Après redémarrage, une ancienne demande peut devenir absente car la mémoire n'est pas durable |
-| **Vérification pédagogique** | Expliquer pourquoi `400`, `404` et un statut métier `FAILED` ne veulent pas dire la même chose ; pourquoi `createdAt` ne change pas au polling et pourquoi un `404` après redémarrage n'invalide pas le `202` précédemment observé |
-| **Statut** | 📘 Référence fondée sur 108 tests réussis et la démonstration du JAR INT-07, redémarrage compris ; compréhension de l'apprenant non évaluée ; INT-08 a depuis complété les refus et la confidentialité |
+| Source · IDs · fichiers | [REST][C2], INT-05 ; `PersonPayload.java`, `CreateFamilyRequest.java`, `RequestAccepted.java`, `RequestView.java`. |
+| Notion · preuve | Le record explicite le transport, génère constructeur/accesseurs/comparaison/représentation, sans setters. Références finales ≠ objets référencés immuables ; une liste peut rester modifiable et la construction ne lance pas Bean Validation. Savoir expliquer `firstName()` plutôt que `getFirstName()` et quand préférer une classe. |
+| Statut · dépendance | 📘 **Explication documentaire ajoutée sur demande**, choix des DTO existants ; conversion JSON déjà testée INT-05, aucun nouveau test pour cet ajout. |
 
-## TD-R014
+### TD-R012
 
-**Comprendre un refus, puis prouver ses effets et sa confidentialité**
-
-| Champ | Valeur |
+| Repère | **Conserver avant d'acquitter, sans promettre la durabilité** |
 |---|---|
-| **Créé dans** | [Note INT-08](sprint-02/INT-08-tester-les-refus.md) |
-| **Story liée** | INT-08 — Tester les refus |
-| **Dépend de** | Contrats et parcours mémoire existants ; aucune nouvelle exécution pour lire ce repère |
-| **Fichiers** | `FamilyRequestRefusalHttpTest.java`, `FamilyRequestAcceptanceFailureHttpTest.java`, `InMemoryFamilyRequestsTest.java`, `ApiExceptionHandler.java`, `ApiExceptionHandlerTest.java` |
-| **À retenir** | Quelques scénarios suffisent pour comprendre le principe ; une matrice paramétrée teste davantage de variantes et de frontières. Un `400` ne prouve pas seul l'absence d'écriture : spy et mock permettent de vérifier les appels. Un détail générique ne suffit pas si `instance` recopie une saisie rejetée ; le correctif et la représentation JSON doivent aussi être testés. Le nombre de cas n'est ni une mesure de compréhension ni une preuve de sécurité exhaustive |
-| **Vérification pédagogique** | Expliquer pourquoi on teste aussi un cas valide, ce que prouvent respectivement MVC, appel Java direct et doublure de panne, et comment la fuite via `instance` a été reproduite puis corrigée |
-| **Statut** | 📘 Référence fondée sur 93 cas ciblés finaux et 181 tests globaux réussis ; 73 cas nets ajoutés à la suite existante. Le passage à INT-09 a depuis été demandé ; compréhension de l'apprenant toujours non évaluée |
+| Source · IDs · fichiers | [REST][C2], INT-06 ; anciens service/store mémoire, `StoredFamilyRequest.java`, configuration (noms historiques précisés aux archives). |
+| Notion · preuve | Snapshot validé, UUID et conservation `PENDING` avant reçu ; `List.copyOf` protège la liste, `putIfAbsent` la clé, pas le dédoublonnage métier. Échec de `save` : pas de reçu ; redémarrage : mémoire perdue, non bornée. `Clock` d'horodatage ≠ horloge de validation. À INT-06, GET seulement préparé ; INT-07 l'a réalisé. |
+| Statut · dépendance | 📘 **Référence historique**, contrats/frontières préexistants ; 96 tests et JAR INT-06 étayent cette étape. INT-07 et INT-08 réalisées ensuite sur accords distincts ; ni `202` ni ces preuves mémoire ne promettent durabilité ou famille créée. |
 
-## TD-R015
+### TD-R013
 
-**Un cycle d'état local n'est ni une sauvegarde ni un verrou**
-
-| Champ | Valeur |
+| Repère | **Consulter sans modifier, distinguer absence et format invalide** |
 |---|---|
-| **Créé dans** | [Note INT-09](sprint-03/INT-09-definir-les-donnees-et-transitions.md) |
-| **Story liée** | INT-09 — Définir les données et transitions |
-| **Dépend de** | États de `RequestStatus` et modèle interne de Capability ; aucune nouvelle exécution pour lire ce repère |
-| **Fichiers** | `StoredFamilyRequest.java`, `StoredFamilyRequestTest.java`, `InMemoryFamilyRequests.java`, [DAT — données](../docs/dat/ConfluxLab.md#6-données-mongodb) |
-| **À retenir** | `pending(...)` initialise `createdAt == updatedAt`, sans `completedAt`. `transitionTo(...)` retourne une nouvelle valeur selon le graphe autorisé ; `createdAt` reste fixe, `updatedAt` ne recule pas, `completedAt` apparaît à la fin. Un état final ne se rouvre pas. Cela ne modifie pas le store et ne protège pas deux appelants concurrents ; l'écriture atomique sera traitée dans INT-11. `result?`/`error?` sont documentés pour la cible mais non implémentés |
-| **Vérification pédagogique** | Expliquer pourquoi deux threads pourraient chacun produire `PROCESSING` à partir du même objet `PENDING`, et distinguer cette validation locale de l'insertion durable réalisée ensuite dans INT-10 |
-| **Statut** | 📘 Référence fondée sur les 3 tests ciblés INT-09, sans MongoDB à cette étape ; INT-10 réalise ensuite la persistance. Pas de nouveau build global ni d'évaluation orale |
+| Source · IDs · fichiers | [REST][C2], INT-07 ; ancien service mémoire, `RequestNotFoundException.java`, `ApiExceptionHandler.java`, preuve de suivi HTTP. |
+| Notion · preuve | GET = UUID/statut stocké/date d'origine, sans `save`, nouvel horodatage ou traitement, sans payload. Capability signale l'absence, BFF adapte en `404` ; format invalide : MVC `400` avant appel Java. Ni l'un ni l'autre n'est un état métier `FAILED`. Mémoire historique : ancien UUID `404` après redémarrage, sans annuler le `202` antérieur. |
+| Statut · dépendance | 📘 **Référence après acceptation INT-06 et DTO `RequestView`** ; 108 tests et JAR INT-07, redémarrage compris, étayent la lecture sans mutation. INT-08 a ensuite complété refus/confidentialité ; pas de relance demandée. |
 
-## TD-R016
+### TD-R014
 
-**Insérer puis acquitter, sans promettre une issue toujours connue**
-
-| Champ | Valeur |
+| Repère | **Comprendre un refus, ses effets et sa confidentialité** |
 |---|---|
-| **Créé dans** | [Note INT-10](sprint-03/INT-10-persister-avant-d-accepter.md) |
-| **Story liée** | INT-10 — Persister avant d'accepter |
-| **Dépend de** | Modèle INT-09, repository MongoDB et contrat HTTP existant |
-| **Fichiers** | `FamilyRequestService.java`, `MongoFamilyRequestStore.java`, `FamilyRequestConfiguration.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestStoreIT.java`, `MongoTestSupport.java` |
-| **À retenir** | `insert` attend l'acquittement du journal avant le reçu, et l'index `_id` interdit une collision sans upsert. Sur un standalone, `majority` ne signifie pas réplication. Une panne réseau peut masquer une écriture réussie : `500` ne garantit pas l'absence en base. UUID unique ne signifie pas idempotence du POST. Le store mémoire ne sert plus qu'aux tests ; les deux nouveaux tests vérifient MongoDB réel et un échec simulé, sans matrice exhaustive |
-| **Vérification pédagogique** | Expliquer pourquoi remplacer `insert` par `save` pourrait écraser un document, pourquoi `202` n'est pas une famille créée et pourquoi rejouer un POST après timeout peut créer un doublon métier |
-| **Statut** | 📘 Référence fondée sur 3 tests ciblés réussis ; incompatibilité Docker initiale corrigée par Testcontainers 1.21.4. Suite globale et redémarrage non exécutés, compréhension de l'apprenant non évaluée |
+| Source · IDs · fichiers | [REST][C2], INT-08 ; `ApiExceptionHandler.java`, tests de refus HTTP/Java et de panne d'acceptation sur le parcours mémoire existant. |
+| Notion · preuve | `400` seul ne prouve pas l'absence d'écriture : vérifier les appels par spy/mock. Détail générique insuffisant si `instance` répète la saisie ; fuite reproduite/corrigée, objet et JSON contrôlés. Cas valide nécessaire pour éviter « tout refuser » ; MVC, Java direct et doublure de panne prouvent des choses distinctes. |
+| Statut · limite | 📘 **Référence fondée sur 93 cas ciblés finaux / 181 globaux réussis** (73 ajouts nets), pas objectif de volume ni sécurité exhaustive. Quelques scénarios expliquent le principe ; nombre de cas ≠ compréhension. Passage à INT-09 demandé ensuite, pas autorisé par ce repère. |
 
-## TD-R017
+## Repères — données, MongoDB et concurrence
 
-**Distinguer quorum, acquittement et découverte d'un replica set**
+### TD-R015
 
-| Champ | Valeur |
+| Repère | **Un cycle d'état local n'est ni sauvegarde ni verrou** |
 |---|---|
-| **Créé dans** | [Complément INT-10 — MongoDB standalone ou replica set](sprint-03/INT-10-complement-mongodb-replica-set.md), sur demande documentaire de l'utilisateur |
-| **Story liée** | INT-10 — Persister avant d'accepter ; complément théorique, pas une nouvelle story |
-| **Dépend de** | Configuration actuelle d'acquittement et hypothèse de membres votants contenant les données, sans arbitre |
-| **Fichiers** | `FamilyRequestConfiguration.java` et `application.yml` relus, non modifiés ; complément sous `notes/sprint-03/` |
-| **À retenir** | `MAJORITY` reste pertinent ; deux membres exigent les deux, trois en exigent deux dans l'hypothèse retenue. L'URI doit permettre la découverte du replica set réellement configuré côté serveurs ; les délais sont à réévaluer. Garder les lectures sur le primary évite le détour vers un secondary en retard. Réplication, sauvegarde et idempotence sont des garanties différentes |
-| **Vérification pédagogique** | Expliquer pourquoi deux instances ne suffisent pas à continuer les écritures après une perte, pourquoi l'URI ne crée pas le replica set et pourquoi un retry du driver ne rend pas un nouveau POST idempotent |
-| **Statut** | 📘 Référence théorique uniquement — aucun replica set créé, aucun test exécuté, aucune modification de configuration ou connaissance évaluée |
+| Source · IDs · fichiers | [Modèle et transitions][C3], INT-09 ; `StoredFamilyRequest.java`, service interne, [DAT — données](../docs/dat/ConfluxLab.md#6-données-mongodb). |
+| Notion · preuve | `pending` : `createdAt == updatedAt`, pas de fin. `transitionTo` retourne une copie selon le graphe, conserve création, refuse recul d'`updatedAt`, pose `completedAt` à la fin ; état final fermé. Deux threads peuvent pourtant produire chacun `PROCESSING` depuis le même ancien objet : ni sauvegarde ni exclusion concurrente. `result?`/`error?` restent cibles non implémentées. |
+| Statut · dépendance | 📘 **Référence du modèle interne et de `RequestStatus`**, 3 cas ciblés INT-09 réussis sans MongoDB à cette étape. Persistance INT-10 et atomicité INT-11 distinctes ; pas de nouveau build global ou d'évaluation orale. |
 
-## TD-R018
+### TD-R016
 
-**Comparer et modifier atomiquement plutôt que lire puis écraser**
-
-| Champ | Valeur |
+| Repère | **Insérer puis acquitter, sans promettre une issue toujours connue** |
 |---|---|
-| **Créé dans** | [Note INT-11](sprint-03/INT-11-securiser-les-mises-a-jour.md) |
-| **Story liée** | INT-11 — Sécuriser les mises à jour |
-| **Dépend de** | Graphe d'état INT-09, persistance MongoDB INT-10 et opération interne INT-11 |
-| **Fichiers** | `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, `MongoFamilyRequestTransitionIT.java`, `StoredFamilyRequestTest.java` |
-| **À retenir** | `requireTransition` valide les flèches entre statuts, pas des dates ; `transitionTo` vérifie la chronologie de l'objet local puis retourne une copie, sans sauvegarder. Le store vérifie `_id + statut attendu + updatedAt <= date` avec l'Update dans un seul `findAndModify` : le second candidat perd sur le statut déjà changé, même avec une date plus récente. `transition(...)` n'a pour l'instant que des appelants de test, pas de production. Un résultat présent désigne la modification gagnante, un résultat vide une absence de correspondance ; une panne reste une exception. `returnNew` retourne le document modifié, aucun upsert ne crée de demande ; les champs non concernés sont préservés. Atomicité d'un document n'est ni exactly-once, ni bail/propriétaire de traitement, ni transaction avec un partenaire |
-| **Vérification pédagogique** | Distinguer graphe des statuts, chronologie et concurrence ; expliquer pourquoi un candidat avec une date plus récente peut perdre, pourquoi une mise à jour périmée ne peut pas écraser `FAILED` et pourquoi `Optional.empty()` ne doit pas masquer une panne MongoDB |
-| **Statut** | 📘 Référence fondée sur 2 nouveaux tests MongoDB et 2 tests du modèle réussis ; aucun traitement réel ni évaluation orale |
+| Source · IDs · fichiers | [Insertion et persistance][C3-mongo], INT-10 ; service/store MongoDB, modèle/configuration, `MongoTestSupport.java`. |
+| Notion · preuve | `insert` attend l'acquittement configuré avec journal ; `_id` unique refuse la collision sans upsert, contrairement au risque d'écrasement d'un `save`. Standalone : `majority` ≠ réplication. Timeout/déconnexion/`500` peuvent masquer une écriture réussie ; rejouer le POST peut doubler le métier, UUID unique ≠ idempotence et `202` ≠ famille créée. |
+| Statut · dépendance | 📘 **Référence après modèle INT-09, repository et contrat HTTP existant** ; [TD-B009](#td-b009) : MongoDB réel et panne simulée, pas matrice exhaustive. Testcontainers 1.21.4 a corrigé l'incompatibilité Docker initiale ; store mémoire réservé aux tests, suite globale/redémarrage non exécutés dans INT-10. |
 
-## TD-R019
+### TD-R017
 
-**Distinguer `test`, `package` et `verify`, puis prouver la persistance entre deux JVM**
-
-| Champ | Valeur |
+| Repère | **Distinguer quorum, acquittement et découverte d'un replica set** |
 |---|---|
-| **Créé dans** | [Note INT-12](sprint-03/INT-12-verifier-la-persistance.md) |
-| **Story liée** | INT-12 — Vérifier la persistance |
-| **Dépend de** | JAR Boot unique, MongoDB Testcontainers et plugin Failsafe activé dans le module d'assemblage |
-| **Fichiers** | POM racine/application, `MongoTestSupport.java`, `FamilyRequestPersistenceIT.java`, classes MongoDB `*IT`, `ModuleArchitectureTest.java` |
-| **À retenir** | Surefire exécute les `*Test` à la phase `test` ; les trois classes `*IT` sont découvertes par Failsafe après le packaging et contrôlées à `verify`. `pluginManagement` fixe la version mais ne remplace pas l'activation du plugin. Le nouveau test lance le même JAR dans deux JVM successives et conserve MongoDB entre les deux : même UUID/statut/date retrouvés. Ce n'est ni un redémarrage de MongoDB ni une preuve de récupération après perte du disque. Les tests HTTP existants `*Test` restent parfois eux aussi intégrés ; le nom ne suffit pas à déterminer leur nature |
-| **Vérification pédagogique** | Expliquer pourquoi une nouvelle instance de repository ou deux contextes dans une seule JVM constituent une preuve différente, pourquoi `-Dtest` n'est pas `-Dit.test` et pourquoi un `verify` ciblé ne valide pas toutes les suites |
-| **Statut** | 📘 Référence fondée sur 1 cas Surefire et 5 cas Failsafe réussis ; 1 scénario ajouté, 4 scénarios MongoDB réutilisés, restitution orale non évaluée |
+| Source · IDs · fichiers | [Replica set (théorie)][C3-replica], complément théorique INT-10 demandé par l'utilisateur ; configuration et `application.yml` relus sans modification, pas nouvelle story. |
+| Notion · preuve | Hypothèse : membres votants contenant les données, sans arbitre. Majorité : 2/2, donc perte d'un membre bloquante ; 2/3, continuité possible sous conditions d'élection/disponibilité. `MAJORITY` reste pertinent ; URI de découverte adaptée aux serveurs réellement configurés, délais à réévaluer. URI ≠ création du replica set ; lectures primary évitent un secondary en retard. |
+| Statut · limite | 📘 **Théorie uniquement**, fondée sur la configuration d'acquittement actuelle ; aucun replica set créé, test exécuté ou réglage modifié. Quorum électoral, acquittement, réplication, sauvegarde et idempotence diffèrent ; retry du driver ≠ nouveau POST idempotent. |
 
-## TD-R020
+### TD-R018
 
-**Séparer persistance, soumission volatile, prise en charge et réponse HTTP**
-
-| Champ | Valeur |
+| Repère | **Comparer et modifier atomiquement plutôt que lire puis écraser** |
 |---|---|
-| **Créé dans** | [Note INT-13](sprint-04/INT-13-dessiner-les-fenetres-de-panne.md) |
-| **Story liée** | INT-13 — Dessiner les fenêtres de panne |
-| **Dépend de** | Persistance INT-10/12 et graphe/atomicité INT-09/11 ; analyse du flux cible, pas validation de l'ébauche INT-14 |
-| **Fichiers** | Service, modèle/store MongoDB et BFF existants relus ; [DAT §7.1](../docs/dat/ConfluxLab.md#71-fenêtres-de-panne-documentées--int-13) et cours INT-13, sans changement applicatif |
-| **À retenir** | Trois cas suffisent : insertion non confirmée ; document `PENDING` sans prise en charge ; traitement interrompu en `PROCESSING`. L'événement local n'est pas durable. Le listener peut commencer avant le `202`, qui ne garantit pas la réussite. Une erreur/timeout ne prouve pas l'absence d'écriture ; aucune reprise automatique n'est ajoutée |
-| **Vérification pédagogique** | Expliquer pourquoi un document peut survivre sans tâche et pourquoi le `202` ne fixe ni le début ni la réussite du traitement |
-| **Statut** | 📘 Référence INT-13 simplifiée : un schéma et trois situations, sans catalogue de pannes ou de politiques ; aucune panne exécutée ni connaissance évaluée |
+| Source · IDs · fichiers | [Modèle et transitions][C3], INT-11 ; `MongoFamilyRequestStore.java`, `StoredFamilyRequest.java`, preuves de transition. Prérequis : graphe INT-09, persistance INT-10. |
+| Notion | `requireTransition` vérifie les flèches, pas les dates ; `transitionTo` vérifie la chronologie locale et copie sans sauvegarder. Le store filtre `_id + statut attendu + updatedAt <= date` et applique l'Update en un `findAndModify` : le second candidat perd sur le statut, même avec date plus récente ; une tentative périmée ne remplace pas `FAILED`. |
+| Preuve · portée | Présent = modification gagnante, vide = aucune correspondance, panne = exception, jamais `Optional.empty()` artificiel. `returnNew` renvoie le document modifié, sans upsert, champs non concernés préservés. Deux nouveaux cas MongoDB + deux du modèle réussis ; atomicité d'un document ≠ exactly-once, bail/propriétaire ou transaction avec le partenaire. |
+| Statut · version | 📘 **Référence** : dans INT-11, `transition` n'avait que des appelants de test ; depuis INT-14, le listener appelle le claim, pas la finalisation métier. Aucun traitement partenaire ou évaluation orale n'est prouvé par INT-11. |
 
-## TD-R021
+### TD-R019
 
-**Publier après sauvegarde et traverser le proxy async avant de prendre en charge**
-
-| Champ | Valeur |
+| Repère | **Distinguer les phases Maven et prouver la persistance entre deux JVM** |
 |---|---|
-| **Créé dans** | [Note INT-14](sprint-04/INT-14-publier-et-consommer.md) |
-| **Story liée** | INT-14 — Publier et consommer |
-| **Dépend de** | Insertion confirmée, événement local, proxy Spring et transition atomique d'INT-11 |
-| **Fichiers** | Service/configuration, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java`, `FamilyRequestEventsIT.java` et tests existants adaptés |
-| **À retenir** | `@EnableAsync` active l'interception ; `@EventListener` reçoit le type publié et `@Async` soumet au worker (executor Boot dans INT-14, `familyRequestExecutor` dédié depuis INT-15). Un appel direct contournant le proxy ne prouve pas l'asynchronisme. Le reçu reste `PENDING`, le GET peut déjà voir `PROCESSING`. Deux lectures `PENDING` restent possibles : le CAS MongoDB arbitre. Le listener s'arrête à la prise en charge, sans métier fictif, état final ou reprise |
-| **Vérification pédagogique** | Expliquer pourquoi le test peut bloquer le listener tout en obtenant `202`, et pourquoi sa lecture préalable ne remplace pas la commande atomique |
-| **Statut** | 📘 Référence fondée sur 9 cas ciblés réussis, dont un seul nouveau scénario événementiel ; compréhension de l'apprenant non évaluée |
+| Source · IDs · fichiers | [Insertion et persistance][C3-mongo], INT-12 ; POM racine/application, `FamilyRequestPersistenceIT.java`, support/IT MongoDB, contrôle de frontière. |
+| Notion · preuve | Surefire : `*Test` à `test` ; trois classes `*IT` alors découvertes par Failsafe après packaging, contrôlées à `verify`. `pluginManagement` seul n'active rien. Même JAR, deux JVM successives, MongoDB conservé : UUID/statut/date retrouvés ; pas simple nouveau repository/deux contextes dans une JVM, ni redémarrage MongoDB/récupération disque. |
+| Statut · dépendance | 📘 **Référence fondée sur [TD-B011](#td-b011)** : Boot unique, Testcontainers, Failsafe activé ; 1 Surefire + 5 Failsafe (1 scénario ajouté, 4 MongoDB réutilisés). `-Dtest` ≠ `-Dit.test` ; sélection ≠ suite complète. Certains `*Test` HTTP sont intégrés : suffixe ≠ nature du test. |
 
-## TD-R022
+## Repères — événement local, asynchronisme et limites
 
-**Borner les tâches sans masquer les rejets ou promettre une reprise**
+### TD-R020
 
-| Champ | Valeur |
+| Repère | **Séparer persistance, soumission volatile, claim et réponse HTTP** |
 |---|---|
-| **Créé dans** | [Note INT-15](sprint-04/INT-15-borner-l-execution.md) |
-| **Story liée** | INT-15 — Borner l'exécution |
-| **Dépend de** | Listener proxifié INT-14 et executor dédié INT-15 |
-| **Fichiers** | `FamilyRequestConfiguration.java`, `FamilyRequestListener.java`, `FamilyRequestEventsIT.java` |
-| **À retenir** | Un pool fixe et une file bornée limitent les tâches acceptées ; `AbortPolicy` refuse au lieu de les exécuter sur le thread HTTP. Le rejet peut laisser `PENDING` après insertion malgré `500`. Le handler `@Async void` journalise UUID et type sans message/trace bruts et ne modifie pas le statut. L'attente de fermeture n'est pas un timeout de tâche ni une garantie d'arrêt forcé |
-| **Vérification pédagogique** | Distinguer le rejet synchrone de soumission de l'exception du worker ; expliquer pourquoi ni l'un ni l'autre ne justifie automatiquement `FAILED` ou une reprise |
-| **Statut** | 📘 Référence fondée sur 4 cas ciblés réussis, dont 2 ajoutés ; arrêt prolongé non testé et compréhension de l'apprenant non évaluée |
+| Source · IDs · fichiers | [Async][C4], INT-13 ; service/modèle/store/BFF relus, [DAT — fenêtres de panne](../docs/dat/ConfluxLab.md#71-fenêtres-de-panne-documentées--int-13), sans modification applicative. |
+| Notion · preuve | Trois situations : insertion non confirmée ; `PENDING` sans prise en charge ; interruption en `PROCESSING`. Événement local non durable : document survivant ≠ tâche survivante. Erreur/timeout ≠ absence d'écriture. Listener possible avant `202`, qui ne fixe ni début ni réussite ; aucune reprise automatique. |
+| Statut · dépendance | 📘 **Analyse documentaire**, appuyée sur persistance INT-10/12 et graphe/atomicité INT-09/11 : un schéma, trois cas, aucune panne exécutée ni validation de l'ébauche INT-14 par cette seule analyse. |
 
-## TD-R023
+### TD-R021
 
-**Distinguer contrats internes, identifiants typés et futures pilotables**
-
-| Champ | Valeur |
+| Repère | **Publier après sauvegarde et traverser le proxy async avant le claim** |
 |---|---|
-| **Créé dans** | [Note INT-17](sprint-05/INT-17-ecrire-les-contrats-des-operations.md) |
-| **Story liée** | INT-17 — Écrire les contrats des opérations |
-| **Dépend de** | Graphe A–F et types `PersonPayload` existants ; aucune infrastructure nouvelle |
-| **Fichiers** | `FamilyOperations.java` en production, `ControlledFamilyOperations.java` uniquement sous `src/test` |
-| **À retenir** | Les signatures expriment les données nécessaires, pas l'ordre d'exécution. `PrincipalId`, `ContractId` et `DependentId` distinguent les rôles sans valider contenu ou appartenance. Le `requestId` corrèle, sans rendre le POST idempotent. Une future ne crée pas de thread ; la fixture laisse les prochains tests choisir succès ou échec avec `complete`/`completeExceptionally`, sans HTTP |
-| **Vérification pédagogique** | Expliquer pourquoi E demande B/C mais pas D, pourquoi les records n'empêchent pas d'inverser deux ayants droit et pourquoi `test-compile` ne prouve pas le fonctionnement du graphe |
-| **Statut** | 📘 Référence INT-17 fondée sur une compilation ciblée ; la fixture a depuis été exercée dans les 2 cas réussis d'INT-18. Compréhension de l'apprenant non évaluée |
+| Source · IDs · fichiers | [Async][C4], INT-14 ; service/configuration, `FamilyRequestSubmitted.java`, `FamilyRequestListener.java`, IT événementiel et preuves existantes adaptées. |
+| Notion · preuve | Insertion confirmée avant publication. `@EnableAsync` active l'interception, `@EventListener` reçoit le type, `@Async` soumet au worker ; appel direct hors proxy ≠ preuve async. Executor Boot dans INT-14, `familyRequestExecutor` dédié depuis INT-15. Reçu `PENDING`, GET déjà `PROCESSING` possible ; deux lectures `PENDING` exigent le CAS MongoDB, pas une réservation Java. |
+| Statut · dépendance | 📘 **Référence fondée sur [TD-B012](#td-b012)** : 9 cas ciblés, un seul scénario nouveau ; publication locale, proxy Spring et CAS INT-11. POST obtenu pendant listener contrôlé ; arrêt au claim, sans métier fictif, état final ou reprise. |
 
-## TD-R024
+### TD-R022
 
-**Composer des dépendances locales et suivre la fin réelle des futures**
-
-| Champ | Valeur |
+| Repère | **Borner les tâches sans masquer les rejets ou promettre une reprise** |
 |---|---|
-| **Créé dans** | [Note INT-18](sprint-05/INT-18-composer-le-succes.md) |
-| **Story liée** | INT-18 — Composer le succès |
-| **Dépend de** | Contrats A–F et fixture INT-17 ; composition avec `thenCompose`, `thenCombine` et `allOf` |
-| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java`, `ControlledFamilyOperations.java` |
-| **À retenir** | B/C/D dépendent chacun d'A. E combine B/C et F combine B/D ; aplatir leur future imbriquée permet de suivre leur terminaison, pas seulement leur démarrage. Le seul `allOf` est final. Les continuations sans suffixe `Async` ne créent pas automatiquement de thread ; le chevauchement de futures en cours n'est pas une mesure de parallélisme de threads ou d'I/O |
-| **Vérification pédagogique** | Expliquer pourquoi une barrière B/C/D retarderait E/F, et comment le test détecte une fin globale annoncée alors que le second rattachement n'est pas achevé |
-| **Statut** | 📘 Référence fondée sur 2 cas paramétrés ciblés réussis, sans HTTP, Spring, MongoDB ou mesure de performance ; compréhension non évaluée |
+| Source · IDs · fichiers | [Pool et erreurs async][C4-pool], INT-15 ; configuration/listener/IT événementiel ; listener proxifié INT-14 et executor dédié INT-15 requis. |
+| Notion · preuve | Pool fixe/file bornée limitent les tâches admises ; `AbortPolicy` refuse sans exécuter sur HTTP. Rejet synchrone : `500`, document parfois déjà `PENDING` ; exception du worker `@Async void` : journal UUID/type sans message/trace bruts, statut inchangé. Aucun des deux n'implique automatiquement `FAILED` ou reprise. |
+| Statut · limite | 📘 **Référence fondée sur [TD-B013](#td-b013)** : 4 cas ciblés dont deux ajoutés. Attente de fermeture ≠ timeout de tâche ni arrêt forcé ; arrêt prolongé non testé et maîtrise non évaluée. |
 
-## TD-R025
+## Repères — graphe A–F et executor explicite
 
-**Attendre les branches lancées sans masquer l'échec**
+### TD-R023
 
-| Champ | Valeur |
+| Repère | **Distinguer contrats internes, identifiants typés et futures pilotables** |
 |---|---|
-| **Créé dans** | [Note INT-19](sprint-05/INT-19-composer-les-echecs.md) |
-| **Story liée** | INT-19 — Composer les échecs |
-| **Dépend de** | Composition native des futures et jonction finale explicite B/C/D/E/F |
-| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java` ; fixture INT-17 inchangée |
-| **À retenir** | B en échec empêche les appels E/F sans annuler C/D déjà lancées. La jonction de fin attend les branches puis expose l'échec ; elle ne retarde pas le démarrage nominal des rattachements. `get` enveloppe l'échec dans `ExecutionException`, dont la cause originale est vérifiée. Une future exceptionnelle n'écrit pas `FAILED` dans MongoDB |
-| **Vérification pédagogique** | Expliquer pourquoi les futures composées E/F peuvent finir en échec alors que les méthodes partenaires E/F n'ont pas été appelées, et pourquoi le suivi doit distinguer erreur de branche et fin globale |
-| **Statut** | 📘 Référence fondée sur un échec B ajouté et les deux cas nominaux réutilisés, 3 réussites ciblées ; aucune preuve de persistance d'état final ou connaissance évaluée |
+| Source · IDs · fichiers | [Orchestration][C5], INT-17 ; `FamilyOperations.java` en production, `ControlledFamilyOperations.java` seulement sous `src/test` ; graphe A–F et `PersonPayload` préexistants. |
+| Notion · preuve | Signatures = données nécessaires, pas ordre ; `PrincipalId`/`ContractId`/`DependentId` distinguent les rôles sans valider contenu/appartenance ni empêcher l'inversion de deux ayants droit. UUID corrèle, sans idempotence. Future ≠ thread ; fixture pilotable par `complete`/`completeExceptionally`, sans HTTP. E exige B/C, pas D. |
+| Statut · dépendance | 📘 **Référence compilée dans INT-17**, sans infrastructure nouvelle : `test-compile` n'exécutait aucun test ni le graphe. Fixture exercée ensuite dans les 2 cas réussis INT-18 ; pas de compréhension évaluée. |
+
+### TD-R024
+
+| Repère | **Composer des dépendances locales et suivre la fin réelle des futures** |
+|---|---|
+| Source · IDs · fichiers | [Orchestration][C5], INT-18 ; orchestrateur/test et fixture INT-17. |
+| Notion · preuve | B/C/D dépendent chacune d'A ; E combine B/C, F combine B/D. `thenCompose` aplatit pour suivre la fin réelle, pas le seul démarrage ; `thenCombine` combine les résultats, `allOf` reste final. Une barrière B/C/D préalable retarderait E/F ; fin globale interdite tant qu'un rattachement continue. |
+| Statut · limite | 📘 **Référence illustrée par [TD-B015](#td-b015)**, 2 cas ciblés, contrats/fixture INT-17 requis. Continuations sans `Async` ≠ nouveaux threads ; futures en cours ≠ mesure de parallélisme ou d'I/O. Ni HTTP, Spring, MongoDB ou performance prouvés. |
+
+### TD-R025
+
+| Repère | **Attendre les branches lancées sans masquer l'échec** |
+|---|---|
+| Source · IDs · fichiers | [Orchestration][C5], INT-19 ; orchestrateur/test, fixture INT-17 inchangée ; composition native et jonction finale explicite B/C/D/E/F. |
+| Notion · preuve | B échouée interdit les appels E/F sans annuler C/D ; leurs futures composées peuvent échouer sans invocation partenaire E/F. La jonction attend les branches avant d'exposer l'échec, sans retarder les démarrages nominaux. `get` enveloppe dans `ExecutionException`, cause originale vérifiée ; future exceptionnelle ≠ `FAILED` écrit en MongoDB. |
+| Statut · limite | 📘 **Référence illustrée par [TD-B016](#td-b016)**, 3 cas dont les 2 nominaux réutilisés et un échec B ajouté. Erreur de branche ≠ fin globale ; aucun état final persisté ou maîtrise évaluée. |
+
+### TD-R026
+
+| Repère | **Soumettre explicitement sans bloquer et connaître la borne réelle du pool** |
+|---|---|
+| Source · IDs · fichiers | [Orchestration][C5], INT-20 ; orchestrateur/test, configuration/listener existants ; composition INT-18/19 et saturation historique INT-15. |
+| Notion | `supplyAsync` avec executor soumet l'invocation, `thenCompose` suit sa future. Rejet initial possible avant le retour d'une future, converti en `failedFuture`. Pas de `join/get` dans le pool ; continuations limitées à composer/soumettre. À un worker, rendre la future du graphe sans l'y attendre évite de bloquer ses propres sous-tâches. |
+| Portée · preuve | Type `Executor` ≠ bornage : l'instance borne workers/file, pas un travail externalisé ailleurs. Admission A ≠ réservation pour la suite : E peut être refusée plus tard. Partage/isolation Java vérifiés dans les 6 cas INT-20, dont 3 réutilisés ; ni test de charge complet ni preuve de câblage Spring. |
+| Statut · dépendance | 📘 **Référence**, sans statut final persisté ni compréhension évaluée. Le raccordement effectif au bean borné, l'adaptateur et la finalisation restent [TD-B018](#td-b018), **lot INT-21 + INT-22 toujours à autoriser**. |
+
+[C1]: sprint-01/INT-01-socle-modulaire.md
+[C1-build]: sprint-01/INT-02-build-et-versionnement.md
+[C2]: sprint-02/INT-05-accepter-et-consulter-une-demande.md
+[C3]: sprint-03/INT-09-modele-et-transitions-atomiques.md
+[C3-mongo]: sprint-03/INT-10-insertion-et-persistance-mongodb.md
+[C3-replica]: sprint-03/INT-10-complement-mongodb-replica-set.md
+[C4]: sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md
+[C4-pool]: sprint-04/INT-15-pool-borne-et-erreurs-async.md
+[C5]: sprint-05/INT-17-orchestrer-les-six-operations.md
