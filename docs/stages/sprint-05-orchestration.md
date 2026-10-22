@@ -1,6 +1,6 @@
 # Sprint 05 — Graphe métier et concurrence bornée
 
-**Statut : INT-17 terminée ; INT-18 à INT-20 non commencées.** Le feu vert explicite « go 17 » ouvre cet incrément du sprint 05, sans valider la clôture pédagogique du sprint 04, qui reste à confirmer. Le périmètre et les tests simplifiés sont conservés ; chaque tâche suivante attend son propre accord.
+**Statut : INT-17 et INT-18 terminées ; INT-19/20 non commencées.** Après « go 17 », le feu vert « commit 17 & go 18 » a autorisé la composition nominale. INT-17 est commitée localement dans `d6f0e86`, sans push. La clôture pédagogique du sprint 04 reste à confirmer ; le périmètre simplifié et le feu vert par tâche sont conservés.
 
 ## Objectif
 
@@ -38,7 +38,7 @@ En tant que développeur, je veux connaître les données attendues et renvoyée
 **Preuves :** `./mvnw -B -ntp -pl capability-api -am test-compile` réussi : production et sources de test compilées, aucun test exécuté. Deux fichiers Java ajoutés, aucune dépendance ou configuration modifiée. Aucun orchestrateur, branchement au listener, HTTP, executor ou état final ajouté.
 
 ### INT-18 — Composer le succès
-**Statut : à faire — feu vert requis.**
+**Statut : terminée sur feu vert « commit 17 & go 18 ».** [Cours, extraits et preuves INT-18](../../notes/sprint-05/INT-18-composer-le-succes.md).
 
 En tant que développeur, je veux lancer chaque opération dès que ses prérequis sont prêts, afin de ne pas attendre une branche indépendante.
 
@@ -47,8 +47,10 @@ En tant que développeur, je veux lancer chaque opération dès que ses prérequ
 - Réutiliser un scénario nominal piloté pour vérifier les dépendances et l'indépendance des branches, sans test distinct pour chaque flèche du graphe.
 
 **Terminé quand :**
-- [ ] A précède B/C/D, qui peuvent être en cours ensemble ; E attend B/C et F attend B/D, sans barrière globale.
-- [ ] Le scénario contrôlé vérifie l'ordre et l'avancement d'une branche pendant que l'autre reste bloquée. Varier l'ordre de fin de C/D seulement si nécessaire pour vérifier les deux chemins, sans dupliquer toute la préparation.
+- [x] `FamilyOrchestrator` compose A puis B/C/D ; E attend B/C et F attend B/D. `thenCompose` aplatit les futures et le seul `allOf` attend les rattachements à la fin.
+- [x] Un scénario paramétré couvre les deux ordres C/D : données et appels vérifiés, B/C/D en cours ensemble, E ou F avançant avec l'autre ayant droit encore en attente, résultat global incomplet jusqu'à la fin réelle des deux rattachements.
+
+**Preuves :** `test` ciblé de `FamilyOrchestratorTest`, 2 cas Surefire réussis, aucun échec/erreur/ignoré. Fixture INT-17 réutilisée sans modification, attentes bornées, ni `sleep`, Spring, MongoDB ou HTTP. Aucun executor, branchement au listener ou état final ajouté ; on vérifie des futures en cours, pas un parallélisme de threads mesuré.
 
 ### INT-19 — Composer les échecs
 **Statut : à faire — feu vert requis.**

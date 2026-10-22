@@ -80,6 +80,7 @@ Les anciens numéros `01.1` à `09.4` ont été remplacés dans les fiches par c
 | INT-15 | [Borner l'exécution](sprint-04/INT-15-borner-l-execution.md) | Terminée : executor dédié borné, rejet explicite et erreur async journalisée sans message privé ; 2 cas ajoutés, 4 cas ciblés réussis ; aucune reprise |
 | INT-16 | [Tester avec un traitement contrôlé](sprint-04/INT-16-tester-avec-un-traitement-controle.md) | Terminée : quatre comportements couverts par trois cas existants, attentes/nettoyage relus et rapports INT-15 inspectés ; aucun code, test ou réglage modifié, aucune réexécution |
 | INT-17 | [Écrire les contrats des opérations](sprint-05/INT-17-ecrire-les-contrats-des-operations.md) | Terminée : six contrats internes, identifiants typés et fixture à futures pilotables ; production et tests compilés, aucun test exécuté ni orchestration ajoutée |
+| INT-18 | [Composer le succès](sprint-05/INT-18-composer-le-succes.md) | Terminée : graphe nominal sans barrière globale avant E/F, fin effective des rattachements suivie ; 2 cas paramétrés réussis, sans branchement au listener ou état final |
 | INT-37 | [Initialiser le dépôt Git](sprint-01/INT-37-initialiser-le-depot-git.md) | Initialisation locale et premier push HTTPS réalisés |
 
 Les preuves historiques restent datées : INT-01 conserve le cadrage initial ; le cours INT-06 explique désormais l'acceptation réalisée et renvoie à la version publiée de sa rétrospective pour l'ébauche antérieure. Les autres dossiers n'ont pas de compte rendu de réussite anticipé.

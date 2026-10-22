@@ -20,13 +20,13 @@
 
 Une requête HTTP demande la création d'une famille fictive de **trois personnes** : un assuré principal et deux ayants droit.
 
-**Lecture du flux :** la liste décrit le parcours cible. Depuis INT-14, acceptation persistée, publication locale, prise en charge asynchrone et suivi sont implémentés. L'orchestration, les appels partenaires et la production d'un état final restent à développer sur leurs feux verts respectifs. INT-13 conserve l'explication courte des fenêtres de panne.
+**Lecture du flux :** la liste décrit le parcours cible. Depuis INT-14, acceptation persistée, publication locale, prise en charge asynchrone et suivi sont implémentés. Depuis INT-18, la composition nominale du graphe existe et est testée en Java, sans branchement au listener. Le traitement de bout en bout, les appels partenaires et la production d'un état final restent à développer sur leurs feux verts respectifs. INT-13 conserve l'explication courte des fenêtres de panne.
 
 1. Le module Experience/BFF reçoit la demande HTTP, valide son format et appelle l'interface Java publique du module Capability, dans la même application Spring Boot.
 2. Depuis INT-10, Capability génère un UUID et insère la demande `PENDING` dans MongoDB avant l'acceptation. À l'étape historique INT-06, ce stockage était temporairement réalisé en mémoire.
 3. Capability publie un **événement Spring local** contenant l'UUID ; un listener `@Async` est planifié.
 4. Capability renvoie l'acceptation et Experience retourne **HTTP `202 Accepted`** avec un `requestId` et une `statusUrl`, sans attendre les appels partenaires.
-5. Le listener lit la demande et tente la transition atomique vers `PROCESSING` (INT-14). L'orchestration métier viendra ensuite ; elle n'est pas simulée dans cet incrément.
+5. Le listener lit la demande et tente la transition atomique vers `PROCESSING` (INT-14). La composition nominale disponible depuis INT-18 n'est pas encore branchée à ce listener ; aucun faux travail métier n'est déclenché derrière le `202`.
 6. Les appels passent par un client Feign configuré avec les mécanismes pertinents de Resilience4j.
 7. MongoDB reçoit l'état final `SUCCEEDED` ou `FAILED`.
 8. Le client consulte **GET `/api/v1/requests/{requestId}`**.
@@ -64,6 +64,12 @@ B, C et D peuvent être lancées en parallèle ; E et F n'attendent que leurs pr
 **[Simulation ConfluxLab — réalisée sur feu vert « go 17 »]** : `FamilyOperations`, interface sans bean dans `capability.internal`, définit les six opérations avec `CompletableFuture`. Chaque appel reçoit le `requestId` de corrélation ; A consomme `PersonPayload` et retourne `PrincipalId`, B utilise ce dernier et retourne `ContractId`, C/D utilisent le principal et les données de l'ayant droit pour retourner chacun un `DependentId`, E/F utilisent contrat et ayant droit et retournent `Void` (réussite sans nouvelle donnée). Les trois records d'identifiants distinguent les rôles, sans ajouter de validation de contenu ou d'appartenance à une famille.
 
 `ControlledFamilyOperations`, sous `src/test` uniquement, prépare un mock Mockito et six futures incomplètes. `test-compile` ciblé de Capability et de ses dépendances réussit ; aucun test n'est exécuté et la fixture sera exercée avec INT-18/19. Aucun contrat HTTP, POM, configuration, listener ou stockage n'est modifié. L'interface ne compose pas le graphe et n'implique aucun thread ou appel HTTP automatique. Voir le [cours INT-17](../../notes/sprint-05/INT-17-ecrire-les-contrats-des-operations.md).
+
+### 3.2 Composition nominale — INT-18
+
+**[Simulation ConfluxLab — réalisée sur feu vert « commit 17 & go 18 »]** : INT-17 est commitée localement dans `d6f0e86`, sans push. `FamilyOrchestrator`, classe Java interne sans bean Spring, dépend de `FamilyOperations` et retourne une `CompletableFuture<Void>`. A fournit le principal ; trois `thenCompose` enregistrent B/C/D indépendamment. E combine B/C et F combine B/D ; leur future de rattachement est aplatie avec `thenCompose`. Le seul `allOf` attend E/F à la fin, sans barrière globale avant leur démarrage.
+
+**Preuves :** un test paramétré réutilise la fixture INT-17 dans les deux ordres C/D ; 2 cas Surefire ciblés réussissent, aucun échec/erreur/ignoré. Il vérifie l'ordre, les UUID/données transmis, le chevauchement possible des opérations encore en cours, l'indépendance d'E/F et l'absence de fin globale prématurée. Pas de mesure de parallélisme de threads ou de performance réseau. Aucun `join`, `get` ou executor dans l'orchestrateur, aucun HTTP, accès MongoDB, état final ou branchement au listener. La gestion métier des échecs et le bornage restent dans INT-19/20. Voir le [cours INT-18](../../notes/sprint-05/INT-18-composer-le-succes.md).
 
 ## 4. Stack technique proposée
 

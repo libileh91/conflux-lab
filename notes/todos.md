@@ -29,7 +29,8 @@ Ce fichier centralise **les actions restantes et les points à retenir issus des
 | [TD-B012](#td-b012) | Publier et consommer après insertion | INT-14 | Terminée : événement après sauvegarde, listener async, un seul gagnant ; 9 cas ciblés réussis |
 | [TD-B013](#td-b013) | Borner l'exécution et journaliser ses erreurs | INT-15 | Terminée : executor dédié borné, refus en `500`, journal UUID/type ; 4 cas ciblés réussis |
 | [TD-B014](#td-b014) | Consolider les tests contrôlés existants | INT-16 | Terminée : preuves et synchronisation relues, rapports INT-15 inspectés ; aucun ajout ou réexécution de test |
-| [TD-B015](#td-b015) | Composer le parcours réussi | INT-18 | À autoriser après INT-17 ; réutiliser la fixture pilotable, sans HTTP ni suite par dépendance |
+| [TD-B015](#td-b015) | Composer le parcours réussi | INT-18 | Terminée : deux ordres C/D vérifiés, 2 cas ciblés réussis ; aucun branchement au listener |
+| [TD-B016](#td-b016) | Composer les échecs | INT-19 | À autoriser ; un échec représentatif et les branches en cours, sans matrice de pannes |
 
 Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemoryFamilyRequests` et son test sont renommés `FamilyRequestService` / `FamilyRequestServiceTest`. `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`.
 
@@ -239,11 +240,25 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 |---|---|
 | **Créé dans** | [Note INT-17](sprint-05/INT-17-ecrire-les-contrats-des-operations.md) |
 | **Story liée** | [INT-18 — Composer le succès](../docs/stages/sprint-05-orchestration.md#int-18--composer-le-succès) ; suivi de la story existante |
-| **Dépend de** | Contrats et fixture INT-17 compilés ; nouveau feu vert INT-18 requis |
-| **Fichiers** | `FamilyOperations.java`, `ControlledFamilyOperations.java` ; orchestrateur interne et scénarios de composition à créer dans Capability, nom non arrêté |
+| **Dépend de** | Contrats et fixture INT-17 commitées `d6f0e86` ; feu vert « commit 17 & go 18 » reçu |
+| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java` ajoutés ; `FamilyOperations.java` et `ControlledFamilyOperations.java` réutilisés sans modification |
 | **Action** | Composer A puis B/C/D, E après B/C et F après B/D, sans barrière globale ; réutiliser la fixture pour un parcours de succès piloté |
 | **Validation** | Ordre et chevauchement vérifiés en Java avec attentes bornées ; contrôler les bons identifiants et l'indépendance des branches, sans HTTP, Spring ou MongoDB pour la composition seule |
-| **Statut** | ⏸ À autoriser — INT-18 non commencée ; aucune composition exécutée dans INT-17 |
+| **Statut** | ✅ Terminée sur feu vert INT-18 ; [cours et preuves](sprint-05/INT-18-composer-le-succes.md), 2 cas paramétrés Surefire réussis, aucun échec/erreur/ignoré. Dépendances et identifiants vérifiés, E/F indépendants et fin globale non prématurée ; aucun branchement au listener, état final ou mesure de parallélisme de threads |
+
+## TD-B016
+
+**Composer les échecs sans succès ni finalisation prématurés**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-18](sprint-05/INT-18-composer-le-succes.md) |
+| **Story liée** | [INT-19 — Composer les échecs](../docs/stages/sprint-05-orchestration.md#int-19--composer-les-échecs) ; suivi de la story existante |
+| **Dépend de** | Composition nominale INT-18 disponible ; nouveau feu vert INT-19 requis |
+| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java`, `ControlledFamilyOperations.java` ; raccordement au suivi à préciser dans le périmètre INT-19 |
+| **Action** | Traiter un échec représentatif, empêcher les descendants concernés de démarrer et attendre les branches déjà lancées avant la finalisation, sans annulation forcée |
+| **Validation** | Réutiliser le scénario piloté pour vérifier l'absence de faux succès et de finalisation avant la fin des branches en cours ; pas de matrice d'erreur A–F |
+| **Statut** | ⏸ À autoriser — INT-19 non commencée ; aucun scénario d'échec exécuté dans INT-18 |
 
 ## Repères de cours
 
@@ -567,4 +582,18 @@ Les anciens repères conservent leurs noms historiques : depuis INT-10, `InMemor
 | **Fichiers** | `FamilyOperations.java` en production, `ControlledFamilyOperations.java` uniquement sous `src/test` |
 | **À retenir** | Les signatures expriment les données nécessaires, pas l'ordre d'exécution. `PrincipalId`, `ContractId` et `DependentId` distinguent les rôles sans valider contenu ou appartenance. Le `requestId` corrèle, sans rendre le POST idempotent. Une future ne crée pas de thread ; la fixture laisse les prochains tests choisir succès ou échec avec `complete`/`completeExceptionally`, sans HTTP |
 | **Vérification pédagogique** | Expliquer pourquoi E demande B/C mais pas D, pourquoi les records n'empêchent pas d'inverser deux ayants droit et pourquoi `test-compile` ne prouve pas le fonctionnement du graphe |
-| **Statut** | 📘 Référence issue d'une compilation ciblée réussie ; fixture pas encore exercée et compréhension de l'apprenant non évaluée |
+| **Statut** | 📘 Référence INT-17 fondée sur une compilation ciblée ; la fixture a depuis été exercée dans les 2 cas réussis d'INT-18. Compréhension de l'apprenant non évaluée |
+
+## TD-R024
+
+**Composer des dépendances locales et suivre la fin réelle des futures**
+
+| Champ | Valeur |
+|---|---|
+| **Créé dans** | [Note INT-18](sprint-05/INT-18-composer-le-succes.md) |
+| **Story liée** | INT-18 — Composer le succès |
+| **Dépend de** | Contrats A–F et fixture INT-17 ; composition avec `thenCompose`, `thenCombine` et `allOf` |
+| **Fichiers** | `FamilyOrchestrator.java`, `FamilyOrchestratorTest.java`, `ControlledFamilyOperations.java` |
+| **À retenir** | B/C/D dépendent chacun d'A. E combine B/C et F combine B/D ; aplatir leur future imbriquée permet de suivre leur terminaison, pas seulement leur démarrage. Le seul `allOf` est final. Les continuations sans suffixe `Async` ne créent pas automatiquement de thread ; le chevauchement de futures en cours n'est pas une mesure de parallélisme de threads ou d'I/O |
+| **Vérification pédagogique** | Expliquer pourquoi une barrière B/C/D retarderait E/F, et comment le test détecte une fin globale annoncée alors que le second rattachement n'est pas achevé |
+| **Statut** | 📘 Référence fondée sur 2 cas paramétrés ciblés réussis, sans HTTP, Spring, MongoDB ou mesure de performance ; compréhension non évaluée |

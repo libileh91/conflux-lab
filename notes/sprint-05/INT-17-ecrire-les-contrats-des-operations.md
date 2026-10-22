@@ -2,6 +2,8 @@
 
 **Statut : terminée sur feu vert « go 17 », le 2026-10-22.** Point de départ : `58b84ff`, plan du sprint 05 simplifié. Deux fichiers Java sont ajoutés : un contrat interne et une doublure de test. **La compilation de production et de test a réussi ; aucun test n'a été exécuté.** La doublure sera exercée avec le graphe dans INT-18/19, sans suite dédiée au seul montage.
 
+> **Lecture historique :** INT-17 a ensuite été commitée dans `d6f0e86`. Sa preuve reste une compilation sans test exécuté ; l'utilisation de la fixture dans deux cas exécutés est documentée séparément dans [INT-18](INT-18-composer-le-succes.md).
+
 **[Simulation ConfluxLab]** Les six opérations et leurs identifiants sont pédagogiques, pas les contrats réels GFP/Open. Aucun HTTP partenaire, traitement métier ou état final n'est ajouté. Le feu vert autorise INT-17, pas la suivante ; il ne vaut pas évaluation de la clôture pédagogique du sprint 04.
 
 ## Parcours de lecture
@@ -183,4 +185,4 @@ Cette commande écrit les sorties locales `target/` ; des dépendances absentes 
 ## 7. Suivi centralisé
 
 - [TD-R023 — Contrats internes, identifiants typés et futures pilotables](../todos.md#td-r023).
-- [TD-B015 — INT-18 : composer et vérifier le parcours réussi, feu vert requis](../todos.md#td-b015).
+- [TD-B015 — INT-18 : composition nominale réalisée avec deux cas ciblés réussis](../todos.md#td-b015).
