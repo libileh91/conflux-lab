@@ -25,12 +25,12 @@ Les IDs `INT-XX` restent uniques et stables. Leur regroupement documentaire ne c
 | [05 — Orchestration](sprint-05-orchestration.md) | Graphe, échecs et soumission : INT-17 à INT-20 | Réalisé en Java, non raccordé au listener ; clôture pédagogique non confirmée |
 | [06 — Parcours partenaire](sprint-06-partenaire.md) | Parcours complet : INT-21 + INT-22 ; pannes : INT-23 + INT-24 | Deux lots réalisés : parcours puis pannes ciblées ; absence de retry justifiée, 11 cas ciblés réussis pour INT-23/24 |
 | [07 — Démonstration et mesures](sprint-07-validation.md) | Montrer, diagnostiquer et mesurer le parcours : INT-25 à INT-28 | Réalisé : deux demandes isolées, relevés locaux et comparaison test-only ; 13 cas ciblés réussis, oral non évalué |
-| [08 — CI exploitable](sprint-08-ci.md) | Vérification et pipeline réellement observé : INT-29 à INT-32 | Partiel : `verify` local global 204 cas réussis, workflow créé ; runs GitHub vert/rouge et retour au vert en attente d'accord distant |
+| [08 — CI exploitable](sprint-08-ci.md) | Vérification et pipeline réellement observé : INT-29 à INT-32 | Réalisé : 204 cas verts en local/GitHub, rouge contrôlé, rapports et retour au vert observés ; PR de preuve fermée sans fusion |
 | [09 — Atelier projet et livraison](sprint-09-cd-theorique.md) | Restitution et livraison conceptuelle : INT-33 à INT-36 | Un atelier à autoriser, sans déploiement |
 
-Les numéros de sprint sont des repères de classement, pas une durée ou un quota. Deux lots restent prévus après le sprint 07 : CI et atelier théorique ; ce découpage découle de leur contenu, pas d'un objectif de nombre.
+Les numéros de sprint sont des repères de classement, pas une durée ou un quota. Un atelier reste prévu après le sprint 08 : restitution et livraison théorique ; ce découpage découle de leur contenu, pas d'un objectif de nombre.
 
-**Lot en cours : [INT-29 à INT-32 — CI exploitable](sprint-08-ci.md), partiel.** Le `verify` non filtré est réussi et le workflow créé localement ; la [note CI](../../notes/sprint-08/INT-29-verifier-et-preparer-la-ci.md) précise les preuves distantes manquantes. Push, PR et runs GitHub vert/rouge exigent un accord distinct. INT-33 à INT-36 restent à autoriser ; la CD reste théorique.
+**Prochain lot : [INT-33 à INT-36 — Atelier projet et livraison](sprint-09-cd-theorique.md), à autoriser.** La [CI INT-29 à INT-32](../../notes/sprint-08/INT-29-verifier-et-preparer-la-ci.md) a ses preuves réelles verte/rouge/retour vert et ses rapports ; aucun déploiement n'a été ajouté. L'atelier n'est pas engagé et la CD reste théorique.
 
 ## Lire l'historique
 

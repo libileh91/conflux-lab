@@ -52,4 +52,4 @@ Aucune plateforme de métriques ni extension Actuator imposée sans besoin démo
 | INT-27 | Séparer les métriques |
 | INT-28 | Comparer et documenter |
 
-**Livrable réalisé :** la note commune ci-dessus porte les quatre IDs, les relevés et les preuves réutilisées situées. [INT-29 à INT-32](sprint-08-ci.md) ont ensuite été engagés localement : `verify` complet réussi et workflow créé, statut partiel sans run GitHub observé. Les opérations distantes restent à autoriser ; les preuves ci-dessus restent celles d'INT-25 à INT-28.
+**Livrable réalisé :** la note commune ci-dessus porte les quatre IDs, les relevés et les preuves réutilisées situées. [INT-29 à INT-32](sprint-08-ci.md) ont ensuite été réalisés avec `verify` complet local et GitHub, rouge contrôlé puis retour au vert. Les preuves ci-dessus restent celles d'INT-25 à INT-28 ; les preuves CI et l'accord distant sont dans leur propre note.

@@ -1,6 +1,6 @@
 # Sprint 06 — Faire fonctionner le parcours partenaire
 
-**Statut : INT-21 + INT-22 réalisées le 2026-10-22 ; INT-23 + INT-24 réalisées le 2026-10-23 sur feu vert « commit & go next INT ».** Le parcours partenaire et les pannes ciblées sont vérifiés, sans retry faute de garantie de répétition sûre. Le lot démonstration/mesures a ensuite été réalisé dans le [sprint 07](sprint-07-validation.md) ; la CI reste à autoriser.
+**Statut : INT-21 + INT-22 réalisées le 2026-10-22 ; INT-23 + INT-24 réalisées le 2026-10-23 sur feu vert « commit & go next INT ».** Le parcours partenaire et les pannes ciblées sont vérifiés, sans retry faute de garantie de répétition sûre. Le lot démonstration/mesures a ensuite été réalisé dans le [sprint 07](sprint-07-validation.md) ; la [CI du sprint 08](sprint-08-ci.md) a ensuite été réalisée avec ses propres preuves.
 
 ## INT-21 + INT-22 — Créer une famille de bout en bout
 

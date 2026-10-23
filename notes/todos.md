@@ -17,17 +17,10 @@ Registre de suivi, pas second cours ni journal des stories : le [plan](../docs/s
 | [TD-B006](#td-b006) — Navigation Zed | **Manuel, non constaté** : interaction GUI à vérifier par l'utilisateur, distincte du diagnostic LSP/build. |
 | [TD-B007](#td-b007) — Wrapper Windows | **Optionnel, non testé** : nécessite Windows, JDK 21 et réseau. |
 | [TD-B008](#td-b008) — `gh` ou SSH | **Seulement si nécessaire, non bloquant** : le push Git HTTPS historique a réussi. |
-| [TD-B019](#td-b019) — Preuves GitHub Actions | **À autoriser à distance** : INT-29 à INT-32 partiels, `verify` global local réussi (190 Surefire + 14 Failsafe), workflow créé ; aucun run vert/rouge observé. |
+| Suite du parcours | [INT-33 à INT-36 — Atelier projet et livraison](../docs/stages/sprint-09-cd-theorique.md) reste à autoriser. [TD-B019](#td-b019) archive les preuves CI obtenues, sans autoriser de déploiement. |
 
 ## Actions ouvertes — manuelles, optionnelles ou futures
 
-### TD-B019
-
-| Suivi | **Observer la CI GitHub sans confondre configuration et exécution** |
-|---|---|
-| Source · IDs · fichiers | [INT-29 à INT-32](sprint-08/INT-29-verifier-et-preparer-la-ci.md), `.github/workflows/ci.yml`, [critères du sprint 08](../docs/stages/sprint-08-ci.md). Feu vert local « next tasks go », le 2026-10-23. |
-| Acquis · action restante | `./mvnw -B -ntp verify` global réussi : **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré. Workflow écrit et contrôlé statiquement, collecte en échec prévue. Après accord distant distinct seulement : conserver les liens et rapports d'un run vert, d'une régression contrôlée rouge en PR de test, puis du retour au vert. |
-| Statut · limites | ⏳ **Partiel — accord distant manquant.** Aucun commit/push/PR/run distant dans ce lot. Pas de CI verte ni collecte distante validée ; aucune régression volontaire introduite. INT-33 à INT-36 non engagés ; aucun déploiement. |
 
 ### TD-B006
 
@@ -51,10 +44,18 @@ Registre de suivi, pas second cours ni journal des stories : le [plan](../docs/s
 |---|---|
 | Source · IDs · fichiers | [Build et versionnement][C1-build], complément à INT-37 déjà terminée ; configuration d'authentification utilisateur hors dépôt. |
 | Action · preuve attendue | Si besoin explicite, authentifier le canal choisi par son mécanisme normal, puis réussir une lecture sans exposer token ou clé privée. Ne pas modifier Git HTTPS pour cette seule raison ; accord requis avant changement de configuration/authentification. |
-| Statut · dépendance | ⏳ **Non prioritaire, non bloquant** : erreurs historiques `gh`/SSH, mais push Git HTTPS réussi. Les canaux sont distincts ; leur état actuel n'a pas été revérifié et aucun blocage Git actuel n'est déduit. |
+| Statut · dépendance | ⏳ **Non prioritaire, non bloquant** : erreurs historiques `gh`/SSH, mais push Git HTTPS réussi. Lors d'INT-29 à INT-32, `gh` a utilisé avec succès le compte déjà configuré `libileh91` après bascule depuis l'ancien compte actif invalide ; consultation des runs, artefacts et gestion de la PR réussies. SSH reste non revérifié et n'est pas nécessaire à cette CI. |
 
 
 ## Archives résolues — périmètre et preuve historiques
+
+### TD-B019
+
+| Archive | **Observer la CI GitHub sans confondre configuration et exécution** |
+|---|---|
+| Source · IDs · fichiers | [INT-29 à INT-32](sprint-08/INT-29-verifier-et-preparer-la-ci.md), `.github/workflows/ci.yml`. Feux verts local puis distant explicite « feu-vert sur tout la ci », le 2026-10-23. |
+| Résultat · preuves | `verify` global local et GitHub : **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré sur les verts. Runs [vert 39933137330](https://github.com/libileh91/conflux-lab/actions/runs/39933137330), [rouge contrôlé 39933362753](https://github.com/libileh91/conflux-lab/actions/runs/39933362753) avec une assertion en échec, puis [retour vert 39934115383](https://github.com/libileh91/conflux-lab/actions/runs/39934115383). Artefacts téléchargés et XML vérifiés, y compris après échec. |
+| Statut · limites | ✅ **Réalisé le 2026-10-23.** PR #1 fermée sans fusion ; régression volontaire annulée. Course de préparation d'un test async révélée au premier retour, corrigée par synchronisation sans capacité/assertion modifiée ; seule cette correction est reportée sur `main`. Contrôle borné des rapports, rétention 14 jours ; pas d'audit exhaustif ou déploiement. INT-33 à INT-36 non engagés. |
 
 ### TD-B018
 
@@ -64,7 +65,7 @@ Registre de suivi, pas second cours ni journal des stories : le [plan](../docs/s
 | Résultat · preuve | Pool existant explicitement injecté ; graphe lancé uniquement après claim gagnant, finalisation conditionnelle après terminaison. Feign/HC5 sans retry, délais configurés. **14 Surefire + 8 Failsafe réussis**, aucun échec/erreur/ignoré : 3 nouveaux scénarios, 19 cas réutilisés ; pas de suite globale. Le JAR conserve `FAILED` après redémarrage sans nouvel appel partenaire. |
 | Statut · limites | ✅ **Réalisée le 2026-10-22.** Une erreur d'écriture finale est journalisée sans données privées, pas transformée en faux acquittement ; `PROCESSING` ou une issue d'écriture inconnue reste possible. Ni reprise, rollback ni idempotence. |
 | Complément · preuve · limites | **[INT-23 + INT-24](sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md) réalisées le 2026-10-23**, sur feu vert « commit & go next INT ». Diagnostic par UUID/opération, `400`, `503` et timeout de lecture sans répétition ; `clean verify` ciblé : **7 Surefire + 4 Failsafe**, aucun échec/erreur/ignoré, pas de suite globale. Aucune opération n'a de garantie de répétition sûre : pas de retry Resilience4j. Après timeout, l'issue distante reste inconnue ; aucun rollback. |
-| Démonstration · mesures | **[INT-25 à INT-28](sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md) réalisés le 2026-10-23**, feu vert « commit & go next tasks ». Deux demandes avec résultats isolés ; logs UUID/opération/statut. `clean verify` ciblé : **7 Surefire + 6 Failsafe**, aucun échec/erreur/ignoré. Comparaison test-only, trois passages par mode après warmup, deux workers et 150 ms par appel : médianes 944,205 / 634,928 ms. Latence client, dates métier et taux séparés ; échec volontaire, pas mesure de fiabilité ni gain général. Complément CI local ensuite réalisé, partiel : preuves distantes suivies dans [TD-B019](#td-b019). |
+| Démonstration · mesures | **[INT-25 à INT-28](sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md) réalisés le 2026-10-23**, feu vert « commit & go next tasks ». Deux demandes avec résultats isolés ; logs UUID/opération/statut. `clean verify` ciblé : **7 Surefire + 6 Failsafe**, aucun échec/erreur/ignoré. Comparaison test-only, trois passages par mode après warmup, deux workers et 150 ms par appel : médianes 944,205 / 634,928 ms. Latence client, dates métier et taux séparés ; échec volontaire, pas mesure de fiabilité ni gain général. Complément CI ensuite réalisé, avec preuves locales et distantes archivées dans [TD-B019](#td-b019). |
 
 Les accords mentionnés ci-dessous ont été reçus pour les réalisations passées, sans autoriser la suite. Les anciennes appellations mémoire désignent leur version historique : depuis INT-10, `InMemoryFamilyRequests` / son test sont devenus `FamilyRequestService` / `FamilyRequestServiceTest` ; `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`, sans repli mémoire de production.
 

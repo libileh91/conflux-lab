@@ -1,8 +1,8 @@
 # Sprint 08 — Obtenir une CI exploitable
 
-**Statut : partiel — feu vert local « next tasks go » reçu le 2026-10-23 pour INT-29 à INT-32.** `verify` complet réussi et workflow créé ; preuves GitHub verte/rouge et retour au vert non exécutées, en attente d'accord distant distinct.
-Prérequis locaux vérifiés : sprint 07 réalisé, JDK 21, Maven Wrapper et Docker disponibles ; branche `main` suivie sur `origin/main`. Disponibilité effective du runner et droits GitHub non vérifiés dans ce lot.
-Un seul feu vert couvre l'incrément ; un **accord distinct reste obligatoire avant tout push, PR ou autre opération distante**.
+**Statut : INT-29 à INT-32 réalisés le 2026-10-23**, feu vert local « next tasks go », puis accord distant explicite « feu-vert sur tout la ci ». `verify` local, runs GitHub vert/rouge/retour au vert et artefacts réellement vérifiés.
+Prérequis vérifiés : JDK 21, Maven Wrapper, Docker local et sur runner ; `main` confirmée comme branche par défaut sur GitHub. PR de preuve #1 fermée sans fusion ; aucune régression volontaire sur `main`.
+L'accord couvre cet incrément et ses opérations CI, pas INT-33 à INT-36 ni un déploiement.
 
 ## Objectif / story
 
@@ -21,14 +21,14 @@ En tant que développeur, je veux une CI qui vérifie réellement le projet et r
 ## Critères observables et preuves minimum
 
 - [x] Le `verify` local non filtré réussit ; commande, environnement et XML inspectés : **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré.
-- [x] Le workflow est écrit pour `main`, avec `push`/PR ciblant `main`, Temurin 21, cache Maven, `contents: read`, runner `ubuntu-24.04` et contrôle Docker. Syntaxe/structure vérifiées localement ; exécution runner non observée.
-- [ ] Un lien ou identifiant de run GitHub Actions réellement vert est conservé ; ses rapports Surefire/Failsafe confirment que les deux niveaux de tests ont tourné.
-- [ ] Un lien ou identifiant de run réellement rouge identifie le test volontairement cassé ; les rapports disponibles restent consultables malgré l'échec.
-- [ ] Les preuves indiquent le retour à une version sans régression volontaire ; logs et pièces jointes ne contiennent ni secret réel ni donnée privée.
+- [x] Le workflow est écrit pour `main`, avec `push`/PR ciblant `main`, Temurin 21, cache Maven, `contents: read`, runner `ubuntu-24.04` et contrôle Docker. Syntaxe/structure vérifiées localement et exécution effective sur le runner GitHub confirmée.
+- [x] [Run vert sur main 39933137330](https://github.com/libileh91/conflux-lab/actions/runs/39933137330) : artefact téléchargé, **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré.
+- [x] [Run rouge contrôlé 39933362753](https://github.com/libileh91/conflux-lab/actions/runs/39933362753) : seule assertion `FamilyRequestPersistenceIT` attend 201 au lieu de 202 ; upload réussi, XML téléchargés malgré l'échec.
+- [x] [Retour vert 39934115383](https://github.com/libileh91/conflux-lab/actions/runs/39934115383), **204 cas réussis** : assertion restaurée et course d'un test async corrigée sans contournement. Rapports fictifs contrôlés selon le périmètre borné décrit dans la note ; PR fermée sans fusion.
 
-**Preuve locale du 2026-10-23 :** `./mvnw -B -ntp verify` depuis la racine, sans filtre, exclusion ni saut : `BUILD SUCCESS`, **204 cas**, environ 1 min 11 s. Linux amd64, Temurin 21.0.12.1, Maven 3.9.16, Docker 29.8.0 ; Failsafe déjà raccordé, aucun POM ou test modifié. Workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml), collecte multi-module `if: always()`, rétention 14 jours. L'upload en échec et la confidentialité des futurs artefacts ne sont pas validés par un run local.
+**Preuve locale du 2026-10-23 :** `./mvnw -B -ntp verify` depuis la racine, sans filtre, exclusion ni saut : `BUILD SUCCESS`, **204 cas**, environ 1 min 11 s. Linux amd64, Temurin 21.0.12.1, Maven 3.9.16, Docker 29.8.0 ; Failsafe déjà raccordé, aucun POM modifié. Une course de préparation dans `FamilyRequestEventsIT`, révélée par le premier run restauré, a ensuite été corrigée par synchronisation des workers, sans changer assertions ou capacité du pool. Workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml), collecte multi-module `if: always()`, rétention 14 jours. L'upload en échec est désormais vérifié à distance ; le contrôle borné des rapports téléchargés ne constitue pas un audit exhaustif des futurs artefacts.
 
-**Note commune : [INT-29 à INT-32 — Vérifier le projet et préparer la CI](../../notes/sprint-08/INT-29-verifier-et-preparer-la-ci.md).** Résultats, fragments du workflow, rapports et protocole distant restant. Aucun commit, push, PR ou run distant réalisé dans ce lot.
+**Note commune : [INT-29 à INT-32 — Vérifier le projet et observer la CI](../../notes/sprint-08/INT-29-verifier-et-preparer-la-ci.md).** Résultats, versions d'actions Node 24, runs, artefacts, échec indépendant rencontré et correction. Commits CI publiés ; [PR #1](https://github.com/libileh91/conflux-lab/pull/1) fermée sans fusion. Seul le correctif de synchronisation est reporté sur `main`.
 
 ## Limites nécessaires
 
@@ -46,4 +46,4 @@ La procédure minimale pour un clone neuf tient aux prérequis, à la commande e
 | INT-31 | Rendre les échecs lisibles |
 | INT-32 | Observer les preuves |
 
-**Clôture en attente :** compléter la note commune avec les identifiants/liens de runs réellement vert et rouge, leurs rapports et le retrait de la régression contrôlée. Le YAML et le succès local ne terminent pas INT-29 à INT-32 ; INT-33 à INT-36 ne sont pas engagés.
+**Résultat technique prouvé :** les runs et XML liés ci-dessus valident le vert, la détection d'une assertion cassée, les rapports malgré l'échec et le retour au vert. Pas de déploiement ni de compréhension orale déclarée acquise. INT-33 à INT-36 ne sont pas engagés.

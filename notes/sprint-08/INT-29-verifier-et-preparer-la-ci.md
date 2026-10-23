@@ -1,6 +1,6 @@
-# INT-29 à INT-32 — Vérifier le projet et préparer la CI
+# INT-29 à INT-32 — Vérifier le projet et observer la CI
 
-**[Simulation ConfluxLab] — Partiel au 2026-10-23, sur feu vert local « next tasks go », puis accord explicite « feu-vert sur tout la ci ».** La vérification locale complète est réussie et le workflow est créé. La publication et la PR de régression contrôlée sont désormais autorisées ; **aucun run GitHub vert ou rouge n'est encore observé à ce stade**. Les preuves restent à compléter avant clôture.
+**[Simulation ConfluxLab] — Réalisé le 2026-10-23**, sur feu vert local « next tasks go », puis accord explicite « feu-vert sur tout la ci » pour commit, push et PR de preuve. Vérification locale complète, **run GitHub vert, régression contrôlée rouge avec rapports disponibles, puis retour au vert réellement observés**. Aucun déploiement ; la compréhension orale n'est pas évaluée par ces résultats.
 
 ## 1. Ce qui fonctionne en local
 
@@ -22,7 +22,7 @@ Environnement observé : Linux amd64, Temurin **21.0.12.1**, Maven Wrapper **3.9
 | `application` | 75 | 14 |
 | **Total** | **190** | **14** |
 
-Surefire inclut les tests unitaires mais aussi certains tests Spring/MongoDB ; son nom ne garantit pas qu'un test soit unitaire. Les six classes Failsafe couvrent persistance/redémarrage du JAR, événements, transitions MongoDB, parcours partenaire et démonstration. WireMock et Testcontainers restent isolés ; aucune réécriture des tests ou modification des POM n'a été nécessaire.
+Surefire inclut les tests unitaires mais aussi certains tests Spring/MongoDB ; son nom ne garantit pas qu'un test soit unitaire. Les six classes Failsafe couvrent persistance/redémarrage du JAR, événements, transitions MongoDB, parcours partenaire et démonstration. WireMock et Testcontainers restent isolés. Aucun POM modifié ; une course de préparation d'un test async a ensuite été corrigée après sa détection sur GitHub, sans modifier le comportement applicatif (voir section 5).
 
 Les sorties sont sous `contracts/target/surefire-reports/`, `capability-api/target/surefire-reports/`, `experience-api/target/surefire-reports/`, puis `application/target/surefire-reports/` et `application/target/failsafe-reports/`. Elles sont générées et ignorées par Git. Les chiffres des anciennes notes restent historiques ; cette exécution globale ne les remplace pas rétroactivement.
 
@@ -38,48 +38,75 @@ on:
     branches: [main]
 ```
 
-Les événements couvrent les push sur `main` et les PR **ciblant** `main`. Ce nom est confirmé par la branche locale et son suivi `origin/main`, utilisé lors du push précédent ; la configuration par défaut du dépôt GitHub n'a pas été interrogée à distance dans ce lot.
+Les événements couvrent les push sur `main` et les PR **ciblant** `main`. La branche par défaut **`main` a été confirmée sur GitHub** avec `gh repo view libileh91/conflux-lab`, en plus du suivi local `origin/main`.
 
-Le job utilise `ubuntu-24.04`, Temurin 21 et un cache Maven indexé sur les POM. `docker info` vérifie le daemon avant le build : le runner GitHub hébergé fournit normalement Docker, mais aucun résultat de runner n'est revendiqué ici. Le job est borné à 15 minutes et exécute la même commande `verify` depuis la racine.
+Le job utilise `ubuntu-24.04`, Temurin 21 et un cache Maven indexé sur les POM. `docker info` vérifie le daemon avant le build ; cette étape et les tests MongoDB Testcontainers ont effectivement réussi sur le runner GitHub. Le job est borné à 15 minutes et exécute la même commande `verify` depuis la racine.
 
 ```yaml
 permissions:
   contents: read
 ```
 
-Le token du workflow n'a pas de permission d'écriture sur le dépôt. Le checkout ne conserve pas ses credentials. Les actions officielles `checkout@v4`, `setup-java@v4` et `upload-artifact@v4` sont référencées ; aucune étape de déploiement, publication d'image ou injection de secret applicatif n'est ajoutée.
+Le token du workflow n'a pas de permission d'écriture sur le dépôt. Le checkout ne conserve pas ses credentials. Les actions officielles sont fixées aux versions stables **`checkout@v7.0.1`, `setup-java@v6.1.0`, `upload-artifact@v7.0.2`**. Leurs releases et métadonnées ont été vérifiées sur GitHub : runtime Node 24 et entrées compatibles. Le premier run vert avec `v4` signalait une dépréciation ; le commit `5668bbb` a actualisé les actions, puis son propre run a réussi sans ces avertissements. Aucune étape de déploiement, publication d'image ou injection de secret applicatif.
 
 ## 3. Conserver un diagnostic même si les tests échouent
 
 ```yaml
 - name: Upload test reports
   if: always()
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7.0.2
 ```
 
 Cette étape collecte les répertoires Surefire et Failsafe de **tous les modules** dans l'artefact `test-reports`, conservé 14 jours. Si Maven échoue, son code retour n'est pas masqué : aucun `continue-on-error`, filtre ou contournement ne fabrique du vert. L'upload tente de conserver les rapports déjà disponibles.
 
-Limites : un échec de compilation peut ne produire aucun rapport ; un échec Surefire peut empêcher Failsafe de démarrer. L'absence de fichiers donne un avertissement. `always()` ne garantit pas un upload après perte du runner, expiration du job ou annulation. La présence effective des artefacts après un test rouge reste à observer sur GitHub.
+Limites : un échec de compilation peut ne produire aucun rapport ; un échec Surefire peut empêcher Failsafe de démarrer. L'absence de fichiers donne un avertissement. `always()` ne garantit pas un upload après perte du runner, expiration du job ou annulation. La disponibilité après l'échec contrôlé est désormais vérifiée : étape d'upload réussie et artefact téléchargé malgré le code retour Maven non nul.
 
-Les rapports peuvent inclure sorties de tests, fixtures et propriétés système. Le workflow n'injecte aucun secret explicite et les données de test sont fictives. Un contrôle local borné de **48 fichiers de rapports** n'a trouvé aucun motif de clé privée, token GitHub ou URI MongoDB authentifiée ; ce n'est **pas un audit exhaustif** ni une garantie pour de futures données. Ne jamais ajouter de données réelles ou secrets dans les fixtures/propriétés collectées.
+Les rapports peuvent inclure sorties de tests, fixtures et propriétés système. Le workflow n'injecte aucun secret explicite et les données de test sont fictives. Le contrôle local initial de 48 fichiers, puis celui de **143 fichiers téléchargés des trois artefacts distants vert/rouge/retour au vert**, n'ont trouvé aucun motif de clé privée, token GitHub ou URI MongoDB authentifiée. Les sorties examinées utilisent des données fictives ; ces contrôles ne sont **pas un audit exhaustif** ni une garantie pour de futures données. Ne jamais ajouter de données réelles ou secrets dans les fixtures/propriétés collectées.
 
-## 4. Validation réalisée et preuves manquantes
+## 4. Runs et rapports effectivement observés
 
-| Élément | État prouvé |
-|---|---|
-| `verify` local non filtré | **Réussi : 190 Surefire + 14 Failsafe**, sans échec/erreur/ignoré |
-| Workflow et chemins de collecte | Fichier créé ; syntaxe YAML et structure ciblée vérifiées avec PyYAML ; les globs correspondent à quatre répertoires Surefire et un Failsafe locaux |
-| Sémantique du workflow | Revue statique réalisée ; pas d'exécution du moteur GitHub ni d'`actionlint` disponible localement |
-| Run GitHub vert et rapports | **Non exécuté / non observé** |
-| Run GitHub rouge sur régression contrôlée | **Non exécuté / non observé** |
-| Retour au vert après retrait de cette régression | **Non exécuté / non observé** ; aucune régression volontaire n'a été introduite |
+[PR de preuve #1](https://github.com/libileh91/conflux-lab/pull/1), branche `ci/proof-int-32`, sans fusion de la régression dans `main`. Tous les runs utilisent le `verify` complet, sans filtre ni saut.
 
-L'accord distant explicite étant reçu, la preuve restante consiste à :
+| Preuve du 2026-10-23 | Commit de tête | Résultat des XML téléchargés |
+|---|---|---|
+| [Vert sur main, actions Node 24 — 39933137330](https://github.com/libileh91/conflux-lab/actions/runs/39933137330) | `5668bbb` | **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré |
+| [Rouge contrôlé sur PR — 39933362753](https://github.com/libileh91/conflux-lab/actions/runs/39933362753) | `4ace6ff` | 190 Surefire réussis ; 14 Failsafe dont **1 assertion en échec**, 0 erreur/ignoré |
+| [Premier retour après restauration — 39933581860](https://github.com/libileh91/conflux-lab/actions/runs/39933581860) | `7113c95` | Assertion volontaire restaurée ; 190 Surefire réussis, 14 Failsafe dont **1 erreur async indépendante**, détaillée ci-dessous |
+| [Retour au vert confirmé sur PR — 39934115383](https://github.com/libileh91/conflux-lab/actions/runs/39934115383) | `6a77745` | **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré |
 
-1. Publier la version saine et conserver l'identifiant/lien du run vert ainsi que ses rapports Surefire/Failsafe.
-2. Créer une branche/PR de test vers `main`, y casser volontairement une assertion existante et observer le test rouge avec ses rapports disponibles.
-3. Retirer la régression sur cette branche, observer le retour au vert et conserver les liens, sans fusionner une version volontairement cassée dans `main`.
+Le premier bootstrap [`39932689507`](https://github.com/libileh91/conflux-lab/actions/runs/39932689507), commit `b62b250`, était aussi vert avec 204 cas, avant actualisation des actions. Ces passages ne s'additionnent pas en couverture.
 
-Ces étapes sont un **protocole autorisé restant à exécuter**, pas des preuves déjà obtenues. Les runs consommeront des ressources GitHub Actions selon l'offre du dépôt et téléchargeront actions, dépendances et images de test. Docker sert aux tests, pas à un déploiement.
+Les trois artefacts principaux portent le nom `test-reports` : identifiants **12491962758** (vert Node 24), **12492318224** (rouge contrôlé), **12492678545** (retour vert). Ils ont été téléchargés et leurs XML inspectés : 16 suites Surefire et 6 Failsafe. L'upload réussit aussi dans le run rouge. Accès depuis chaque run, rubrique **Artifacts**, pendant la rétention de 14 jours ; les liens et le bilan restent dans cette note après expiration.
 
-Le [sprint 08](../../docs/stages/sprint-08-ci.md), [l'index](../README.md) et le [registre](../todos.md) signalent ce statut partiel. **INT-33 à INT-36 ne sont pas engagés** et la CD reste théorique. Publication et observation des runs autorisées ; les identifiants et résultats seront conservés après exécution effective.
+Pour inspecter les preuves, commandes réellement utilisées depuis la racine (le répertoire de téléchargement est local, ignoré par Git) :
+
+```sh
+gh run view 39933362753 --repo libileh91/conflux-lab
+gh run download 39933362753 --repo libileh91/conflux-lab --name test-reports --dir application/target/ci-evidence/red
+```
+
+L'assertion volontaire dans `FamilyRequestPersistenceIT.retainsTheSameRequestAfterRestartingThePackagedApplication` attendait **201 au lieu du vrai 202**. Le rapport rouge contient `expected: <201> but was: <202>` : il s'agit d'une assertion réellement détectée, pas d'un échec YAML ou Docker. Le commit `7113c95` annule exactement cette modification. Aucun code applicatif changé pour cette preuve.
+
+## 5. Course de test révélée par la CI
+
+Le premier run restauré a exposé un défaut distinct : `FamilyRequestEventsIT.acceptsWhileTheListenerIsBlockedAndOnlyOneDuplicateEventCanClaim` pouvait rejeter le deuxième événement. Avec deux core threads déjà créés, même inactifs, les soumissions passent par la file de capacité 1 ; publier deux tâches sans attendre la prise de la première peut remplir cette file avant le réveil des workers.
+
+Correction uniquement dans [le test d'événements](../../application/src/test/java/dev/confluxlab/capability/internal/event/FamilyRequestEventsIT.java), fragment :
+
+```java
+await("First listener to reach the claim").atMost(Duration.ofSeconds(5))
+        .until(() -> ready.getCount() == 1);
+events.publishEvent(new FamilyRequestSubmitted(requestId));
+```
+
+Le premier worker atteint le claim bloqué avant la seconde soumission. Les deux claims restent ensuite en concurrence derrière le même latch ; la preuve du gagnant unique est conservée. Même synchronisation entre les deux premières soumissions du scénario de saturation : deux workers occupés, troisième tâche en file, quatrième refusée. **Aucune capacité ou assertion modifiée, aucun retry de test, aucun sleep arbitraire.**
+
+Validation locale ciblée réellement exécutée avant publication du correctif :
+
+```sh
+./mvnw -B -ntp -pl application -am -Dtest=FamilyRequestListenerTest -Dsurefire.failIfNoSpecifiedTests=false -Dit.test=FamilyRequestEventsIT verify
+```
+
+**1 Surefire + 3 Failsafe réussis**, aucun échec/erreur/ignoré, puis `verify` GitHub complet vert à 204 cas. Le correctif `6a77745` de la branche de preuve est reporté seul sur `main` par `e175ca3`, sans y apporter les commits de régression/restauration. La PR de preuve est fermée sans fusion ; sa branche et ses liens conservent la trace des essais.
+
+Le [sprint 08](../../docs/stages/sprint-08-ci.md), [l'index](../README.md) et [TD-B019](../todos.md#td-b019) conservent ces preuves. Les runs ont consommé des ressources GitHub Actions ; aucune image applicative publiée, aucun secret créé et aucun déploiement. **INT-33 à INT-36 ne sont pas engagés** ; la CD reste théorique.

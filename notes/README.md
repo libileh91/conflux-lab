@@ -19,7 +19,7 @@ Ces cours expliquent le code du laboratoire, **par sujets cohérents et par frag
 | 06 — Parcours partenaire | [Créer une famille de bout en bout](sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md) | INT-21 + INT-22 : Feign/WireMock, claim gagnant, états finaux et absence de retry |
 | 06 — Pannes partenaire | [Terminer proprement malgré une panne](sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md) | INT-23 + INT-24 : refus, timeout réel, diagnostic par opération et décision de ne pas rejouer |
 | 07 — Démonstration et mesures | [Démontrer et mesurer le parcours](sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md) | INT-25 à INT-28 : deux demandes isolées, diagnostic final et comparaison locale séquentiel/concurrent |
-| 08 — CI, partiel | [Vérifier le projet et préparer la CI](sprint-08/INT-29-verifier-et-preparer-la-ci.md) | INT-29 à INT-32 : `verify` global local réussi, workflow créé ; preuves GitHub verte/rouge encore absentes |
+| 08 — CI | [Vérifier le projet et observer la CI](sprint-08/INT-29-verifier-et-preparer-la-ci.md) | INT-29 à INT-32 : 204 cas verts en local/GitHub, rouge contrôlé avec rapports, retour au vert et PR fermée sans fusion |
 
 **Complément au sprint 03 :** [MongoDB standalone ou replica set](sprint-03/INT-10-complement-mongodb-replica-set.md), théorie condensée avec schéma et tableau de quorum. Ce n'est ni une nouvelle tâche ni un cluster implémenté.
 
@@ -50,4 +50,4 @@ Le nombre de tâches et de notes dépend du sujet : ne pas tout fusionner pour r
 
 ## Suite
 
-**INT-29 à INT-32 sont partiels** : vérification locale globale réussie et workflow créé, mais runs GitHub vert/rouge et retour au vert non observés. La [suite du lot](../docs/stages/sprint-08-ci.md) nécessite un accord distant distinct ; INT-33 à INT-36 ne sont pas engagés. Un accord porte sur le périmètre annoncé, pas automatiquement sur les opérations distantes ou le lot suivant.
+**INT-29 à INT-32 sont réalisés**, avec preuves locales et GitHub conservées dans la note. La [suite INT-33 à INT-36](../docs/stages/sprint-09-cd-theorique.md) reste à autoriser et n'est pas engagée : atelier de restitution et livraison théorique, aucun déploiement.

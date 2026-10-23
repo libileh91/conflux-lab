@@ -154,11 +154,11 @@ Le montage de mesures sépare latence HTTP vue du client, durée issue des dates
 
 Sources de versions : [POM parent](../pom.xml), [POM Capability](../capability-api/pom.xml), [POM application](../application/pom.xml), [Maven Wrapper](../.mvn/wrapper/maven-wrapper.properties). Guide : [build et versionnement](sprint-01/INT-02-build-et-versionnement.md).
 
-## 9. Ce qui n'est pas livré
+## 9. CI et limites du périmètre
 
 | Sujet | État à cette version |
 |---|---|
-| **GitHub Actions / CI** | Absent du snapshot `7fae263`. **Complément local du 2026-10-23 :** [workflow créé et `verify` global réussi](sprint-08/INT-29-verifier-et-preparer-la-ci.md), 190 Surefire + 14 Failsafe ; lot partiel, aucun run GitHub vert/rouge observé |
+| **GitHub Actions / CI** | Absent du snapshot applicatif `7fae263`, puis **réalisé le 2026-10-23** : [workflow, runs vert/rouge/retour vert et artefacts observés](sprint-08/INT-29-verifier-et-preparer-la-ci.md), 190 Surefire + 14 Failsafe réussis sur les verts. PR de preuve fermée sans fusion ; actions officielles Node 24 et correction de synchronisation d'un test async |
 | **CD et déploiement** | Théorie uniquement : aucune livraison en staging/production |
 | **Resilience4j** | Non ajouté pour les raisons de répétition sûre expliquées ci-dessus |
 | **Actuator / plateforme de métriques** | Non ajoutés ; logs et relevés locaux suffisent au périmètre réalisé |

@@ -87,4 +87,4 @@ Aucune suite globale, CI, campagne de charge ou nouvelle mesure de performance n
 
 ## Suivi
 
-Le [sprint 06](../../docs/stages/sprint-06-partenaire.md) et le [registre](../todos.md#td-b018) conservent ce résultat et ses limites. La suite **[INT-25 à INT-28 — Démonstration et mesures](../sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md)** a été réalisée le 2026-10-23, avec ses propres relevés et preuves. Les résultats ci-dessus restent ceux du lot pannes ; la CI demeure à autoriser.
+Le [sprint 06](../../docs/stages/sprint-06-partenaire.md) et le [registre](../todos.md#td-b018) conservent ce résultat et ses limites. La suite **[INT-25 à INT-28 — Démonstration et mesures](../sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md)** a été réalisée le 2026-10-23, avec ses propres relevés et preuves. Les résultats ci-dessus restent ceux du lot pannes ; la [CI](../sprint-08/INT-29-verifier-et-preparer-la-ci.md) a ensuite été réalisée avec ses propres preuves verte/rouge/retour au vert.
