@@ -10,7 +10,7 @@ Laboratoire Java/Spring : accepter une création de famille fictive de trois per
 
 Le POST valide la demande, génère un UUID et attend l'insertion `PENDING` dans MongoDB avant de publier un événement local et de retourner son reçu. Le listener `@Async` tente atomiquement `PENDING → PROCESSING`, sur un pool borné. Le GET ne fait que lire `requestId`, `status` et `createdAt`.
 
-**Depuis INT-21 + INT-22, le listener lance le graphe A–F après une prise en charge gagnante.** Les six opérations passent par Feign vers le partenaire fictif, puis une transition conditionnelle tente `SUCCEEDED` ou `FAILED` après la fin des branches. Un échec d'écriture finale est signalé sans faux acquittement ; aucune reprise automatique ou CI n'est livrée. Le prochain lot à autoriser est [INT-23 + INT-24 — Gestion des pannes partenaires](docs/stages/sprint-06-partenaire.md).
+**Depuis INT-21 + INT-22, le listener lance le graphe A–F après une prise en charge gagnante.** Les six opérations passent par Feign vers le partenaire fictif, puis une transition conditionnelle tente `SUCCEEDED` ou `FAILED` après la fin des branches. Un échec d'écriture finale est signalé sans faux acquittement ; aucune reprise automatique ou CI n'est livrée. INT-23/24 ont vérifié les pannes sans retry dangereux ; INT-25 à INT-28 ajoutent une [démonstration locale et des mesures distinctes](notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md). Le prochain lot à autoriser est [INT-29 à INT-32 — CI exploitable](docs/stages/sprint-08-ci.md).
 
 | HTTP | Comportement actuel |
 |---|---|
@@ -29,7 +29,7 @@ Le POST valide la demande, génère un UUID et attend l'insertion `PENDING` dans
 | `capability-api` | API Java publique, invariants, statuts, MongoDB, événements et orchestration internes |
 | `application` | Assemblage et seul démarrage/JAR Spring Boot exécutable |
 
-Experience appelle Capability **en Java dans la même JVM**, sans HTTP interne ni accès à ses classes internes. Les frontières sont contrôlées par ArchUnit sous `application/src/test`, absent du JAR livré. Feign vise uniquement le partenaire fictif ; aucun HTTP interne. Feign et le transport HC5 n'effectuent aucun retry et les redirections sont désactivées. Resilience4j reste à traiter sur feu vert du lot pannes.
+Experience appelle Capability **en Java dans la même JVM**, sans HTTP interne ni accès à ses classes internes. Les frontières sont contrôlées par ArchUnit sous `application/src/test`, absent du JAR livré. Feign vise uniquement le partenaire fictif ; aucun HTTP interne. Feign et le transport HC5 n'effectuent aucun retry et les redirections sont désactivées. INT-23/24 conservent explicitement l'absence de retry : aucune opération partenaire n'a de garantie de répétition sûre, donc Resilience4j n'est pas ajouté pour cet usage.
 
 ## Prérequis
 
@@ -69,7 +69,11 @@ Le cycle est configuré pour inclure Surefire puis Failsafe (`*IT`) après le pa
 | Graphe INT-18/19/20 | **2 → 3 → 6** cas ciblés successifs, non cumulatifs ; étapes avant raccordement |
 | Parcours INT-21 + INT-22 | **14 Surefire + 8 Failsafe réussis**, dont 3 nouveaux scénarios ; succès/échec HTTP, écriture finale non confirmée et redémarrage du JAR. Sélection ciblée, pas suite globale |
 
-La dernière commande complète de sélection et ses preuves sont dans le [cours INT-21 + INT-22](notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md#7-vérifications-de-cette-session). Les [cours](notes/README.md) conservent le contexte, les commandes historiques et les limites utiles. Rapports générés : `application/target/surefire-reports/`, `application/target/failsafe-reports/` et `capability-api/target/surefire-reports/`.
+Les commandes et preuves de chaque lot restent situées dans leurs cours : [INT-21/22](notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md#7-vérifications-de-cette-session), [pannes INT-23/24](notes/sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md), puis [démonstration INT-25 à INT-28](notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md). Les [cours](notes/README.md) conservent le contexte, les commandes historiques et les limites utiles. Rapports générés : `application/target/surefire-reports/`, `application/target/failsafe-reports/` et `capability-api/target/surefire-reports/`.
+
+## Démonstration locale automatisée
+
+La [note INT-25 à INT-28](notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md) fournit la commande réellement exécutée, les prérequis et l'arrêt automatique : deux demandes fictives passent par un vrai port HTTP jusqu'à `SUCCEEDED` et `FAILED`, puis le montage compare séquentiel/concurrent uniquement dans les tests. Dernier passage ciblé : **7 Surefire + 6 Failsafe réussis** ; ni suite globale ni CI. Mesures et CSV sous `application/target/failsafe-reports/`, sans donnée réelle ni partenaire permanent. Le taux de 50 % vient d'un refus volontaire sur deux demandes ; ce n'est pas une mesure de fiabilité.
 
 ## Démarrage local — exemple manuel non exécuté pour cette documentation
 

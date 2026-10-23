@@ -24,13 +24,13 @@ Les IDs `INT-XX` restent uniques et stables. Leur regroupement documentaire ne c
 | [04 — Asynchronisme](sprint-04-async.md) | Prise en charge async : INT-13 + INT-14 + INT-16 ; ressources/erreurs : INT-15 | Deux ensembles réalisés jusqu'à `PROCESSING` ; clôture pédagogique non confirmée |
 | [05 — Orchestration](sprint-05-orchestration.md) | Graphe, échecs et soumission : INT-17 à INT-20 | Réalisé en Java, non raccordé au listener ; clôture pédagogique non confirmée |
 | [06 — Parcours partenaire](sprint-06-partenaire.md) | Parcours complet : INT-21 + INT-22 ; pannes : INT-23 + INT-24 | Deux lots réalisés : parcours puis pannes ciblées ; absence de retry justifiée, 11 cas ciblés réussis pour INT-23/24 |
-| [07 — Démonstration et mesures](sprint-07-validation.md) | Montrer, diagnostiquer et mesurer le parcours : INT-25 à INT-28 | Un lot à autoriser ; réutiliser les preuves existantes au bon niveau |
+| [07 — Démonstration et mesures](sprint-07-validation.md) | Montrer, diagnostiquer et mesurer le parcours : INT-25 à INT-28 | Réalisé : deux demandes isolées, relevés locaux et comparaison test-only ; 13 cas ciblés réussis, oral non évalué |
 | [08 — CI exploitable](sprint-08-ci.md) | Vérification et pipeline réellement observé : INT-29 à INT-32 | Un lot à autoriser ; opérations distantes sur accord distinct |
 | [09 — Atelier projet et livraison](sprint-09-cd-theorique.md) | Restitution et livraison conceptuelle : INT-33 à INT-36 | Un atelier à autoriser, sans déploiement |
 
-Les numéros de sprint sont des repères de classement, pas une durée ou un quota. Trois lots restent prévus après le sprint 06 : démonstration/mesures, CI et atelier théorique ; ce découpage découle de leur contenu, pas d'un objectif de nombre.
+Les numéros de sprint sont des repères de classement, pas une durée ou un quota. Deux lots restent prévus après le sprint 07 : CI et atelier théorique ; ce découpage découle de leur contenu, pas d'un objectif de nombre.
 
-**Prochain résultat : [INT-25 à INT-28 — Démonstration et mesures](sprint-07-validation.md), à autoriser.** Le [lot INT-21 + INT-22](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md) a raccordé le parcours ; [INT-23 + INT-24](../../notes/sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md) vérifient refus, timeout et diagnostic corrélé, sans retry faute de garantie d'idempotence.
+**Prochain résultat : [INT-29 à INT-32 — CI exploitable](sprint-08-ci.md), à autoriser.** Les [mesures INT-25 à INT-28](../../notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md) sont locales et ne prouvent aucune CI verte. Push, PR et exécution distante exigent un accord distinct ; la CD reste théorique.
 
 ## Lire l'historique
 

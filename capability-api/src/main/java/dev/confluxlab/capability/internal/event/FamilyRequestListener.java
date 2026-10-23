@@ -60,6 +60,8 @@ class FamilyRequestListener {
         try {
             if (store.transition(request.requestId(), RequestStatus.PROCESSING, target, Instant.now(clock)).isEmpty()) {
                 LOGGER.error("Family finalization not applied: requestId={}, targetStatus={}", request.requestId(), target);
+            } else {
+                LOGGER.info("Family request finalized: requestId={}, status={}", request.requestId(), target);
             }
         } catch (RuntimeException writeFailure) {
             LOGGER.error("Family finalization unconfirmed: requestId={}, targetStatus={}, exceptionType={}",

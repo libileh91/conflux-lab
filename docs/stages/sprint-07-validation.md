@@ -1,7 +1,7 @@
 # Sprint 07 — Démontrer et mesurer le parcours
 
-**Statut : non commencé — feu vert requis pour l'incrément complet INT-25 à INT-28.**
-Prérequis : sprint 06 clos et parcours raccordé ; Docker disponible si le montage utilise Testcontainers, sinon signaler le blocage.
+**Statut : INT-25 à INT-28 réalisés le 2026-10-23 sur feu vert « commit & go next tasks ».**
+Prérequis utilisés : parcours et pannes ciblées du sprint 06 réalisés, JDK 21 et Docker disponibles. La compréhension orale n'est pas évaluée par ces preuves.
 Un seul feu vert couvre cet incrément ; les anciens IDs sont des repères de traçabilité, pas quatre tâches à autoriser.
 
 ## Objectif / story
@@ -27,11 +27,15 @@ En tant que développeur, je veux démontrer le parcours, diagnostiquer un éche
 
 ## Critères observables et preuves minimum
 
-- [ ] La démonstration montre une acceptation puis une fin de traitement, et un échec après acceptation reste visible dans le suivi.
-- [ ] Quelques lignes de logs permettent de retrouver UUID, opérations et statuts d'un échec ; un contrôle de deux demandes raccordées démontre l'absence de mélange d'états et de résultats. Réutiliser un scénario existant s'il porte déjà cette preuve.
-- [ ] Le relevé distingue les trois mesures, avec effectifs et conditions ; un `202` ne vaut ni traitement terminé ni réussite métier.
-- [ ] Le tableau séquentiel/concurrent indique le protocole reproductible, quelques relevés et leur variation, sans seuil chronométrique fragile comme critère de test.
-- [ ] Les rapports existants cités gardent leur date et leur périmètre ; les nouvelles observations ne sont pas présentées comme une nouvelle campagne de tests.
+- [x] La démonstration montre une acceptation puis une fin de traitement, et un échec après acceptation reste visible dans le suivi.
+- [x] Quelques lignes de logs permettent de retrouver UUID, opérations et statuts d'un échec ; un contrôle de deux demandes raccordées démontre l'absence de mélange d'états et de résultats. Réutiliser un scénario existant s'il porte déjà cette preuve.
+- [x] Le relevé distingue les trois mesures, avec effectifs et conditions ; un `202` ne vaut ni traitement terminé ni réussite métier.
+- [x] Le tableau séquentiel/concurrent indique le protocole reproductible, quelques relevés et leur variation, sans seuil chronométrique fragile comme critère de test.
+- [x] Les rapports existants cités gardent leur date et leur périmètre ; les nouvelles observations ne sont pas présentées comme une nouvelle campagne de tests.
+
+**Preuves du 2026-10-23 :** `clean verify` ciblé réussi, **7 Surefire + 6 Failsafe**, aucun échec/erreur/ignoré ; seulement deux nouveaux scénarios intégrés. Serveur de test sur vrai port HTTP : deux demandes soumises sans attendre la première, UUID/payloads/échanges distincts, `SUCCEEDED` et `FAILED`, journal de finalisation confirmé. Trois passages par mode après warmup, mêmes données, deux workers et délai WireMock 150 ms : médianes **944,205 ms séquentiel / 634,928 ms concurrent**. Aucune assertion chronométrique ni suite globale.
+
+**Cours et protocole : [INT-25 à INT-28 — Démontrer et mesurer le parcours](../../notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md).** Commande de lancement/arrêt automatique, relevés, variation et bornes réelles : latence vue du client, durée issue des dates du document et taux sur deux demandes, dont un échec injecté. Pas d'instrumentation exacte des acquittements serveur ni de preuve d'un chevauchement serveur synchronisé.
 
 ## Limites nécessaires
 
@@ -48,4 +52,4 @@ Aucune plateforme de métriques ni extension Actuator imposée sans besoin démo
 | INT-27 | Séparer les métriques |
 | INT-28 | Comparer et documenter |
 
-**Clôture future :** une seule note synthétique pour INT-25 à INT-28, avec démonstration, liens vers les preuves réutilisées, relevés et limites réelles. Cette réécriture ne commence pas l'incrément et ne crée aucune note de réussite.
+**Livrable réalisé :** la note commune ci-dessus porte les quatre IDs, les relevés et les preuves réutilisées situées. INT-29 à INT-32 restent à autoriser ; aucun workflow, push, PR ni run distant n'est lancé.

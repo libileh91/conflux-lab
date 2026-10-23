@@ -16,6 +16,7 @@ Ces cours expliquent le code du laboratoire, **par sujets cohérents et par frag
 | 05 — Orchestration | [Orchestrer les six opérations](sprint-05/INT-17-orchestrer-les-six-operations.md) | INT-17 à INT-20 : composition Java avant raccordement au listener |
 | 06 — Parcours partenaire | [Créer une famille de bout en bout](sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md) | INT-21 + INT-22 : Feign/WireMock, claim gagnant, états finaux et absence de retry |
 | 06 — Pannes partenaire | [Terminer proprement malgré une panne](sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md) | INT-23 + INT-24 : refus, timeout réel, diagnostic par opération et décision de ne pas rejouer |
+| 07 — Démonstration et mesures | [Démontrer et mesurer le parcours](sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md) | INT-25 à INT-28 : deux demandes isolées, diagnostic final et comparaison locale séquentiel/concurrent |
 
 **Complément au sprint 03 :** [MongoDB standalone ou replica set](sprint-03/INT-10-complement-mongodb-replica-set.md), théorie condensée avec schéma et tableau de quorum. Ce n'est ni une nouvelle tâche ni un cluster implémenté.
 
@@ -46,4 +47,4 @@ Le nombre de tâches et de notes dépend du sujet : ne pas tout fusionner pour r
 
 ## Suite
 
-Les deux lots du sprint 06 sont réalisés. La [suite](../docs/stages/README.md#roadmap) reste à autoriser, sans note de réussite anticipée : **INT-25 à INT-28 — Démonstration et mesures**, puis CI et atelier théorique. Un accord porte sur le lot présenté, pas automatiquement sur tous les travaux du sprint.
+La démonstration et les relevés du sprint 07 sont réalisés. La [suite](../docs/stages/README.md#roadmap) reste à autoriser, sans note de réussite anticipée : **INT-29 à INT-32 — CI exploitable**, puis atelier théorique. Un accord porte sur le lot présenté, pas automatiquement sur tous les travaux du sprint.

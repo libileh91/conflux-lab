@@ -337,6 +337,16 @@ L'asynchronisme peut réduire l'attente HTTP **sans** réduire la durée métier
 
 Les résultats AXA rapportés (environ **30 s → 2,5 s** et **50 % → >90 %** de réussite sous charge) sont un **récit historique à contextualiser**, pas une promesse ni un benchmark ConfluxLab.
 
+### 8.1 Démonstration et mesures locales — INT-25 à INT-28
+
+**[Simulation ConfluxLab — réalisée le 2026-10-23 sur feu vert « commit & go next tasks »]** : le montage de test traverse un vrai port HTTP, MongoDB et Feign/WireMock avec deux demandes distinctes soumises sans attendre la première. Payloads, UUID, états finaux et échanges restent associés : un succès, un refus de contrat. Le listener journalise désormais UUID/statut après une transition finale appliquée, sans donnée personnelle ni MDC ajouté.
+
+Les relevés distinguent la latence **vue du client** (487,422 / 478,392 ms, en incluant la réception du corps `202`), la durée issue des dates stockées (1 071 / 914 ms, bornes avant insertion/avant écriture finale), et le taux sur cet échantillon (1 succès / 2 terminées, 0 en cours). Le refus est volontaire : ces **50 % ne mesurent pas la fiabilité**. Les bornes pratiques ne sont pas une instrumentation exacte des acquittements durables.
+
+Le comparateur uniquement sous `src/test` utilise les mêmes six appels, le même pool de deux workers et 150 ms de délai WireMock par appel. Après un warmup de chaque mode, trois passages alternés donnent les médianes **944,205 ms séquentiel / 634,928 ms concurrent**. Cette durée du graphe exclut HTTP d'entrée/listener/MongoDB ; pas de gain général ou sous charge revendiqué. Aucun second parcours de production, outil de métriques ni nouvelle dépendance.
+
+**Preuves :** `clean verify` ciblé réussi, **7 Surefire + 6 Failsafe**, aucun échec/erreur/ignoré. Deux nouveaux scénarios intégrés ; pas de seuil chronométrique, suite globale ni CI. [Commande, données et limites](../../notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md).
+
 ## 9. Validation fonctionnelle et technique
 
 | Cas | Ce qui doit être observable |
