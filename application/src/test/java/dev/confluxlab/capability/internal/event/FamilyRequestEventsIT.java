@@ -126,6 +126,9 @@ class FamilyRequestEventsIT extends MongoTestSupport {
             MvcResult response = postAcceptedRequest();
             UUID requestId = UUID.fromString(objectMapper.readTree(response.getResponse().getContentAsString())
                     .path("requestId").asText());
+            // Existing idle core threads still enqueue submissions: let the first task leave the one-slot queue.
+            await("First listener to reach the claim").atMost(Duration.ofSeconds(5))
+                    .until(() -> ready.getCount() == 1);
             events.publishEvent(new FamilyRequestSubmitted(requestId));
 
             assertTrue(ready.await(5, TimeUnit.SECONDS), "Both event deliveries must reach the claim before release.");
@@ -166,6 +169,8 @@ class FamilyRequestEventsIT extends MongoTestSupport {
 
         try {
             postAcceptedRequest();
+            await("First worker to be occupied").atMost(Duration.ofSeconds(5))
+                    .until(() -> running.getCount() == 1);
             postAcceptedRequest();
             assertTrue(running.await(5, TimeUnit.SECONDS), "Both workers must be occupied before filling the queue.");
             postAcceptedRequest();
