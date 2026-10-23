@@ -95,6 +95,14 @@ Le BOM Spring Cloud 2025.0.0 accompagne Boot 3.5.7, OpenFeign 4.3.0 et Feign 13.
 
 **Preuves :** `verify` ciblé réussi avec **14 cas Surefire + 8 Failsafe**, aucun échec/erreur/ignoré. Trois nouveaux scénarios et 19 cas réutilisés : parcours nominal à six échanges, contrat `503` unique sans rattachement/fuite puis `FAILED`, journal d'écriture finale non confirmée. Le test existant du JAR conserve désormais `FAILED` au redémarrage sans rappeler le partenaire. Pas de suite globale ni CI verte revendiquée. [Cours et commande exacte](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
 
+### 3.6 Pannes partenaire et répétitions — INT-23 + INT-24
+
+**[Simulation ConfluxLab — réalisée le 2026-10-23 sur feu vert « commit & go next INT »]** : l'adaptateur journalise les échecs par UUID et opération A–F, avec catégorie, statut HTTP disponible et type d'exception, sans message, URL, corps ni trace brute. Les refus 4xx hors 408/429 sont distingués des réponses potentiellement transitoires 408/429/5xx et des timeouts de socket. L'exception initiale est relancée ; le graphe et sa finalisation après les branches lancées restent inchangés.
+
+Les six POST n'ont aucune garantie de répétition sûre : **aucun retry, même après une erreur transitoire**. Feign et HC5 restent sans répétition automatique ; Resilience4j n'est pas ajouté sans opération éligible. Un timeout signifie une issue distante inconnue ; `FAILED` n'affirme ni absence de création externe ni rollback.
+
+**Preuves :** `clean verify` ciblé réussi avec **7 cas Surefire + 4 Failsafe**, aucun échec/erreur/ignoré. Parcours nominal, refus `400`, contrat `503` et timeout de lecture sur A vérifiés ; une seule tentative fautive, diagnostic corrélé, aucun descendant interdit et suivi final. Le timeout de connexion n'est pas simulé et les délais socket ne constituent pas une deadline globale. [Politique, code et commande](../../notes/sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md).
+
 ## 4. Stack technique proposée
 
 | Domaine | Technologies / rôle |

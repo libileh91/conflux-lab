@@ -171,4 +171,4 @@ Le premier passage avait échoué à la compilation des tests sur l'import WireM
 
 Le partenaire reste une simulation à réponses contrôlées. En cas d'échec partiel, certaines créations externes peuvent déjà avoir réussi ; ni l'UUID ni `FAILED` ne donnent une idempotence ou un rollback. L'événement local peut être perdu après un crash.
 
-[TD-B018 — Raccordement et finalisation réalisés](../todos.md#td-b018). La suite **INT-23 + INT-24 — Terminer proprement malgré une panne partenaire** reste à autoriser dans la [fiche du sprint](../../docs/stages/sprint-06-partenaire.md).
+[TD-B018 — Raccordement et finalisation réalisés](../todos.md#td-b018). La suite **[INT-23 + INT-24 — Terminer proprement malgré une panne partenaire](INT-23-terminer-malgre-une-panne-partenaire.md)** a été réalisée le 2026-10-23 : diagnostic par opération, refus et timeout vérifiés, sans retry faute de garantie de répétition sûre. Les preuves ci-dessus restent celles de la livraison initiale et du refactor ; le complément possède sa propre commande et ses résultats.

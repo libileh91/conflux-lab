@@ -19,6 +19,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -48,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -163,11 +166,12 @@ class FamilyPartnerFlowIT extends MongoTestSupport {
         PARTNER.verify(1, partnerRequest("/contracts/contract-1/dependents", SECOND_ATTACHMENT_BODY, receipt.requestId()));
     }
 
-    @Test
-    void exposesFailedAfterOneContract503WithoutAttachmentsOrPrivateErrorInTrackingAndLogs(CapturedOutput output)
-            throws Exception {
+    @ParameterizedTest
+    @CsvSource({"400, REJECTED", "503, TRANSIENT_HTTP_ERROR"})
+    void exposesFailedAfterOneContractErrorWithoutAttachmentsOrPrivateErrorInTrackingAndLogs(
+            int httpStatus, String failureKind, CapturedOutput output) throws Exception {
         PARTNER.stubFor(partnerPost("/contracts", CONTRACT_BODY)
-                .willReturn(aResponse().withStatus(503).withHeader("Content-Type", "application/json")
+                .willReturn(aResponse().withStatus(httpStatus).withHeader("Content-Type", "application/json")
                         .withBody("{\"error\":\"" + PRIVATE_MARKER + "\"}")));
 
         Receipt receipt = postFamily();
@@ -183,6 +187,29 @@ class FamilyPartnerFlowIT extends MongoTestSupport {
         PARTNER.verify(0, anyRequestedFor(urlPathMatching("/contracts/[^/]+/dependents")));
         assertFalse(tracking.toString().contains(PRIVATE_MARKER), "Tracking must not expose the partner error body.");
         assertFalse(output.getAll().contains(PRIVATE_MARKER), "Logs must not expose the partner error body.");
+        assertTrue(output.getAll().contains("requestId=" + receipt.requestId()
+                + ", operation=B, failureKind=" + failureKind + ", httpStatus=" + httpStatus));
+    }
+
+    @Test
+    void aCreationReadTimeoutEndsInFailedWithoutRetryOrDownstreamCalls(CapturedOutput output) throws Exception {
+        PARTNER.stubFor(partnerPost("/principals", PRINCIPAL)
+                .willReturn(aResponse().withStatus(201).withHeader("Content-Type", "application/json")
+                        .withBody("{\"id\":\"principal-1\"}").withFixedDelay(6000)));
+
+        Receipt receipt = postFamily();
+        awaitTracking(receipt, "FAILED");
+        awaitWorkersIdle();
+
+        // WireMock may journal the delayed response after the client has already timed out.
+        await("Delayed creation to be journaled").atMost(Duration.ofSeconds(10))
+                .until(() -> PARTNER.getAllServeEvents().size() == 1);
+        PARTNER.verify(1, partnerRequest("/principals", PRINCIPAL, receipt.requestId()));
+        PARTNER.verify(0, anyRequestedFor(urlEqualTo("/contracts")));
+        PARTNER.verify(0, anyRequestedFor(urlEqualTo("/dependents")));
+        PARTNER.verify(0, anyRequestedFor(urlPathMatching("/contracts/[^/]+/dependents")));
+        assertTrue(output.getAll().contains("requestId=" + receipt.requestId()
+                + ", operation=A, failureKind=TIMEOUT, httpStatus=-1"));
     }
 
     private Receipt postFamily() throws Exception {

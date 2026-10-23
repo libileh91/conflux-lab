@@ -1,6 +1,6 @@
 # Sprint 06 — Faire fonctionner le parcours partenaire
 
-**Statut : INT-21 + INT-22 réalisées sur feu vert « ok go », le 2026-10-22 ; INT-23 + INT-24 restent à autoriser.** Le parcours partenaire est raccordé et vérifié, sans retry. Le lot de gestion détaillée des pannes n'est pas lancé.
+**Statut : INT-21 + INT-22 réalisées le 2026-10-22 ; INT-23 + INT-24 réalisées le 2026-10-23 sur feu vert « commit & go next INT ».** Le parcours partenaire et les pannes ciblées sont vérifiés, sans retry faute de garantie de répétition sûre. Le lot suivant reste à autoriser.
 
 ## INT-21 + INT-22 — Créer une famille de bout en bout
 
@@ -29,7 +29,7 @@
 
 ## INT-23 + INT-24 — Terminer proprement malgré une panne partenaire
 
-**Prérequis :** premier incrément réalisé et feu vert pour ce lot.
+**Prérequis utilisés :** premier incrément réalisé ; feu vert « commit & go next INT » reçu le 2026-10-23.
 
 **Story :** en tant que client de l'API, je veux connaître l'échec d'un traitement et éviter les répétitions dangereuses, afin qu'une panne ne soit ni masquée ni aggravée par des doublons.
 
@@ -39,13 +39,17 @@
 - Ajouter un retry Resilience4j borné seulement pour une erreur transitoire **et** une répétition sûre. Si aucune garantie partenaire ne permet cette répétition, conserver explicitement l'absence de retry ; ne pas inventer une garantie pour placer un outil.
 
 **Terminé quand :**
-- [ ] Un timeout de création termine en échec observable, sans nouvelle tentative aveugle ni affirmation que le partenaire n'a rien créé.
-- [ ] La politique choisie est vérifiée par le nombre de tentatives : refus définitif non rejoué et, si une opération est réellement répétable, répétition transitoire bornée.
-- [ ] Un échec partiel laisse visibles les appels déjà réussis et ne déclenche ni rollback global promis ni fallback de réussite artificielle.
+- [x] Un timeout de création termine en échec observable, sans nouvelle tentative aveugle ni affirmation que le partenaire n'a rien créé.
+- [x] La politique choisie est vérifiée par le nombre de tentatives : `400`, `503` et timeout non rejoués. Aucune des six opérations ne dispose d'une garantie de répétition sûre : aucun retry ni Resilience4j ajouté.
+- [x] Un échec partiel laisse visibles les appels déjà réussis et ne déclenche ni rollback global promis ni fallback de réussite artificielle.
 
 **Preuves au minimum utile :** enrichir les scénarios du premier lot pour couvrir le timeout et la décision de répétition ; réutiliser son échec si celui-ci prouve déjà le refus définitif ou l'échec partiel. Pas de matrice exhaustive A–F × pannes.
 
 **Fichiers concernés :** adaptateur partenaire, configuration de délais/résilience et tests du parcours créés dans le premier lot. Une seule note pour la politique et les modifications réellement utiles.
+
+**Preuves du 2026-10-23 :** `clean verify` ciblé réussi, **7 cas Surefire + 4 Failsafe**, aucun échec/erreur/ignoré. Scénario contrat `503` réutilisé et étendu à `400`, plus timeout réel de lecture sur A ; catégories corrélées par UUID/opération, absence de corps privé, une seule tentative et suivi `FAILED`. Composition/finalisation réutilisées, sans suite globale. Le timeout de connexion n'est pas simulé.
+
+**Cours : [INT-23 + INT-24 — Terminer proprement malgré une panne partenaire](../../notes/sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md).** Le timeout ne prouve pas l'absence de création distante ; la politique ne promet ni reprise ni état final en cas de panne MongoDB.
 
 ## Traçabilité du regroupement
 
