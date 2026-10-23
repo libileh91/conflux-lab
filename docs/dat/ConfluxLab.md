@@ -386,9 +386,9 @@ Le [plan de travail dans `docs/stages/`](../stages/README.md) détaille les obje
 
 La CI est directement utile à la compréhension de la stack : elle démontre que l'application compile, que les tests du parcours et des cas de panne sont reproductibles et qu'une régression est détectée **avant** fusion. Elle introduit GitHub Actions **sans imposer de déploiement**.
 
-### 11.2 Workflow cible (spécification, pas encore créé)
+### 11.2 Workflow créé localement — exécution distante non observée
 
-**Déclencheurs proposés** : `pull_request` et `push` sur la branche principale.
+**[Simulation ConfluxLab — feu vert « next tasks go », le 2026-10-23]** : [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) déclenche le job sur `push` vers `main` et `pull_request` ciblant `main`. Le job utilise `ubuntu-24.04`, Temurin 21, cache Maven et contrôle Docker, puis `./mvnw -B -ntp verify` sans filtre. Permissions `contents: read`, credentials de checkout non conservés, limite 15 minutes. Les rapports Surefire/Failsafe de tous les modules sont collectés avec `if: always()`, rétention 14 jours ; aucun déploiement ni secret applicatif ajouté.
 
 ```mermaid
 flowchart LR
@@ -411,11 +411,13 @@ flowchart LR
 4. Tests d'intégration isolés : MongoDB Testcontainers et API WireMock (timeouts, `5xx`, états finaux).
 5. Rapports de tests exploitables en cas d'échec ; permissions GitHub minimales ; aucune variable de production.
 
-**Point de rigueur :** `mvn verify` ne suffit pas, à lui seul, à garantir l'exécution des classes `*IT` ; les tests d'intégration devront être raccordés au cycle Maven (par ex. plugin Failsafe). Vérifier cela dans la CI réelle.
+**Point de rigueur :** Failsafe est déjà raccordé à `integration-test`/`verify` dans `application`, avec `failIfNoTests=true`. Le passage local non filtré du 2026-10-23 réussit : **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré, XML et résumé Failsafe inspectés. Ce résultat ne prouve ni exécution des tests ni disponibilité des rapports sur GitHub. YAML vérifié en syntaxe/structure et relu statiquement, pas exécuté par le moteur Actions.
 
 **Pipeline P1 — options après premier succès :** format/lint, JaCoCo, analyse des dépendances, archivage des JARs ; **pas** de seuil de couverture arbitraire.
 
 **Definition of Done CI (quand implémentée) :** un nouveau clone peut lancer les tests sans service externe réel ; une PR cassant la logique métier fait échouer le workflow ; succès observé sur un run GitHub Actions ; commandes et preuves enregistrées.
+
+**Statut INT-29 à INT-32 : partiel.** Les runs GitHub vert et rouge sur régression contrôlée, leurs rapports et le retour au vert restent à observer après accord distant distinct. Aucun commit, push ou PR dans ce lot ; aucun nouveau dispositif de déploiement. [Note, environnement, rapports et limites](../../notes/sprint-08/INT-29-verifier-et-preparer-la-ci.md).
 
 ## 12. CD — Uniquement en théorie
 

@@ -17,9 +17,17 @@ Registre de suivi, pas second cours ni journal des stories : le [plan](../docs/s
 | [TD-B006](#td-b006) — Navigation Zed | **Manuel, non constaté** : interaction GUI à vérifier par l'utilisateur, distincte du diagnostic LSP/build. |
 | [TD-B007](#td-b007) — Wrapper Windows | **Optionnel, non testé** : nécessite Windows, JDK 21 et réseau. |
 | [TD-B008](#td-b008) — `gh` ou SSH | **Seulement si nécessaire, non bloquant** : le push Git HTTPS historique a réussi. |
-| Suite du parcours | [INT-29 à INT-32 — CI exploitable](../docs/stages/sprint-08-ci.md) reste à autoriser ; aucune opération distante n'est engagée. [TD-B018](#td-b018) relie le parcours, ses pannes et les relevés locaux réalisés. |
+| [TD-B019](#td-b019) — Preuves GitHub Actions | **À autoriser à distance** : INT-29 à INT-32 partiels, `verify` global local réussi (190 Surefire + 14 Failsafe), workflow créé ; aucun run vert/rouge observé. |
 
 ## Actions ouvertes — manuelles, optionnelles ou futures
+
+### TD-B019
+
+| Suivi | **Observer la CI GitHub sans confondre configuration et exécution** |
+|---|---|
+| Source · IDs · fichiers | [INT-29 à INT-32](sprint-08/INT-29-verifier-et-preparer-la-ci.md), `.github/workflows/ci.yml`, [critères du sprint 08](../docs/stages/sprint-08-ci.md). Feu vert local « next tasks go », le 2026-10-23. |
+| Acquis · action restante | `./mvnw -B -ntp verify` global réussi : **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré. Workflow écrit et contrôlé statiquement, collecte en échec prévue. Après accord distant distinct seulement : conserver les liens et rapports d'un run vert, d'une régression contrôlée rouge en PR de test, puis du retour au vert. |
+| Statut · limites | ⏳ **Partiel — accord distant manquant.** Aucun commit/push/PR/run distant dans ce lot. Pas de CI verte ni collecte distante validée ; aucune régression volontaire introduite. INT-33 à INT-36 non engagés ; aucun déploiement. |
 
 ### TD-B006
 
@@ -56,7 +64,7 @@ Registre de suivi, pas second cours ni journal des stories : le [plan](../docs/s
 | Résultat · preuve | Pool existant explicitement injecté ; graphe lancé uniquement après claim gagnant, finalisation conditionnelle après terminaison. Feign/HC5 sans retry, délais configurés. **14 Surefire + 8 Failsafe réussis**, aucun échec/erreur/ignoré : 3 nouveaux scénarios, 19 cas réutilisés ; pas de suite globale. Le JAR conserve `FAILED` après redémarrage sans nouvel appel partenaire. |
 | Statut · limites | ✅ **Réalisée le 2026-10-22.** Une erreur d'écriture finale est journalisée sans données privées, pas transformée en faux acquittement ; `PROCESSING` ou une issue d'écriture inconnue reste possible. Ni reprise, rollback ni idempotence. |
 | Complément · preuve · limites | **[INT-23 + INT-24](sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md) réalisées le 2026-10-23**, sur feu vert « commit & go next INT ». Diagnostic par UUID/opération, `400`, `503` et timeout de lecture sans répétition ; `clean verify` ciblé : **7 Surefire + 4 Failsafe**, aucun échec/erreur/ignoré, pas de suite globale. Aucune opération n'a de garantie de répétition sûre : pas de retry Resilience4j. Après timeout, l'issue distante reste inconnue ; aucun rollback. |
-| Démonstration · mesures | **[INT-25 à INT-28](sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md) réalisés le 2026-10-23**, feu vert « commit & go next tasks ». Deux demandes avec résultats isolés ; logs UUID/opération/statut. `clean verify` ciblé : **7 Surefire + 6 Failsafe**, aucun échec/erreur/ignoré. Comparaison test-only, trois passages par mode après warmup, deux workers et 150 ms par appel : médianes 944,205 / 634,928 ms. Latence client, dates métier et taux séparés ; échec volontaire, pas mesure de fiabilité ni gain général. CI et opérations distantes restent à autoriser. |
+| Démonstration · mesures | **[INT-25 à INT-28](sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md) réalisés le 2026-10-23**, feu vert « commit & go next tasks ». Deux demandes avec résultats isolés ; logs UUID/opération/statut. `clean verify` ciblé : **7 Surefire + 6 Failsafe**, aucun échec/erreur/ignoré. Comparaison test-only, trois passages par mode après warmup, deux workers et 150 ms par appel : médianes 944,205 / 634,928 ms. Latence client, dates métier et taux séparés ; échec volontaire, pas mesure de fiabilité ni gain général. Complément CI local ensuite réalisé, partiel : preuves distantes suivies dans [TD-B019](#td-b019). |
 
 Les accords mentionnés ci-dessous ont été reçus pour les réalisations passées, sans autoriser la suite. Les anciennes appellations mémoire désignent leur version historique : depuis INT-10, `InMemoryFamilyRequests` / son test sont devenus `FamilyRequestService` / `FamilyRequestServiceTest` ; `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`, sans repli mémoire de production.
 

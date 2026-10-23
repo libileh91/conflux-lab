@@ -10,7 +10,7 @@ Laboratoire Java/Spring : accepter une création de famille fictive de trois per
 
 Le POST valide la demande, génère un UUID et attend l'insertion `PENDING` dans MongoDB avant de publier un événement local et de retourner son reçu. Le listener `@Async` tente atomiquement `PENDING → PROCESSING`, sur un pool borné. Le GET ne fait que lire `requestId`, `status` et `createdAt`.
 
-**Depuis INT-21 + INT-22, le listener lance le graphe A–F après une prise en charge gagnante.** Les six opérations passent par Feign vers le partenaire fictif, puis une transition conditionnelle tente `SUCCEEDED` ou `FAILED` après la fin des branches. Un échec d'écriture finale est signalé sans faux acquittement ; aucune reprise automatique ou CI n'est livrée. INT-23/24 ont vérifié les pannes sans retry dangereux ; INT-25 à INT-28 ajoutent une [démonstration locale et des mesures distinctes](notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md). Le prochain lot à autoriser est [INT-29 à INT-32 — CI exploitable](docs/stages/sprint-08-ci.md).
+**Depuis INT-21 + INT-22, le listener lance le graphe A–F après une prise en charge gagnante.** Les six opérations passent par Feign vers le partenaire fictif, puis une transition conditionnelle tente `SUCCEEDED` ou `FAILED` après la fin des branches. Un échec d'écriture finale est signalé sans faux acquittement ; aucune reprise automatique n'est livrée. INT-23/24 ont vérifié les pannes sans retry dangereux ; INT-25 à INT-28 ajoutent une [démonstration locale et des mesures distinctes](notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md). [INT-29 à INT-32 — CI exploitable](docs/stages/sprint-08-ci.md) sont **partiels** : vérification locale globale réussie et workflow créé ; runs GitHub vert/rouge et retour au vert en attente d'accord distant distinct.
 
 | HTTP | Comportement actuel |
 |---|---|
@@ -52,13 +52,13 @@ Sélection du graphe, sans Docker :
 
 **Dernière exécution historique INT-20, le 2026-10-22 : 6 cas réussis, 0 échec/erreur/ignoré.** Elle réutilise trois cas et en ajoute trois pour rejet et partage/isolation ; ni IT, Spring, MongoDB ni HTTP démarrés. Les avertissements connus d'auto-attachement Mockito/Byte Buddy n'empêchent pas ce succès. Aucun test n'a été relancé pour la consolidation documentaire.
 
-Vérification complète prévue, avec Docker :
+Vérification complète, avec JDK 21 et Docker démarré, depuis la racine :
 
 ```sh
 ./mvnw -B -ntp verify
 ```
 
-Le cycle est configuré pour inclure Surefire puis Failsafe (`*IT`) après le packaging Boot. **Ne pas confondre cette commande non filtrée avec les passages ciblés ci-dessous** ; aucun nouveau résultat global n'est revendiqué.
+**Exécutée le 2026-10-23 : `BUILD SUCCESS`, 190 cas Surefire + 14 Failsafe, aucun échec/erreur/ignoré**, sans filtre, exclusion ni saut. Le cycle inclut Failsafe (`*IT`) après le packaging Boot ; les XML et le résumé Failsafe ont été inspectés. Linux amd64, Temurin 21.0.12.1, Maven 3.9.16, Docker 29.8.0. Les preuves historiques ci-dessous gardent leur date et leur périmètre.
 
 | Preuve historique | Résultat et limite |
 |---|---|
@@ -70,6 +70,12 @@ Le cycle est configuré pour inclure Surefire puis Failsafe (`*IT`) après le pa
 | Parcours INT-21 + INT-22 | **14 Surefire + 8 Failsafe réussis**, dont 3 nouveaux scénarios ; succès/échec HTTP, écriture finale non confirmée et redémarrage du JAR. Sélection ciblée, pas suite globale |
 
 Les commandes et preuves de chaque lot restent situées dans leurs cours : [INT-21/22](notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md#7-vérifications-de-cette-session), [pannes INT-23/24](notes/sprint-06/INT-23-terminer-malgre-une-panne-partenaire.md), puis [démonstration INT-25 à INT-28](notes/sprint-07/INT-25-demontrer-et-mesurer-le-parcours.md). Les [cours](notes/README.md) conservent le contexte, les commandes historiques et les limites utiles. Rapports générés : `application/target/surefire-reports/`, `application/target/failsafe-reports/` et `capability-api/target/surefire-reports/`.
+
+## CI GitHub Actions — préparée, non encore observée
+
+Le [workflow](.github/workflows/ci.yml) configure `push` et PR ciblant `main`, Temurin 21, cache Maven et Docker sur `ubuntu-24.04`, puis la même commande `verify` non filtrée. Permissions `contents: read`, pas de déploiement. Les rapports `**/target/surefire-reports/` et `**/target/failsafe-reports/` sont collectés avec `if: always()` dans l'artefact `test-reports`, rétention 14 jours. Ils seront accessibles dans le détail d'un run, rubrique **Artifacts**, après exécution et upload effectifs.
+
+**Aucun run GitHub vert ou rouge n'est revendiqué.** Push, PR de régression contrôlée et observation des runs nécessitent encore un accord distant distinct ; le succès local ne prouve pas la CI. Voir la [note INT-29 à INT-32](notes/sprint-08/INT-29-verifier-et-preparer-la-ci.md) pour les rapports, limites de collecte et preuves restantes.
 
 ## Démonstration locale automatisée
 

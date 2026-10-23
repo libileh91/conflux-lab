@@ -1,7 +1,7 @@
 # Sprint 08 — Obtenir une CI exploitable
 
-**Statut : non commencé — feu vert requis pour l'incrément complet INT-29 à INT-32.**
-Prérequis : sprint 07 clos, dépôt Git/GitHub accessible et Docker disponible localement et sur le runner.
+**Statut : partiel — feu vert local « next tasks go » reçu le 2026-10-23 pour INT-29 à INT-32.** `verify` complet réussi et workflow créé ; preuves GitHub verte/rouge et retour au vert non exécutées, en attente d'accord distant distinct.
+Prérequis locaux vérifiés : sprint 07 réalisé, JDK 21, Maven Wrapper et Docker disponibles ; branche `main` suivie sur `origin/main`. Disponibilité effective du runner et droits GitHub non vérifiés dans ce lot.
 Un seul feu vert couvre l'incrément ; un **accord distinct reste obligatoire avant tout push, PR ou autre opération distante**.
 
 ## Objectif / story
@@ -20,11 +20,15 @@ En tant que développeur, je veux une CI qui vérifie réellement le projet et r
 
 ## Critères observables et preuves minimum
 
-- [ ] Le `verify` local non filtré réussit ; sa commande, l'environnement et les rapports prouvent l'exécution des tests unitaires et d'intégration, sans tests sautés pour obtenir le vert.
-- [ ] Le workflow utilise la branche principale confirmée, les deux déclencheurs, JDK 21, cache Maven, permissions minimales et un runner avec Docker.
+- [x] Le `verify` local non filtré réussit ; commande, environnement et XML inspectés : **190 Surefire + 14 Failsafe**, aucun échec/erreur/ignoré.
+- [x] Le workflow est écrit pour `main`, avec `push`/PR ciblant `main`, Temurin 21, cache Maven, `contents: read`, runner `ubuntu-24.04` et contrôle Docker. Syntaxe/structure vérifiées localement ; exécution runner non observée.
 - [ ] Un lien ou identifiant de run GitHub Actions réellement vert est conservé ; ses rapports Surefire/Failsafe confirment que les deux niveaux de tests ont tourné.
 - [ ] Un lien ou identifiant de run réellement rouge identifie le test volontairement cassé ; les rapports disponibles restent consultables malgré l'échec.
 - [ ] Les preuves indiquent le retour à une version sans régression volontaire ; logs et pièces jointes ne contiennent ni secret réel ni donnée privée.
+
+**Preuve locale du 2026-10-23 :** `./mvnw -B -ntp verify` depuis la racine, sans filtre, exclusion ni saut : `BUILD SUCCESS`, **204 cas**, environ 1 min 11 s. Linux amd64, Temurin 21.0.12.1, Maven 3.9.16, Docker 29.8.0 ; Failsafe déjà raccordé, aucun POM ou test modifié. Workflow [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml), collecte multi-module `if: always()`, rétention 14 jours. L'upload en échec et la confidentialité des futurs artefacts ne sont pas validés par un run local.
+
+**Note commune : [INT-29 à INT-32 — Vérifier le projet et préparer la CI](../../notes/sprint-08/INT-29-verifier-et-preparer-la-ci.md).** Résultats, fragments du workflow, rapports et protocole distant restant. Aucun commit, push, PR ou run distant réalisé dans ce lot.
 
 ## Limites nécessaires
 
@@ -42,5 +46,4 @@ La procédure minimale pour un clone neuf tient aux prérequis, à la commande e
 | INT-31 | Rendre les échecs lisibles |
 | INT-32 | Observer les preuves |
 
-**Clôture future :** une seule note synthétique pour INT-29 à INT-32, avec résultat local, liens des runs, rapports et blocages réels ; pas quatre notes ni validations indépendantes.
-Cette réécriture ne crée aucun workflow et n'autorise aucun test, build, push, PR ou lancement distant.
+**Clôture en attente :** compléter la note commune avec les identifiants/liens de runs réellement vert et rouge, leurs rapports et le retrait de la régression contrôlée. Le YAML et le succès local ne terminent pas INT-29 à INT-32 ; INT-33 à INT-36 ne sont pas engagés.
