@@ -66,7 +66,7 @@ class FamilyRequestPersistenceIT extends MongoTestSupport {
                                 .header("Content-Type", "application/json")
                                 .POST(HttpRequest.BodyPublishers.ofString(VALID_REQUEST))
                                 .build(), HttpResponse.BodyHandlers.ofString());
-                assertEquals(201, accepted.statusCode(), accepted.body());
+                assertEquals(202, accepted.statusCode(), accepted.body());
                 JsonNode receipt = mapper.readTree(accepted.body());
                 UUID requestId = UUID.fromString(receipt.path("requestId").asText());
                 location = accepted.headers().firstValue("Location").orElseThrow();
