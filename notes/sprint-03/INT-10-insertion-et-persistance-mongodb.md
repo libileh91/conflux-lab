@@ -1,5 +1,7 @@
 # INT-10 + INT-12 — Insertion et persistance MongoDB
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **[Simulation ConfluxLab] — Réalisé techniquement ; clôture pédagogique non confirmée.** Le résultat : enregistrer la demande avant son acceptation et la retrouver après remplacement de la JVM applicative, avec la même base conservée.
 
 Les preuves INT-10 et INT-12 datent des **2026-10-21 et 2026-10-22**. Les extraits partiels viennent des sources actuelles inspectées, parfois réalignées. **Aucun code, test ou build exécuté pour cette rédaction.**
@@ -10,7 +12,7 @@ La [fiche du sprint](../../docs/stages/sprint-03-mongodb.md) donne les critères
 
 Le trajet reste **HTTP → Experience/BFF → appel Java à Capability → MongoDB**. Une seule application Spring Boot assemble les modules ; MongoDB est un processus de stockage extérieur à sa JVM, pas une seconde API métier.
 
-[`FamilyRequestService`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java) copie et valide l'entrée, y compris pour un appel Java direct. La portion actuelle qui suit cette validation est :
+[`FamilyRequestService`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/service/FamilyRequestService.java) copie et valide l'entrée, y compris pour un appel Java direct. La portion actuelle qui suit cette validation est :
 
 ```java
 UUID requestId = UUID.randomUUID();
@@ -29,7 +31,7 @@ Le [`FamilyController`](../../experience-api/src/main/java/dev/confluxlab/experi
 
 ## 2. Mapper l'UUID et créer sans remplacer
 
-Le service passe par l'interface interne `FamilyRequestStore`. Dans [`MongoFamilyRequestStore.save(...)`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/MongoFamilyRequestStore.java), l'opération est :
+Le service passe par l'interface interne `FamilyRequestStore`. Dans [`MongoFamilyRequestStore.save(...)`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/persistence/MongoFamilyRequestStore.java), l'opération est :
 
 ```java
 mongoTemplate.insert(request);
@@ -39,7 +41,7 @@ Malgré le nom `save` de l'interface, on utilise **`insert`**, pas `MongoTemplat
 
 | Élément inspecté | Rôle dans MongoDB |
 |---|---|
-| `@Document("family_requests")` sur [`StoredFamilyRequest`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/StoredFamilyRequest.java) | Choisir la collection, sans exposer le document au BFF |
+| `@Document("family_requests")` sur [`StoredFamilyRequest`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/persistence/StoredFamilyRequest.java) | Choisir la collection, sans exposer le document au BFF |
 | `@Id UUID requestId` | Mapper l'identifiant Java vers `_id`, protégé par l'index unique natif |
 | `uuid-representation: standard` | Écrire et relire l'UUID BSON selon la même convention ; le JSON HTTP utilise une chaîne |
 | `MongoTemplate` | API synchrone Spring Data ; son convertisseur assure le mapping, le driver contacte le serveur |
@@ -48,7 +50,7 @@ Malgré le nom `save` de l'interface, on utilise **`insert`**, pas `MongoTemplat
 
 ## 3. Acquittement et configuration
 
-Dans [`FamilyRequestConfiguration`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java), le bean `MongoTemplate` reçoit :
+Dans [`FamilyRequestConfiguration`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/config/FamilyRequestConfiguration.java), le bean `MongoTemplate` reçoit :
 
 ```java
 template.setWriteConcern(WriteConcern.MAJORITY.withJournal(true).withWTimeout(5, TimeUnit.SECONDS));
@@ -134,7 +136,7 @@ Ces goals raccordent réellement les IT au cycle. Le [`POM racine`](../../pom.xm
 | `failIfNoTests=true` | Refuser une réussite silencieuse si aucun IT n'est découvert |
 | `application.jar` via `systemPropertyVariables` | Fournir à la JVM de test le chemin du JAR à lancer, pas une propriété métier |
 
-Les quatre cas MongoDB existants ont été renommés, pas recopiés : [`MongoFamilyRequestStoreIT`](../../application/src/test/java/dev/confluxlab/capability/internal/MongoFamilyRequestStoreIT.java) et [`MongoFamilyRequestTransitionIT`](../../application/src/test/java/dev/confluxlab/capability/internal/MongoFamilyRequestTransitionIT.java). INT-12 ajoute seulement le scénario de redémarrage.
+Les quatre cas MongoDB existants ont été renommés, pas recopiés : [`MongoFamilyRequestStoreIT`](../../application/src/test/java/dev/confluxlab/capability/internal/persistence/MongoFamilyRequestStoreIT.java) et [`MongoFamilyRequestTransitionIT`](../../application/src/test/java/dev/confluxlab/capability/internal/persistence/MongoFamilyRequestTransitionIT.java). INT-12 ajoute seulement le scénario de redémarrage.
 
 ## 6. Commandes essentielles et preuves historiques
 

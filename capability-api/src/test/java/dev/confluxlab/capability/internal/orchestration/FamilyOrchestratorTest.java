@@ -1,4 +1,4 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.orchestration;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -12,11 +12,13 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import dev.confluxlab.capability.internal.FamilyOperations.ContractId;
-import dev.confluxlab.capability.internal.FamilyOperations.DependentId;
-import dev.confluxlab.capability.internal.FamilyOperations.PrincipalId;
+import dev.confluxlab.capability.internal.config.FamilyRequestConfiguration;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.ContractId;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.DependentId;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.PrincipalId;
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.PersonPayload;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;

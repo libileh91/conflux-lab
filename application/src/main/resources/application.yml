@@ -6,6 +6,12 @@ spring:
       uri: ${MONGODB_URI:mongodb://localhost:27017/conflux_lab?serverSelectionTimeoutMS=3000&connectTimeoutMS=3000&socketTimeoutMS=5000&retryWrites=false}
       uuid-representation: standard
 
+conflux:
+  partner:
+    base-url: ${FAMILY_PARTNER_URL:http://localhost:9090}
+    connect-timeout-ms: 1000
+    read-timeout-ms: 3000
+
 server:
   port: 8080
   error:

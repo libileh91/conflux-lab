@@ -1,5 +1,7 @@
 # Sprint 04 — Prise en charge asynchrone et maîtrise de l'exécution
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **Statut : deux incréments réalisés dans leur périmètre technique.** La prise en charge s'arrête à `PROCESSING` ; le parcours de création d'une famille de bout en bout n'est pas réalisé par ce flux. Restitution orale non évaluée et clôture pédagogique à confirmer.
 
 **[Simulation ConfluxLab]** Le sprint classe deux résultats distincts : il n'impose ni une seule tâche ni une seule note par sprint. Les IDs restent stables ; cette réorganisation ne change ni leurs preuves ni leur chronologie.

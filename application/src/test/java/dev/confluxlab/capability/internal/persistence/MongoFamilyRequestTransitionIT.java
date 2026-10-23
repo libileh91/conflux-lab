@@ -1,4 +1,4 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.persistence;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -17,6 +17,7 @@ import dev.confluxlab.MongoTestSupport;
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.PersonPayload;
 import dev.confluxlab.contracts.RequestStatus;
+
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

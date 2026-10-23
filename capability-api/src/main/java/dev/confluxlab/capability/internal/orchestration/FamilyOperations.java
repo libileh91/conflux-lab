@@ -1,4 +1,4 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.orchestration;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -6,7 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import dev.confluxlab.contracts.PersonPayload;
 
 /** Internal contracts for the six fictional operations, not the public HTTP contract. */
-interface FamilyOperations {
+public interface FamilyOperations {
 
     CompletableFuture<PrincipalId> createPrincipal(UUID requestId, PersonPayload principal);
 

@@ -1,10 +1,10 @@
 # Sprint 06 — Faire fonctionner le parcours partenaire
 
-**Statut : planifié, aucun développement autorisé par cette réorganisation.** Deux incréments complets remplacent les quatre micro-tâches. Un feu vert et une note par incrément ; les IDs existants restent des repères de traçabilité.
+**Statut : INT-21 + INT-22 réalisées sur feu vert « ok go », le 2026-10-22 ; INT-23 + INT-24 restent à autoriser.** Le parcours partenaire est raccordé et vérifié, sans retry. Le lot de gestion détaillée des pannes n'est pas lancé.
 
 ## INT-21 + INT-22 — Créer une famille de bout en bout
 
-**Prérequis :** orchestration INT-17 à INT-20 disponible, accord pour ouvrir ce lot et Docker disponible pour les tests MongoDB. La clôture pédagogique du sprint 05 n'est pas revendiquée par ce plan.
+**Prérequis utilisés :** orchestration INT-17 à INT-20, pool existant et Docker disponible pour MongoDB Testcontainers. Le feu vert porte sur ce lot complet ; il ne vaut pas clôture orale du sprint 05.
 
 **Story :** en tant que client de l'API, je veux que ma demande acceptée aboutisse à une famille créée chez le partenaire fictif, afin de suivre un vrai traitement jusqu'à son résultat.
 
@@ -17,13 +17,15 @@
 **Fichiers concernés :** configuration, listener et contrats internes existants de Capability ; client Feign, DTO et stubs partenaires à créer ; POM et configuration d'assemblage à adapter selon les dépendances retenues.
 
 **Terminé quand :**
-- [ ] Le même parcours HTTP public effectue POST `202`, appelle A–F avec les bons identifiants et expose ensuite `SUCCEEDED` au GET.
-- [ ] Un échec partenaire représentatif ne produit pas de faux succès : les branches déjà lancées sont attendues puis le GET expose `FAILED`, sans trace privée. Une panne de l'écriture finale est signalée, pas déclarée persistée à tort.
-- [ ] Les appels passent par le pool explicite, les délais sont configurés et aucune répétition automatique n'est active.
+- [x] Le même parcours HTTP public effectue POST `202`, appelle A–F via Feign avec les bons identifiants et expose ensuite `SUCCEEDED` au GET.
+- [x] Un contrat `503` termine en `FAILED`, sans rattachement ni fuite du corps d'erreur. Les tests du graphe réutilisés vérifient l'attente des branches ; un cas unitaire vérifie le journal d'une écriture finale non confirmée, sans faux rattrapage.
+- [x] Les appels passent par le pool explicite ; connexion 1000 ms, lecture 3000 ms et redirections désactivées. Retry Feign et retry du transport HC5 désactivés ; une seule tentative de contrat observée en `503`.
 
 **Preuves au minimum utile :** réutiliser les tests de composition ; ajouter le parcours intégré nominal et un échec nécessaire au nouveau raccordement, avec MongoDB Testcontainers et WireMock. Vérifier les échanges et les statuts dans ces scénarios, pas dans une nouvelle suite par couche ou par endpoint.
 
-**Livrable pédagogique :** une note qui suit le flux réel POST → listener → orchestrateur → Feign → état final. Expliquer les principaux extraits du code, pas le montage complet des tests.
+**Preuves du 2026-10-22 :** `verify` ciblé réussi, **14 cas Surefire + 8 cas Failsafe**, aucun échec/erreur/ignoré. Trois nouveaux scénarios (2 HTTP, 1 écriture finale) et 19 cas réutilisés ; pas de suite globale. Le test existant du JAR conserve désormais `FAILED` après redémarrage sans nouvel appel partenaire. Les anciens tests de claim/insertion isolent leur preuve avec une future de graphe incomplète, uniquement dans les tests.
+
+**Cours : [INT-21 + INT-22 — Créer une famille de bout en bout](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).** Code expliqué par fragments, contrat des quatre routes, finalisation et limites. Une panne MongoDB finale peut laisser `PROCESSING` ou une issue inconnue ; elle est journalisée sans reprise automatique.
 
 ## INT-23 + INT-24 — Terminer proprement malgré une panne partenaire
 

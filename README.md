@@ -10,7 +10,7 @@ Laboratoire Java/Spring : accepter une création de famille fictive de trois per
 
 Le POST valide la demande, génère un UUID et attend l'insertion `PENDING` dans MongoDB avant de publier un événement local et de retourner son reçu. Le listener `@Async` tente atomiquement `PENDING → PROCESSING`, sur un pool borné. Le GET ne fait que lire `requestId`, `status` et `createdAt`.
 
-Le graphe A–F existe en Java, avec dépendances, propagation des échecs et executor explicite, **mais il n'est pas raccordé au listener**. Aucun appel partenaire, état final métier de production, mécanisme de reprise ou workflow CI n'est livré. Le prochain lot à autoriser est [INT-21 + INT-22 — Créer une famille de bout en bout](docs/stages/sprint-06-partenaire.md).
+**Depuis INT-21 + INT-22, le listener lance le graphe A–F après une prise en charge gagnante.** Les six opérations passent par Feign vers le partenaire fictif, puis une transition conditionnelle tente `SUCCEEDED` ou `FAILED` après la fin des branches. Un échec d'écriture finale est signalé sans faux acquittement ; aucune reprise automatique ou CI n'est livrée. Le prochain lot à autoriser est [INT-23 + INT-24 — Gestion des pannes partenaires](docs/stages/sprint-06-partenaire.md).
 
 | HTTP | Comportement actuel |
 |---|---|
@@ -29,12 +29,12 @@ Le graphe A–F existe en Java, avec dépendances, propagation des échecs et ex
 | `capability-api` | API Java publique, invariants, statuts, MongoDB, événements et orchestration internes |
 | `application` | Assemblage et seul démarrage/JAR Spring Boot exécutable |
 
-Experience appelle Capability **en Java dans la même JVM**, sans HTTP interne ni accès à ses classes internes. Les frontières sont contrôlées par ArchUnit sous `application/src/test`, absent du JAR livré. Feign/Resilience4j reste réservé au futur partenaire fictif.
+Experience appelle Capability **en Java dans la même JVM**, sans HTTP interne ni accès à ses classes internes. Les frontières sont contrôlées par ArchUnit sous `application/src/test`, absent du JAR livré. Feign vise uniquement le partenaire fictif ; aucun HTTP interne. Feign et le transport HC5 n'effectuent aucun retry et les redirections sont désactivées. Resilience4j reste à traiter sur feu vert du lot pannes.
 
 ## Prérequis
 
 - **JDK 21** ; Maven Wrapper fourni (`./mvnw`, ou `./mvnw.cmd` sous Windows), Maven **3.9.16** épinglé. Le script Windows n'a pas été exécuté dans les preuves Linux.
-- Accès à Maven Central pour les dépendances absentes du cache.
+- Accès à Maven Central pour les dépendances absentes du cache. Le BOM Spring Cloud 2025.0.0 est associé à Boot 3.5.7 ; WireMock standalone 3.13.1 est réservé aux tests.
 - **Docker pour les tests MongoDB et Spring d'assemblage** : Testcontainers 1.21.4 utilise `mongo:8.0.16`, supprimé après les tests. Certains `*Test` Surefire utilisent aussi cette base ; ils ne sont pas tous unitaires.
 - Pour réussir POST/GET localement : MongoDB accessible via `MONGODB_URI`. Le défaut est `mongodb://localhost:27017/conflux_lab?serverSelectionTimeoutMS=3000&connectTimeoutMS=3000&socketTimeoutMS=5000&retryWrites=false`, UUID standard.
 
@@ -66,9 +66,10 @@ Le cycle est configuré pour inclure Surefire puis Failsafe (`*IT`) après le pa
 | REST INT-08 | Dernier `clean verify` non filtré observé : **181 cas**, avant MongoDB/Failsafe ; pas le total actuel validé |
 | MongoDB INT-12 | **1 Surefire sélectionné + 5 Failsafe**, même JAR relancé sur la même base ; pas toute la suite ni redémarrage MongoDB |
 | Async INT-14/15 | Respectivement **5 + 4**, puis **1 + 3** cas Surefire/Failsafe ; preuves de claim, rejet et journal corrélé, sans reprise métier |
-| Graphe INT-18/19/20 | **2 → 3 → 6** cas ciblés successifs, non cumulatifs ; pas un parcours partenaire raccordé |
+| Graphe INT-18/19/20 | **2 → 3 → 6** cas ciblés successifs, non cumulatifs ; étapes avant raccordement |
+| Parcours INT-21 + INT-22 | **14 Surefire + 8 Failsafe réussis**, dont 3 nouveaux scénarios ; succès/échec HTTP, écriture finale non confirmée et redémarrage du JAR. Sélection ciblée, pas suite globale |
 
-Les [cours](notes/README.md) conservent le contexte, les commandes historiques et les limites utiles. Rapports générés : `application/target/surefire-reports/`, `application/target/failsafe-reports/` et `capability-api/target/surefire-reports/`.
+La dernière commande complète de sélection et ses preuves sont dans le [cours INT-21 + INT-22](notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md#7-vérifications-de-cette-session). Les [cours](notes/README.md) conservent le contexte, les commandes historiques et les limites utiles. Rapports générés : `application/target/surefire-reports/`, `application/target/failsafe-reports/` et `capability-api/target/surefire-reports/`.
 
 ## Démarrage local — exemple manuel non exécuté pour cette documentation
 
@@ -82,6 +83,8 @@ java -jar application/target/application-0.1.0-SNAPSHOT.jar --server.port=0 --se
 
 Le conteneur et le volume nommé sont créés localement ; la base n'est exposée que sur loopback. Sans authentification dans cet exemple, ne jamais l'exposer sur Internet. Le volume conserve les données à l'arrêt de l'application. `0.25` règle le cache WiredTiger, pas la mémoire totale du conteneur. Un conteneur déjà créé se relance avec `docker start conflux-lab-mongo`.
 
-`-DskipTests package` construit sans exécuter les tests et ne prouve pas une validation. Tomcat affiche le port libre choisi par `server.port=0`. Utiliser le payload fictif de [l'exemple JSON](contracts/src/test/resources/contracts/create-family.json), puis le lien du reçu pour le GET. Arrêter l'application par `Ctrl+C`, et éventuellement la base par `docker stop conflux-lab-mongo`, sans supprimer le volume pour un essai de redémarrage.
+`-DskipTests package` construit sans exécuter les tests et ne prouve pas une validation. Tomcat affiche le port libre choisi par `server.port=0`. Le parcours nécessite aussi un partenaire conforme au [contrat fictif](notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md#2-le-contrat-http-partenaire). Fournir son URL avec `FAMILY_PARTNER_URL` ou `--conflux.partner.base-url=...` ; le défaut est `http://localhost:9090`. Connexion 1000 ms et lecture 3000 ms, configurables sous `conflux.partner`. Les tests démarrent eux-mêmes WireMock sur un port libre ; aucun simulateur permanent n'est lancé par le JAR. Sans partenaire disponible, le POST peut être accepté puis le GET atteindre `FAILED`.
+
+Utiliser le payload fictif de [l'exemple JSON](contracts/src/test/resources/contracts/create-family.json), puis le lien du reçu pour le GET. Arrêter l'application par `Ctrl+C`, et éventuellement la base par `docker stop conflux-lab-mongo`, sans supprimer le volume pour un essai de redémarrage.
 
 Les notes REST décrivent la mémoire historique, remplacée par MongoDB. L'acquittement `majority` avec journal sur le standalone ne fournit ni réplication ni sauvegarde. La réorganisation documentaire et l'exemple de lancement ne valent pas nouveau feu vert de développement, commit, push ou déploiement. **La CD reste théorique.**

@@ -1,5 +1,7 @@
 # Sprint 02 — Accepter et consulter une demande
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **[Simulation ConfluxLab] — INT-05 à INT-08 regroupées en un résultat technique réalisé.** Les développements et preuves historiques ont été obtenus sur leurs feux verts individuels. Ce regroupement documentaire ne crée ni nouvelle exécution, ni validation pédagogique : la restitution orale de l'apprenant reste non évaluée.
 
 > **Version à retenir :** ce sprint décrit l'acceptation et le suivi **en mémoire au stade 02**, perdus au redémarrage. Depuis INT-10, la production du laboratoire utilise MongoDB ; depuis INT-14/15, elle publie un événement local et tente une prise en charge asynchrone. Ne pas lire les anciennes limites comme l'état actuel du code.

@@ -1,5 +1,7 @@
 # INT-01, INT-03 et INT-04 — Architecture, assemblage et frontières
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **[Simulation ConfluxLab] — Résultat réalisé du [sprint 01](../../docs/stages/sprint-01-socle.md).** Une application Spring Boot assemble des modules aux responsabilités séparées, reliés en Java et protégés par des contrôles de dépendances. Ce découpage décrit le laboratoire, pas le déploiement historique AXA.
 
 Ce cours couvre INT-01/03/04 ; [INT-02 et INT-37 — Build reproductible et versionnement](INT-02-build-et-versionnement.md) explique Maven, le Wrapper et Git. Les notes sont regroupées **par sujet cohérent**, pas obligatoirement par sprint. Révision documentaire du 2026-10-22 : aucun code, test, build, démarrage ou commit exécuté ; les preuves ci-dessous restent historiques.
@@ -75,7 +77,7 @@ RequestAccepted createFamily(CreateFamilyRequest request);
 RequestView getRequest(UUID requestId);
 ```
 
-Elle définit les opérations accessibles aux autres modules, pas leur implémentation. Le contrôleur reçoit cette interface par constructeur ; un bean concret doit la réaliser. L'implémentation reste dans `capability.internal`, sans être connue du BFF.
+Elle définit les opérations accessibles aux autres modules, pas leur implémentation. Le contrôleur reçoit cette interface par constructeur ; un bean concret doit la réaliser. L'implémentation reste dans `capability.internal.service`, sans être connue du BFF.
 
 Dans le POST de [`FamilyController`](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java), fragment :
 
@@ -94,7 +96,7 @@ La première ligne est un **appel Java dans la même JVM**, sans client HTTP int
 
 **INT-03/04, avant INT-06 :** le client HTTP interne et l'ancien démarrage d'Experience ont été supprimés. Le bean provisoire `UnavailableFamilyRequests` signalait une indisponibilité, adaptée en `503`, sans conserver de demande. Le `202` préparé par un **double de test** prouvait la délégation du contrôleur, pas une acceptation réelle. Le bean provisoire puis son exception/mapping ont été retirés dans INT-06/07.
 
-**Sources actuelles :** dans [`FamilyRequestService`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java), après validation et construction de la demande, fragment :
+**Sources actuelles :** dans [`FamilyRequestService`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/service/FamilyRequestService.java), après validation et construction de la demande, fragment :
 
 ```java
 store.save(stored);
@@ -102,7 +104,7 @@ events.publishEvent(new FamilyRequestSubmitted(requestId));
 return new RequestAccepted(requestId, stored.status(), "/api/v1/requests/" + requestId);
 ```
 
-L'insertion précède publication et reçu. [`MongoFamilyRequestStore`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/MongoFamilyRequestStore.java) est le store de production, sans fallback mémoire ; le [listener](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) tente ensuite la transition atomique vers `PROCESSING` sur un pool dédié borné. L'événement local n'est pas durable : `202` ne signifie ni famille créée ni reprise garantie.
+L'insertion précède publication et reçu. [`MongoFamilyRequestStore`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/persistence/MongoFamilyRequestStore.java) est le store de production, sans fallback mémoire ; le [listener](../../capability-api/src/main/java/dev/confluxlab/capability/internal/event/FamilyRequestListener.java) tente ensuite la transition atomique vers `PROCESSING` sur un pool dédié borné. L'événement local n'est pas durable : `202` ne signifie ni famille créée ni reprise garantie.
 
 Le GET actuel projette les métadonnées en `200`, l'absence en `404`. Une erreur inattendue de stockage ou un rejet de soumission relève du `500` générique de l'[advice HTTP](../../experience-api/src/main/java/dev/confluxlab/experience/ApiExceptionHandler.java), pas de l'ancien `503`. La base est nécessaire pour réussir POST/GET ; [configuration et prérequis actuels](INT-02-build-et-versionnement.md#4-commandes-et-prérequis-sans-réexécution).
 

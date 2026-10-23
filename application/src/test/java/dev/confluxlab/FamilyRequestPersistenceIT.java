@@ -16,8 +16,14 @@ import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -49,8 +55,11 @@ class FamilyRequestPersistenceIT extends MongoTestSupport {
         String location;
         JsonNode beforeRestart;
 
+        WireMockServer partner = new WireMockServer(options().bindAddress("127.0.0.1").dynamicPort());
         try (HttpClient client = HttpClient.newBuilder().connectTimeout(HTTP_TIMEOUT).build()) {
-            RunningApplication first = start(jar, reports.resolve("persistence-before-restart.log"));
+            partner.start();
+            partner.stubFor(post(urlEqualTo("/principals")).willReturn(aResponse().withStatus(503)));
+            RunningApplication first = start(jar, reports.resolve("persistence-before-restart.log"), partner.baseUrl());
             try (first) {
                 HttpResponse<String> accepted = client.send(HttpRequest.newBuilder(first.origin().resolve("/api/v1/families"))
                                 .timeout(HTTP_TIMEOUT)
@@ -65,31 +74,34 @@ class FamilyRequestPersistenceIT extends MongoTestSupport {
                 assertEquals(location, receipt.path("statusUrl").asText());
                 assertEquals("PENDING", receipt.path("status").asText());
 
-                beforeRestart = await("Request to reach PROCESSING before restart")
+                beforeRestart = await("Request to reach FAILED before restart")
                         .atMost(Duration.ofSeconds(10))
                         .until(() -> {
                             HttpResponse<String> lookup = get(client, first.origin().resolve(location));
                             assertEquals(200, lookup.statusCode(), lookup.body());
                             return mapper.readTree(lookup.body());
-                        }, view -> "PROCESSING".equals(view.path("status").asText()));
+                        }, view -> "FAILED".equals(view.path("status").asText()));
                 assertEquals(3, beforeRestart.size(), "Tracking must contain only its three public metadata fields.");
                 assertEquals(requestId.toString(), beforeRestart.path("requestId").asText());
-                assertEquals("PROCESSING", beforeRestart.path("status").asText());
+                assertEquals("FAILED", beforeRestart.path("status").asText());
                 Instant.parse(beforeRestart.path("createdAt").asText());
             }
             assertFalse(first.process().isAlive(), "The first JVM must stop before the second one starts.");
 
-            RunningApplication second = start(jar, reports.resolve("persistence-after-restart.log"));
+            RunningApplication second = start(jar, reports.resolve("persistence-after-restart.log"), partner.baseUrl());
             try (second) {
                 assertNotEquals(first.process().pid(), second.process().pid(), "The restart must use a new JVM.");
                 HttpResponse<String> lookup = get(client, second.origin().resolve(location));
                 assertEquals(200, lookup.statusCode(), lookup.body());
                 assertEquals(beforeRestart, mapper.readTree(lookup.body()),
-                        "UUID, PROCESSING and original createdAt must survive the application restart.");
+                        "UUID, FAILED and original createdAt must survive the application restart.");
             }
             assertFalse(second.process().isAlive(), "The second JVM must also be stopped after the proof.");
-            System.out.printf("INT-12 restart proof: firstPid=%d, secondPid=%d, requestId=%s, status=PROCESSING, both JVMs stopped.%n",
+            partner.verify(1, postRequestedFor(urlEqualTo("/principals")));
+            System.out.printf("Restart persistence proof: firstPid=%d, secondPid=%d, requestId=%s, status=FAILED, both JVMs stopped.%n",
                     first.process().pid(), second.process().pid(), beforeRestart.path("requestId").asText());
+        } finally {
+            partner.stop();
         }
     }
 
@@ -98,10 +110,11 @@ class FamilyRequestPersistenceIT extends MongoTestSupport {
                 HttpResponse.BodyHandlers.ofString());
     }
 
-    private static RunningApplication start(Path jar, Path log) throws Exception {
+    private static RunningApplication start(Path jar, Path log, String partnerBaseUrl) throws Exception {
         String java = Path.of(System.getProperty("java.home"), "bin", "java").toString();
         Process process = new ProcessBuilder(java, "-jar", jar.toString(),
-                "--server.address=127.0.0.1", "--server.port=0", "--spring.data.mongodb.uri=" + mongoUri())
+                "--server.address=127.0.0.1", "--server.port=0", "--spring.data.mongodb.uri=" + mongoUri(),
+                "--conflux.partner.base-url=" + partnerBaseUrl)
                 .redirectErrorStream(true)
                 .redirectOutput(log.toFile())
                 .start();

@@ -1,5 +1,7 @@
 # INT-09 + INT-11 — Modèle et transitions atomiques
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **[Simulation ConfluxLab] — Réalisé techniquement ; clôture pédagogique non confirmée.** Le résultat est un cycle de demande cohérent, dont les changements persistés refusent les tentatives concurrentes ou périmées.
 
 Les preuves INT-09 et INT-11 datent respectivement des **2026-10-21 et 2026-10-22**. Les fragments ci-dessous viennent des sources actuelles inspectées, avec présentation parfois réalignée. **Aucun code, test ou build exécuté pour cette rédaction.**
@@ -22,7 +24,7 @@ stateDiagram-v2
 
 `PENDING` signifie « en attente », `PROCESSING` « prise en charge », pas « travail réussi ». `SUCCEEDED` et `FAILED` sont finaux. Une erreur avant acceptation ne correspond pas à une demande passée en `FAILED` : ce graphe décrit le cycle d'une demande enregistrée.
 
-Le record interne [`StoredFamilyRequest`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/StoredFamilyRequest.java) appartient à Capability, pas au contrat HTTP. Le [DAT — données](../../docs/dat/ConfluxLab.md#6-données-mongodb) fixe ses invariants :
+Le record interne [`StoredFamilyRequest`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/persistence/StoredFamilyRequest.java) appartient à Capability, pas au contrat HTTP. Le [DAT — données](../../docs/dat/ConfluxLab.md#6-données-mongodb) fixe ses invariants :
 
 | Champ | Règle pendant le cycle |
 |---|---|
@@ -71,7 +73,7 @@ L'UUID, le payload et la création restent identiques. La date de fin apparaît 
 
 Une lecture `PENDING` suivie d'une sauvegarde est insuffisante : les deux candidats peuvent lire avant qu'aucun n'écrive. Le **compare-and-set (CAS)** signifie ici « modifier seulement si l'état attendu est encore présent ».
 
-L'opération reste interne à Capability, sans nouvelle route HTTP permettant au client de choisir un statut. Dans [`MongoFamilyRequestStore.transition(requestId, expectedStatus, nextStatus, changedAt)`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/MongoFamilyRequestStore.java), on prépare d'abord :
+L'opération reste interne à Capability, sans nouvelle route HTTP permettant au client de choisir un statut. Dans [`MongoFamilyRequestStore.transition(requestId, expectedStatus, nextStatus, changedAt)`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/persistence/MongoFamilyRequestStore.java), on prépare d'abord :
 
 ```java
 StoredFamilyRequest.requireTransition(expectedStatus, nextStatus);
@@ -146,7 +148,7 @@ Après `PROCESSING → FAILED`, deux protections se complètent :
 
 Le même raisonnement protège `SUCCEEDED`. Le statut attendu suffit pour ce graphe **sans retour arrière** ; aucun champ `@Version` ni verrou Java n'est ajouté. Une future reprise qui réintroduirait des cycles demanderait de réévaluer cette hypothèse.
 
-**Branchement historique et actuel :** dans INT-11, seuls les tests appelaient ces transitions. Depuis INT-14, le [`listener`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) relit puis tente le CAS `PENDING → PROCESSING`. Sa lecture préalable ne remplace pas le CAS. Il s'arrête à cette tentative : aucun parcours métier ni état final n'est actuellement raccordé.
+**Branchement historique et actuel :** dans INT-11, seuls les tests appelaient ces transitions. Depuis INT-14, le [`listener`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/event/FamilyRequestListener.java) relit puis tente le CAS `PENDING → PROCESSING`. Sa lecture préalable ne remplace pas le CAS. Il s'arrête à cette tentative : aucun parcours métier ni état final n'est actuellement raccordé.
 
 ## 6. Preuves historiques et limites du résultat
 
@@ -155,7 +157,7 @@ Le même raisonnement protège `SUCCEEDED`. Le statut attendu suffit pour ce gra
 | **INT-09 — 2026-10-21** | **3 cas ciblés réussis** : 2 nouveaux tests du modèle + 1 acceptation existante. Graphe/dates et stockage encore en mémoire ; pas de MongoDB à cette étape |
 | **INT-11 — 2026-10-22** | **4 cas ciblés réussis** : 2 nouveaux tests MongoDB + 2 tests du modèle réutilisés. Un seul gagnant concurrent, refus des statuts/dates périmés, états finaux protégés |
 
-Les deux tests MongoDB sont aujourd'hui dans [`MongoFamilyRequestTransitionIT`](../../application/src/test/java/dev/confluxlab/capability/internal/MongoFamilyRequestTransitionIT.java). Ils vérifient aussi l'absence d'upsert, la conservation des données et la confidentialité du suivi avec un diagnostic fictif non mappé. Ce témoin de test ne définit pas le futur champ métier `error`.
+Les deux tests MongoDB sont aujourd'hui dans [`MongoFamilyRequestTransitionIT`](../../application/src/test/java/dev/confluxlab/capability/internal/persistence/MongoFamilyRequestTransitionIT.java). Ils vérifient aussi l'absence d'upsert, la conservation des données et la confidentialité du suivi avec un diagnostic fictif non mappé. Ce témoin de test ne définit pas le futur champ métier `error`.
 
 Les deux candidats sont libérés ensemble ; la preuve porte sur **un seul résultat gagnant**, pas sur une simultanéité physique exacte ni tous les entrelacements possibles. Ces passages étaient ciblés, pas des suites globales. Leur réutilisation sous Failsafe est expliquée dans le [cours insertion et persistance](INT-10-insertion-et-persistance-mongodb.md#5-redémarrage-du-jar-et-failsafe).
 

@@ -1,5 +1,7 @@
 # INT-17 à INT-20 — Orchestrer les six opérations
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **Résultat réalisé : un graphe Java de six opérations, avec identifiants typés, dépendances locales, attente finale et soumission à un executor explicite.** Cette note réunit INT-17 à INT-20 autour de ce résultat, pas de quatre développements à recommencer.
 
 **[Simulation ConfluxLab]** Les opérations A–F sont fictives ; elles ne décrivent pas les contrats réels GFP/Open ni un paramétrage historique AXA.
@@ -10,10 +12,10 @@
 
 | Source inspectée | Rôle dans le flux |
 |---|---|
-| [FamilyOperations.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyOperations.java) | Entrées, résultats et identifiants des six opérations internes |
-| [FamilyOrchestrator.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyOrchestrator.java) | Composition du graphe et soumission des invocations |
-| [FamilyRequestConfiguration.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java) | Pool borné existant, créé dans INT-15 |
-| [FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) | Prise en charge asynchrone existante, sans appel au graphe |
+| [FamilyOperations.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/orchestration/FamilyOperations.java) | Entrées, résultats et identifiants des six opérations internes |
+| [FamilyOrchestrator.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/orchestration/FamilyOrchestrator.java) | Composition du graphe et soumission des invocations |
+| [FamilyRequestConfiguration.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/config/FamilyRequestConfiguration.java) | Pool borné existant, créé dans INT-15 |
+| [FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/event/FamilyRequestListener.java) | Prise en charge asynchrone existante, sans appel au graphe |
 
 ## 1. Lire le parcours avant les opérateurs Java
 
@@ -223,7 +225,7 @@ Les résultats suivants sont **repris des preuves INT-17 à INT-20 du 2026-10-22
 
 **Ces nombres ne s'additionnent pas.** Les sélections successives réutilisent les mêmes cas ; les rapports courants remplacent les précédents. Les extraits de cette note décrivent uniquement le code courant INT-20, pas plusieurs versions reconstituées.
 
-Les [tests existants](../../capability-api/src/test/java/dev/confluxlab/capability/internal/FamilyOrchestratorTest.java) portent la preuve des dépendances, de la fin des branches et des rejets. Un contrôle à un worker distingue le succès et l'échec de deux UUID, pas deux parcours complets sous charge. Leur montage n'est pas recopié : la saturation réelle du pool reste une preuve historique d'INT-15, non rejouée ici.
+Les [tests existants](../../capability-api/src/test/java/dev/confluxlab/capability/internal/orchestration/FamilyOrchestratorTest.java) portent la preuve des dépendances, de la fin des branches et des rejets. Un contrôle à un worker distingue le succès et l'échec de deux UUID, pas deux parcours complets sous charge. Leur montage n'est pas recopié : la saturation réelle du pool reste une preuve historique d'INT-15, non rejouée ici.
 
 Commandes historiques, depuis la racine `conflux-lab/`, avec JDK 21 et dépendances Maven disponibles ; Docker non requis pour ces sélections :
 

@@ -1,18 +1,25 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.event;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.confluxlab.ConfluxLabApplication;
 import dev.confluxlab.MongoTestSupport;
+import dev.confluxlab.capability.internal.orchestration.FamilyOrchestrator;
+import dev.confluxlab.capability.internal.persistence.MongoFamilyRequestStore;
+import dev.confluxlab.capability.internal.persistence.StoredFamilyRequest;
+import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.RequestStatus;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -27,6 +34,7 @@ import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -41,6 +49,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -82,6 +91,16 @@ class FamilyRequestEventsIT extends MongoTestSupport {
     @Autowired
     private MongoTemplate mongoTemplate;
 
+    @MockitoBean
+    private FamilyOrchestrator orchestrator;
+
+    @BeforeEach
+    void keepOrchestrationIncomplete() {
+        // Test-only: isolate claiming without partner HTTP calls or finalization.
+        when(orchestrator.execute(any(UUID.class), any(CreateFamilyRequest.class)))
+                .thenAnswer(invocation -> new CompletableFuture<>());
+    }
+
     @Test
     void acceptsWhileTheListenerIsBlockedAndOnlyOneDuplicateEventCanClaim() throws Exception {
         CountDownLatch ready = new CountDownLatch(2);
@@ -117,6 +136,8 @@ class FamilyRequestEventsIT extends MongoTestSupport {
             assertTrue(finished.await(10, TimeUnit.SECONDS), "Both claim attempts must finish.");
             assertEquals(2, results.size(), "Both MongoDB attempts must return normally; inspect async logs otherwise.");
             assertEquals(1L, results.stream().filter(Optional::isPresent).count());
+            awaitWorkersIdle();
+            verify(orchestrator).execute(eq(requestId), any(CreateFamilyRequest.class));
             assertEquals(RequestStatus.PROCESSING, store.findById(requestId).orElseThrow().status());
             mockMvc.perform(get("/api/v1/requests/{requestId}", requestId))
                     .andExpect(status().isOk())

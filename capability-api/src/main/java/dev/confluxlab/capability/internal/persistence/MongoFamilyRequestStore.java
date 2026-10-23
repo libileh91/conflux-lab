@@ -1,11 +1,13 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.persistence;
 
-import dev.confluxlab.contracts.RequestStatus;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+
+import dev.confluxlab.contracts.RequestStatus;
+
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -14,7 +16,7 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Repository;
 
 @Repository
-class MongoFamilyRequestStore implements FamilyRequestStore {
+public class MongoFamilyRequestStore implements FamilyRequestStore {
 
     private final MongoTemplate mongoTemplate;
 
@@ -33,7 +35,7 @@ class MongoFamilyRequestStore implements FamilyRequestStore {
         return Optional.ofNullable(mongoTemplate.findById(requestId, StoredFamilyRequest.class));
     }
 
-    Optional<StoredFamilyRequest> transition(
+    public Optional<StoredFamilyRequest> transition(
         UUID requestId,
         RequestStatus expectedStatus,
         RequestStatus nextStatus,

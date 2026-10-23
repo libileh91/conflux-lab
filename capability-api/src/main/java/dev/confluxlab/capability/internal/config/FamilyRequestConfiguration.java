@@ -1,15 +1,22 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.config;
 
 import java.time.Clock;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import com.mongodb.WriteConcern;
+import dev.confluxlab.capability.internal.client.FamilyPartnerClient;
+import dev.confluxlab.capability.internal.event.FamilyRequestSubmitted;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations;
+import dev.confluxlab.capability.internal.orchestration.FamilyOrchestrator;
 
+import com.mongodb.WriteConcern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.MongoDatabaseFactory;
@@ -21,7 +28,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration(proxyBeanMethods = false)
 @EnableAsync
-class FamilyRequestConfiguration implements AsyncConfigurer {
+@EnableFeignClients(clients = FamilyPartnerClient.class)
+public class FamilyRequestConfiguration implements AsyncConfigurer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FamilyRequestConfiguration.class);
 
@@ -38,7 +46,13 @@ class FamilyRequestConfiguration implements AsyncConfigurer {
     }
 
     @Bean
-    ThreadPoolTaskExecutor familyRequestExecutor(
+    FamilyOrchestrator familyOrchestrator(FamilyOperations operations,
+            @Qualifier("familyRequestExecutor") Executor executor) {
+        return new FamilyOrchestrator(operations, executor);
+    }
+
+    @Bean
+    public ThreadPoolTaskExecutor familyRequestExecutor(
             @Value("${conflux.processing.workers:2}") int workers,
             @Value("${conflux.processing.queue-capacity:16}") int queueCapacity,
             @Value("${conflux.processing.shutdown-await-seconds:5}") int shutdownAwaitSeconds) {

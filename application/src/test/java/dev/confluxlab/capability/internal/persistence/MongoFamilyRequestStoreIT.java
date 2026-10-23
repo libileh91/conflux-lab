@@ -1,24 +1,33 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.persistence;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.confluxlab.ConfluxLabApplication;
 import dev.confluxlab.MongoTestSupport;
+import dev.confluxlab.capability.internal.orchestration.FamilyOrchestrator;
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.PersonPayload;
 import dev.confluxlab.contracts.RequestStatus;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -33,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -54,8 +64,21 @@ class MongoFamilyRequestStoreIT extends MongoTestSupport {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
     @MockitoSpyBean
     private MongoFamilyRequestStore store;
+
+    @MockitoBean
+    private FamilyOrchestrator orchestrator;
+
+    @BeforeEach
+    void keepOrchestrationIncomplete() {
+        // Test-only: isolate insertion and claiming without partner HTTP calls or finalization.
+        when(orchestrator.execute(any(UUID.class), any(CreateFamilyRequest.class)))
+                .thenAnswer(invocation -> new CompletableFuture<>());
+    }
 
     @Test
     void acceptsOnlyAfterInsertionAndRejectsDuplicateIdsWithoutOverwritingMongoData() throws Exception {
@@ -81,6 +104,12 @@ class MongoFamilyRequestStoreIT extends MongoTestSupport {
         StoredFamilyRequest collision = StoredFamilyRequest.pending(requestId, PAYLOAD, stored.createdAt());
         verify(store).save(collision);
         assertThrows(DuplicateKeyException.class, () -> store.save(collision));
+        assertEquals(stored, store.findById(requestId).orElseThrow());
+
+        // Existing documents retain the class name written before the package reorganization.
+        mongoTemplate.updateFirst(Query.query(Criteria.where("_id").is(requestId)),
+                new Update().set("_class", "dev.confluxlab.capability.internal.StoredFamilyRequest"),
+                StoredFamilyRequest.class);
         assertEquals(stored, store.findById(requestId).orElseThrow());
     }
 

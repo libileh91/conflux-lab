@@ -1,9 +1,9 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.persistence;
 
 import java.util.Optional;
 import java.util.UUID;
 
-interface FamilyRequestStore {
+public interface FamilyRequestStore {
 
     void save(StoredFamilyRequest request);
 

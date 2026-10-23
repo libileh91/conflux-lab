@@ -1,5 +1,7 @@
 # Sprint 03 — Persistance MongoDB et cycle des états
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **[Simulation ConfluxLab] — Deux incréments réalisés techniquement ; clôture et restitution pédagogiques non confirmées.** Les regroupements répondent à deux résultats distincts, sans imposer la fusion de tout le sprint. Les IDs, dates et preuves restent ceux des réalisations INT-09 → INT-10 → INT-11 → INT-12.
 
 ## Prérequis communs

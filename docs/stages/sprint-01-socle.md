@@ -1,5 +1,7 @@
 # Sprint 01 — Socle du monolithe modulaire
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **Deux résultats réalisés, regroupés par sujet :** architecture/assemblage/frontières (INT-01/03/04) et build/versionnement (INT-02/37). Le sprint est un repère de classement, **pas l'obligation d'une tâche ou d'une note unique**. Les IDs et leurs preuves restent inchangés.
 
 **Clôture technique et documentaire demandée le 2026-10-21 ; restitution orale non évaluée.** La réorganisation documentaire du 2026-10-22 ne lance aucun code, test, build, démarrage, commit ou push. Les critères cochés décrivent les vérifications historiques, pas une nouvelle validation des sources actuelles.

@@ -1,11 +1,11 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.orchestration;
 
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-import dev.confluxlab.capability.internal.FamilyOperations.ContractId;
-import dev.confluxlab.capability.internal.FamilyOperations.DependentId;
-import dev.confluxlab.capability.internal.FamilyOperations.PrincipalId;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.ContractId;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.DependentId;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.PrincipalId;
 import dev.confluxlab.contracts.PersonPayload;
 
 import static org.mockito.ArgumentMatchers.any;

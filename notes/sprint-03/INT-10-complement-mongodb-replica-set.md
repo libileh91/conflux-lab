@@ -22,7 +22,7 @@ Dans cette hypothèse homogène, quorum électoral et nombre de confirmations `w
 
 ## 2. Majorité, journal et délais ne promettent pas la même chose
 
-Le réglage réel de [`FamilyRequestConfiguration`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java), expliqué dans le [cours insertion](INT-10-insertion-et-persistance-mongodb.md#3-acquittement-et-configuration), reste le point de départ :
+Le réglage réel de [`FamilyRequestConfiguration`](../../capability-api/src/main/java/dev/confluxlab/capability/internal/config/FamilyRequestConfiguration.java), expliqué dans le [cours insertion](INT-10-insertion-et-persistance-mongodb.md#3-acquittement-et-configuration), reste le point de départ :
 
 | Réglage | Sens dans l'hypothèse répliquée |
 |---|---|

@@ -1,4 +1,4 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.orchestration;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -8,23 +8,23 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import dev.confluxlab.capability.internal.FamilyOperations.ContractId;
-import dev.confluxlab.capability.internal.FamilyOperations.DependentId;
-import dev.confluxlab.capability.internal.FamilyOperations.PrincipalId;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.ContractId;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.DependentId;
+import dev.confluxlab.capability.internal.orchestration.FamilyOperations.PrincipalId;
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.PersonPayload;
 
-final class FamilyOrchestrator {
+public final class FamilyOrchestrator {
 
     private final FamilyOperations operations;
     private final Executor executor;
 
-    FamilyOrchestrator(FamilyOperations operations, Executor executor) {
+    public FamilyOrchestrator(FamilyOperations operations, Executor executor) {
         this.operations = Objects.requireNonNull(operations, "operations");
         this.executor = Objects.requireNonNull(executor, "executor");
     }
 
-    CompletableFuture<Void> execute(UUID requestId, CreateFamilyRequest request) {
+    public CompletableFuture<Void> execute(UUID requestId, CreateFamilyRequest request) {
         PersonPayload firstPerson = request.dependents().get(0);
         PersonPayload secondPerson = request.dependents().get(1);
         CompletableFuture<PrincipalId> principal = submit(() -> operations.createPrincipal(requestId, request.principal()));

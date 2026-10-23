@@ -107,7 +107,8 @@ class FamilyRequestTrackingHttpTest extends MongoTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.requestId").value(requestId))
-                .andExpect(jsonPath("$.status").value(anyOf(is("PENDING"), is("PROCESSING"))))
+                .andExpect(jsonPath("$.status").value(anyOf(
+                        is("PENDING"), is("PROCESSING"), is("SUCCEEDED"), is("FAILED"))))
                 .andExpect(jsonPath("$.createdAt").isString())
                 .andReturn();
 

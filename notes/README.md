@@ -13,7 +13,8 @@ Ces cours expliquent le code du laboratoire, **par sujets cohérents et par frag
 | 03 — Stockage | [Insertion et persistance MongoDB](sprint-03/INT-10-insertion-et-persistance-mongodb.md) | INT-10 + INT-12 : insertion avant acceptation, acquittement, suivi et redémarrage |
 | 04 — Prise en charge | [Traiter les demandes en arrière-plan](sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md) | INT-13 + INT-14 + INT-16 : événement, proxy async, claim et fenêtres de panne |
 | 04 — Ressources | [Pool borné et erreurs async](sprint-04/INT-15-pool-borne-et-erreurs-async.md) | INT-15 : paramètres, rejet explicite et journalisation confidentielle |
-| 05 — Orchestration | [Orchestrer les six opérations](sprint-05/INT-17-orchestrer-les-six-operations.md) | INT-17 à INT-20 : contrats, dépendances, échecs et executor ; graphe non raccordé au listener |
+| 05 — Orchestration | [Orchestrer les six opérations](sprint-05/INT-17-orchestrer-les-six-operations.md) | INT-17 à INT-20 : composition Java avant raccordement au listener |
+| 06 — Parcours partenaire | [Créer une famille de bout en bout](sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md) | INT-21 + INT-22 : Feign/WireMock, claim gagnant, états finaux et absence de retry |
 
 **Complément au sprint 03 :** [MongoDB standalone ou replica set](sprint-03/INT-10-complement-mongodb-replica-set.md), théorie condensée avec schéma et tableau de quorum. Ce n'est ni une nouvelle tâche ni un cluster implémenté.
 
@@ -23,7 +24,7 @@ Les résultats techniques sont documentés ; une compréhension orale non évalu
 
 - Le cours REST montre l'étape historique **en mémoire**, avec les extraits situés dans leur version Git. Ce stockage n'est plus utilisé en production.
 - MongoDB a ensuite remplacé la mémoire. Depuis le raccordement async, le reçu POST reste `PENDING`, mais le GET peut déjà lire `PROCESSING`.
-- Le cours d'orchestration décrit le code d'INT-20 dans l'arbre de travail : le graphe existe, sans listener raccordé, appels partenaires ou état final de production.
+- Les cours 01 à 05 sont situés dans leurs étapes, jusqu'à INT-20 : le graphe y existe sans listener raccordé. Le cours INT-21 + INT-22 décrit le raccordement ultérieur via Feign et la finalisation ; il ne transforme pas rétroactivement les anciennes preuves.
 - Les tableaux de preuves reprennent les résultats réellement observés à l'époque. **Aucun test, build ou démarrage n'a été relancé pour cette consolidation.** Les sélections successives ne s'additionnent pas et ne constituent pas une suite globale actuelle.
 
 ## Comment les notes sont organisées
@@ -44,4 +45,4 @@ Le nombre de tâches et de notes dépend du sujet : ne pas tout fusionner pour r
 
 ## Suite
 
-Les sprints 06 à 09 sont [planifiés](../docs/stages/README.md#roadmap), sans note de réussite anticipée. Le prochain lot est **INT-21 + INT-22 — Créer une famille de bout en bout**. Un accord porte sur le lot présenté, pas automatiquement sur tous les travaux du sprint.
+Le premier lot du sprint 06 est réalisé. La [suite](../docs/stages/README.md#roadmap) reste à autoriser, sans note de réussite anticipée : **INT-23 + INT-24 — Terminer proprement malgré une panne partenaire**, puis démonstration/mesures, CI et atelier théorique. Un accord porte sur le lot présenté, pas automatiquement sur tous les travaux du sprint.

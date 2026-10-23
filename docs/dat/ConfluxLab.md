@@ -20,15 +20,15 @@
 
 Une requête HTTP demande la création d'une famille fictive de **trois personnes** : un assuré principal et deux ayants droit.
 
-**Lecture du flux :** la liste décrit le parcours cible. Depuis INT-14, acceptation persistée, publication locale, prise en charge asynchrone et suivi sont implémentés. Depuis INT-18, la composition nominale du graphe existe et est testée en Java ; INT-19 ajoute la preuve d'un échec représentatif et d'une attente finale explicite des branches. INT-20 rend explicite l'executor des six invocations et vérifie le partage du pool borné existant. Ce graphe n'est pas branché au listener. Le traitement de bout en bout, les appels partenaires et la production d'un état final restent à développer sur leurs feux verts respectifs. INT-13 conserve l'explication courte des fenêtres de panne.
+**Lecture du flux :** INT-21 + INT-22 raccordent le parcours complet sur feu vert « ok go » : acceptation persistée, événement local, prise en charge atomique gagnante, graphe A–F, Feign vers WireMock et finalisation conditionnelle. La composition Java INT-17 à INT-20 est réutilisée sans changement. La politique détaillée des erreurs et répétitions reste le lot INT-23 + INT-24, non autorisé ; aucun retry ou Resilience4j n'est ajouté à ce stade.
 
 1. Le module Experience/BFF reçoit la demande HTTP, valide son format et appelle l'interface Java publique du module Capability, dans la même application Spring Boot.
 2. Depuis INT-10, Capability génère un UUID et insère la demande `PENDING` dans MongoDB avant l'acceptation. À l'étape historique INT-06, ce stockage était temporairement réalisé en mémoire.
 3. Capability publie un **événement Spring local** contenant l'UUID ; un listener `@Async` est planifié.
 4. Capability renvoie l'acceptation et Experience retourne **HTTP `202 Accepted`** avec un `requestId` et une `statusUrl`, sans attendre les appels partenaires.
-5. Le listener lit la demande et tente la transition atomique vers `PROCESSING` (INT-14). La composition nominale disponible depuis INT-18 n'est pas encore branchée à ce listener ; aucun faux travail métier n'est déclenché derrière le `202`.
-6. Les appels passent par un client Feign configuré avec les mécanismes pertinents de Resilience4j.
-7. MongoDB reçoit l'état final `SUCCEEDED` ou `FAILED`.
+5. Le listener lit la demande et tente la transition atomique vers `PROCESSING` ; seul le résultat gagnant déclenche l'orchestrateur. Il observe sa future sans attente bloquante dans le pool.
+6. Les six appels passent par le client Spring Cloud OpenFeign vers le partenaire fictif, sans retry Feign ou HC5 ni redirection automatique.
+7. Après la terminaison globale du graphe, une transition conditionnelle tente `SUCCEEDED` ou `FAILED`. Une écriture non confirmée est journalisée : l'état final n'est pas garanti si MongoDB échoue, et le document peut rester `PROCESSING`.
 8. Le client consulte **GET `/api/v1/requests/{requestId}`**.
 
 **Nuance importante :** le traitement `@Async` peut commencer **avant** la fin de la réponse HTTP `202` ; le schéma décrit les responsabilités, pas une garantie de chronologie de ces deux opérations.
@@ -61,7 +61,7 @@ B, C et D peuvent être lancées en parallèle ; E et F n'attendent que leurs pr
 
 ### 3.1 Contrats internes des opérations — INT-17
 
-**[Simulation ConfluxLab — réalisée sur feu vert « go 17 »]** : `FamilyOperations`, interface sans bean dans `capability.internal`, définit les six opérations avec `CompletableFuture`. Chaque appel reçoit le `requestId` de corrélation ; A consomme `PersonPayload` et retourne `PrincipalId`, B utilise ce dernier et retourne `ContractId`, C/D utilisent le principal et les données de l'ayant droit pour retourner chacun un `DependentId`, E/F utilisent contrat et ayant droit et retournent `Void` (réussite sans nouvelle donnée). Les trois records d'identifiants distinguent les rôles, sans ajouter de validation de contenu ou d'appartenance à une famille.
+**[Simulation ConfluxLab — réalisée sur feu vert « go 17 »]** : `FamilyOperations`, interface sans bean à l'étape INT-17, désormais dans `capability.internal.orchestration`, définit les six opérations avec `CompletableFuture`. Chaque appel reçoit le `requestId` de corrélation ; A consomme `PersonPayload` et retourne `PrincipalId`, B utilise ce dernier et retourne `ContractId`, C/D utilisent le principal et les données de l'ayant droit pour retourner chacun un `DependentId`, E/F utilisent contrat et ayant droit et retournent `Void` (réussite sans nouvelle donnée). Les trois records d'identifiants distinguent les rôles, sans ajouter de validation de contenu ou d'appartenance à une famille.
 
 `ControlledFamilyOperations`, sous `src/test` uniquement, prépare un mock Mockito et six futures incomplètes. `test-compile` ciblé de Capability et de ses dépendances réussit ; aucun test n'est exécuté et la fixture sera exercée avec INT-18/19. Aucun contrat HTTP, POM, configuration, listener ou stockage n'est modifié. L'interface ne compose pas le graphe et n'implique aucun thread ou appel HTTP automatique. Voir le [cours INT-17](../../notes/sprint-05/INT-17-orchestrer-les-six-operations.md).
 
@@ -81,9 +81,19 @@ B, C et D peuvent être lancées en parallèle ; E et F n'attendent que leurs pr
 
 **[Simulation ConfluxLab — réalisée sur feu vert « commit 19 & go 20 »]** : INT-19 est commitée localement dans `eb0dc5a`, sans push. `FamilyOrchestrator` reçoit un `Executor` explicite ; chaque invocation A–F passe par `supplyAsync(..., executor)`, puis sa future est aplatie avec `thenCompose`. Un rejet, y compris initial, devient une future exceptionnelle ; la jonction finale continue d'attendre les branches lancées. Aucun `commonPool` implicite, `join/get`, nouvel executor, réglage ou bean d'orchestrateur ajouté.
 
-**Choix de raccordement retenu :** réutiliser `familyRequestExecutor` d'INT-15 et observer la fin du graphe sans bloquer le listener. Ce raccordement reste à réaliser avec l'adaptateur partenaire : ni le type `Executor` ni ce test ne prouvent son câblage Spring. Le pool borne ses workers et sa file, pas les futures qu'un adaptateur ferait travailler ailleurs ; une admission d'A ne réserve pas la capacité pour tout le graphe.
+**Choix de raccordement retenu dans INT-20 :** réutiliser `familyRequestExecutor` d'INT-15 et observer la fin du graphe sans bloquer le listener. Ce test Java ne prouvait pas encore le câblage Spring, réalisé ensuite dans INT-21 + INT-22. Le pool borne ses workers et sa file, pas les futures qu'un adaptateur ferait travailler ailleurs ; une admission d'A ne réserve pas la capacité pour tout le graphe.
 
 **Preuves :** 6 cas Surefire ciblés réussis, 0 échec/erreur/ignoré : 3 cas existants, 2 cas de rejet A/E et un contrôle de partage/isolation. Ce dernier réutilise la configuration du pool à un worker, démarre les compositions depuis ce même pool et distingue deux UUID avec un succès et un échec. Saturation INT-15 réutilisée historiquement, sans nouvel IT ou test HTTP. Aucun état final persisté ni appel partenaire. Voir le [cours INT-20](../../notes/sprint-05/INT-17-orchestrer-les-six-operations.md).
+
+### 3.5 Parcours partenaire et finalisation — INT-21 + INT-22
+
+**[Simulation ConfluxLab — réalisée sur feu vert « ok go », le 2026-10-22]** : `FamilyPartnerClient` expose quatre routes de ressources pour les six opérations : création du principal, du contrat, des ayants droit, puis rattachements. Chaque appel transmet `X-Request-Id`. Les DTO du partenaire restent internes et `FeignFamilyOperations` adapte les réponses aux identifiants typés existants. Les identifiants absents/vides sont refusés ; aucune nouvelle donnée partenaire n'est exposée dans le suivi public.
+
+Le bean `FamilyOrchestrator` reçoit le pool existant explicitement qualifié. Après un claim gagnant, le listener lui fournit le payload stocké et observe sa fin par `whenComplete`, sans `join/get`. Le callback finalise avec le store atomique existant ; il capture et journalise lui-même les erreurs d'écriture, sans message, payload ou trace brute, car ces erreurs de callback ne passent pas automatiquement dans le handler `@Async void`. Aucun rollback, état de secours artificiel ou reprise n'est ajouté.
+
+Le BOM Spring Cloud 2025.0.0 accompagne Boot 3.5.7, OpenFeign 4.3.0 et Feign 13.6. Le client est configuré avec connexion 1000 ms, lecture 3000 ms et redirections désactivées ; `Retryer.NEVER_RETRY` et HC5 `disableAutomaticRetries()` neutralisent les deux niveaux de répétition. L'URL utilise `FAMILY_PARTNER_URL`, sinon `http://localhost:9090`. Ces délais ne sont pas une deadline globale. WireMock standalone 3.13.1 est une dépendance de test ; le JAR ne lance pas lui-même de simulateur.
+
+**Preuves :** `verify` ciblé réussi avec **14 cas Surefire + 8 Failsafe**, aucun échec/erreur/ignoré. Trois nouveaux scénarios et 19 cas réutilisés : parcours nominal à six échanges, contrat `503` unique sans rattachement/fuite puis `FAILED`, journal d'écriture finale non confirmée. Le test existant du JAR conserve désormais `FAILED` au redémarrage sans rappeler le partenaire. Pas de suite globale ni CI verte revendiquée. [Cours et commande exacte](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
 
 ## 4. Stack technique proposée
 
@@ -128,7 +138,7 @@ flowchart TD
 
 Aucun cycle, aucune dépendance Capability → Experience, aucun HTTP interne ni accès du BFF aux repositories. Dans INT-03, les dépendances Maven suivent ce graphe ; seul `application` déclare le plugin Boot. Son démarrage `dev.confluxlab.ConfluxLabApplication` est à la racine des packages pour découvrir Experience et Capability dans le même contexte Spring.
 
-Le BFF injecte `dev.confluxlab.capability.api.FamilyRequests` ; son implémentation reste dans `capability.internal`, sans import de ce package par Experience. Dans INT-03/04, l'exception publique provisoire `CapabilityNotReadyException`, sans statut HTTP, signalait l'indisponibilité des deux opérations, adaptée en `503` par le BFF. L'acceptation mémoire l'a remplacée pour le POST dans INT-06, puis la consultation réelle dans INT-07 a permis de supprimer cette exception et son mapping provisoire.
+Le BFF injecte `dev.confluxlab.capability.api.FamilyRequests` ; son implémentation reste dans `capability.internal.service`, sans import de ce package par Experience. Dans INT-03/04, l'exception publique provisoire `CapabilityNotReadyException`, sans statut HTTP, signalait l'indisponibilité des deux opérations, adaptée en `503` par le BFF. L'acceptation mémoire l'a remplacée pour le POST dans INT-06, puis la consultation réelle dans INT-07 a permis de supprimer cette exception et son mapping provisoire.
 
 Le `clean verify` global d'INT-03 réussit avec 64 tests et le JAR réel démarre sans base ni partenaire. Les deux routes valides répondent `503` ; les réponses de succès des tests de délégation proviennent uniquement d'un double. Voir les [preuves INT-03](../../notes/sprint-01/INT-01-socle-modulaire.md). Les modèles d'échange sont définis dans INT-05 ; cette preuve historique ne réalisait pas encore l'acceptation, développée ensuite dans INT-06. Le suivi effectif a ensuite été réalisé dans INT-07, sans modifier ces preuves historiques. Les contrôles automatiques de frontières ont ensuite été réalisés dans INT-04, sans modification du métier.
 
@@ -161,6 +171,21 @@ Le `clean verify` global INT-07 réussit avec **108 tests**, dont les tests de f
 Un défaut a été reproduit : un identifiant mal formé contenant un marqueur fictif était recopié par MVC dans `ProblemDetail.instance`, malgré un détail générique. Le helper d'erreur fournit désormais `URI.create("")`, non nulle, pour empêcher cet écho automatique. La sérialisation actuelle omet cette valeur vide ; les tests protègent à la fois l'objet Java et l'absence stricte du champ et du marqueur dans le JSON. Ce couplage MVC/Jackson est volontairement testé ; aucun identifiant d'erreur supplémentaire n'est introduit. Le changement concerne les erreurs gérées par cet advice, pas une garantie sur tous les logs, proxys ou filtres.
 
 Le `clean verify` global réussit avec **181 tests**. Les erreurs `500` et le refus de Capability sont simulés explicitement par doublures ; le JAR réel valide des refus `400`/`415`/`404`, la confidentialité et deux acceptations/consultations indépendantes. Le processus est arrêté. Cette couverture de non-régression est plus large que le minimum nécessaire pour comprendre le principe, pas une preuve de sécurité exhaustive. Voir le [cours INT-08](../../notes/sprint-02/INT-05-accepter-et-consulter-une-demande.md).
+
+### 4.6 Organisation interne de Capability
+
+**[Simulation ConfluxLab — refactor explicite]** Sous `dev.confluxlab.capability.internal`, ce rangement vise la compacité de lecture, pas une nouvelle architecture ni un changement métier :
+
+| Sous-package | Rôle |
+|---|---|
+| `config` | Câblage Spring, MongoDB et executor |
+| `service` | Acceptation et consultation des demandes |
+| `persistence` | Document, contrat de stockage et adaptateur MongoDB |
+| `event` | Événement local et listener asynchrone |
+| `orchestration` | Contrat des opérations et composition du graphe A–F |
+| `client` | Client partenaire Feign, configuration et adaptation HTTP |
+
+Les tests suivent ces sous-packages ; la fixture `application/src/test/java/dev/confluxlab/capability/internal/fixture` ne bouge pas. Certaines classes et méthodes deviennent `public` pour les échanges Java entre sous-packages, mais restent internes : le BFF est limité à `capability.api`, les règles ArchUnit sont préservées. **Validation après déplacement :** `clean verify` ciblé réussi le 2026-10-22, **25 cas Surefire + 8 Failsafe**, aucun échec/erreur/ignoré. Les contrôles de frontières, le parcours partenaire et le redémarrage du JAR passent ; le test MongoDB confirme aussi la lecture avec l'ancien nom `_class` du document. Aucune migration des documents n'est nécessaire pour cette lecture typée. [Commande et limites](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md#organisation-interne-après-déplacement).
 
 ## 5. Contrats HTTP
 
@@ -272,7 +297,7 @@ Le [cours INT-13](../../notes/sprint-04/INT-13-traiter-les-demandes-en-arriere-p
 
 À l'étape INT-14, `@EnableAsync` active les proxies ; `FamilyRequestListener` associe `@EventListener` et `@Async("applicationTaskExecutor")`. Il utilise alors provisoirement l'executor auto-configuré par Boot ; INT-15 le remplace ensuite par le pool dédié décrit en section 7.3. Il relit le document et, seulement s'il est `PENDING`, tente le `findAndModify` atomique d'INT-11. Deux lectures concurrentes ne remplacent pas cette protection en base.
 
-Le listener s'arrête après cette tentative : aucun travail métier, faux succès ou état final n'est produit. Le POST conserve son reçu initial `PENDING` ; le GET peut déjà lire `PROCESSING`. Ni l'ordre de démarrage par rapport au `202`, ni une reprise après crash ne sont garantis. La future orchestration devra continuer uniquement sur une prise en charge gagnante.
+À l'étape INT-14, le listener s'arrêtait après cette tentative : aucun travail métier ou état final n'était produit. Ce point d'arrêt historique est dépassé par le raccordement INT-21 + INT-22 décrit en section 3.5. Le POST conserve son reçu initial `PENDING` ; le GET peut déjà lire `PROCESSING`. Ni l'ordre de démarrage par rapport au `202`, ni une reprise après crash ne sont garantis. La future orchestration devra continuer uniquement sur une prise en charge gagnante.
 
 **Preuves du 2026-10-22 :** `verify` ciblé réussi, **5 cas Surefire + 4 cas Failsafe**, aucun échec/erreur/ignoré. Deux tests unitaires existants vérifient publication après sauvegarde et absence de publication si elle échoue. Un seul scénario est ajouté : POST accepté pendant que les tentatives de prise en charge sont bloquées, puis deux réceptions donnent un seul gagnant sur MongoDB réel. Les tests de suivi, insertion et redémarrage existants sont adaptés au passage à `PROCESSING` ; le JAR réel conserve cet état entre deux JVM, ce qui ne démontre pas une reprise. Suite complète, saturation, traitement métier, CI et INT-15 non exécutés. Voir le [cours INT-14](../../notes/sprint-04/INT-13-traiter-les-demandes-en-arriere-plan.md).
 

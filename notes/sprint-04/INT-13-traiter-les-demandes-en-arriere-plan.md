@@ -1,5 +1,7 @@
 # INT-13 + INT-14 + INT-16 — Prendre en charge les demandes en arrière-plan
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **Statut : prise en charge technique réalisée jusqu'à `PROCESSING`, pas jusqu'à la création d'une famille.** Cet incrément couvre insertion, publication, proxy async, claim, suivi et compréhension des pannes. [Fiche du sprint 04](../../docs/stages/sprint-04-async.md).
 
 **[Simulation ConfluxLab]** Experience et Capability sont deux modules d'une seule application Spring Boot, avec appels Java internes. Ce cours ne certifie pas une implémentation historique AXA. Les fragments sont partiels, issus des sources inspectées, sans classe entière ni code de harnais de test.
@@ -44,7 +46,7 @@ Un **bean** est un objet géré par Spring ; le **proxy** est son intermédiaire
 
 ## 2. Insérer avant de publier
 
-[FamilyRequestService.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java), fragment de `createFamily(...)`, après copie et validation de l'entrée :
+[FamilyRequestService.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/service/FamilyRequestService.java), fragment de `createFamily(...)`, après copie et validation de l'entrée :
 
 ```java
 UUID requestId = UUID.randomUUID();
@@ -56,11 +58,11 @@ return new RequestAccepted(requestId, stored.status(), "/api/v1/requests/" + req
 ```
 
 1. L'UUID corrèle reçu, document et événement ; la date est normalisée à la milliseconde pour MongoDB.
-2. `save` attend l'insertion acquittée. Dans [MongoFamilyRequestStore.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/MongoFamilyRequestStore.java), il s'agit de `mongoTemplate.insert(request)`, sans upsert ni remplacement d'un UUID existant.
+2. `save` attend l'insertion acquittée. Dans [MongoFamilyRequestStore.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/persistence/MongoFamilyRequestStore.java), il s'agit de `mongoTemplate.insert(request)`, sans upsert ni remplacement d'un UUID existant.
 3. Une exception de sauvegarde empêche d'atteindre la publication. Après réussite, le proxy peut soumettre la notification.
 4. Le reçu utilise l'objet local initial, encore `PENDING`, même si la base est déjà passée à `PROCESSING`.
 
-[FamilyRequestSubmitted.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestSubmitted.java) est un record interne avec **seulement `UUID requestId`**, non nul. Le service crée cette valeur, qui n'est pas un bean ; les données familiales restent dans le document.
+[FamilyRequestSubmitted.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/event/FamilyRequestSubmitted.java) est un record interne avec **seulement `UUID requestId`**, non nul. Le service crée cette valeur, qui n'est pas un bean ; les données familiales restent dans le document.
 
 [FamilyController.java](../../experience-api/src/main/java/dev/confluxlab/experience/FamilyController.java) appelle l'interface publique en Java, puis construit le `202`, `Location` et `statusUrl`. Le BFF ne connaît ni événement ni store interne.
 
@@ -68,7 +70,7 @@ return new RequestAccepted(requestId, stored.status(), "/api/v1/requests/" + req
 
 ## 3. Relire puis gagner le claim atomique
 
-[FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java), fragment du corps exécuté sur le worker :
+[FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/event/FamilyRequestListener.java), fragment du corps exécuté sur le worker :
 
 ```java
 store.findById(event.requestId())
@@ -110,7 +112,7 @@ Le listener termine après la tentative, sans exploiter son résultat pour pours
 
 ## 4. Le suivi n'est pas le reçu initial
 
-[FamilyRequestService.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestService.java), fragment de `getRequest(...)` :
+[FamilyRequestService.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/service/FamilyRequestService.java), fragment de `getRequest(...)` :
 
 ```java
 StoredFamilyRequest stored = store.findById(requestId)
@@ -150,7 +152,7 @@ Comptes rendus du **2026-10-22**, non renouvelés par cette rédaction :
 | INT-14, repère `bdb93f8` | **5 cas Surefire + 4 cas Failsafe**, aucun échec/erreur/ignoré | Publication après insertion et absence sur échec, réponse indépendante, claim unique, suivi, insertion et redémarrage du JAR ; un seul scénario ajouté |
 | INT-16, relecture de `59c881c` | Code et deux rapports ciblés INT-15 relus, **sans nouvelle exécution** | Câblage, signaux, attentes bornées et nettoyage ; aucune adaptation jugée nécessaire pour les critères. Les résultats relus appartiennent à [INT-15](INT-15-pool-borne-et-erreurs-async.md#6-preuves-historiques-int-15) |
 
-Les deux tests de service utilisent des doublures pour vérifier l'ordre et l'absence de publication sur échec. Dans [FamilyRequestEventsIT.java](../../application/src/test/java/dev/confluxlab/capability/internal/FamilyRequestEventsIT.java), Spring et MongoDB Testcontainers sont réels ; MockMvc n'ouvre pas de socket. Deux tentatives sont bloquées avant la commande : le POST répond sans les libérer, puis deux retours normaux donnent un seul gagnant. Aucun ordre autour du `202` n'est imposé.
+Les deux tests de service utilisent des doublures pour vérifier l'ordre et l'absence de publication sur échec. Dans [FamilyRequestEventsIT.java](../../application/src/test/java/dev/confluxlab/capability/internal/event/FamilyRequestEventsIT.java), Spring et MongoDB Testcontainers sont réels ; MockMvc n'ouvre pas de socket. Deux tentatives sont bloquées avant la commande : le POST répond sans les libérer, puis deux retours normaux donnent un seul gagnant. Aucun ordre autour du `202` n'est imposé.
 
 INT-16 a relu les trois cas existants, dont les contrôles de bornage/diagnostic détaillés dans la seconde note. Les attentes sont bornées, les signaux libérés dans les `finally` et le pool attendu au repos, sans `Thread.sleep` comme preuve. Ce contrôle reste dans les tests, pas dans un faux métier applicatif.
 

@@ -1,16 +1,18 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.persistence;
 
-import dev.confluxlab.contracts.CreateFamilyRequest;
-import dev.confluxlab.contracts.RequestStatus;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import dev.confluxlab.contracts.CreateFamilyRequest;
+import dev.confluxlab.contracts.RequestStatus;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document("family_requests")
-record StoredFamilyRequest(
+public record StoredFamilyRequest(
     @Id UUID requestId,
     RequestStatus status,
     CreateFamilyRequest payload,
@@ -18,7 +20,7 @@ record StoredFamilyRequest(
     Instant updatedAt,
     Instant completedAt
 ) {
-    StoredFamilyRequest {
+    public StoredFamilyRequest {
         Objects.requireNonNull(requestId, "requestId");
         Objects.requireNonNull(status, "status");
         Objects.requireNonNull(createdAt, "createdAt");
@@ -33,11 +35,11 @@ record StoredFamilyRequest(
         payload = new CreateFamilyRequest(payload.principal(), List.copyOf(payload.dependents()));
     }
 
-    static StoredFamilyRequest pending(UUID requestId, CreateFamilyRequest payload, Instant createdAt) {
+    public static StoredFamilyRequest pending(UUID requestId, CreateFamilyRequest payload, Instant createdAt) {
         return new StoredFamilyRequest(requestId, RequestStatus.PENDING, payload, createdAt, createdAt, null);
     }
 
-    StoredFamilyRequest transitionTo(RequestStatus nextStatus, Instant changedAt) {
+    public StoredFamilyRequest transitionTo(RequestStatus nextStatus, Instant changedAt) {
         requireTransition(status, nextStatus);
         Objects.requireNonNull(changedAt, "changedAt");
         if (changedAt.isBefore(updatedAt)) {

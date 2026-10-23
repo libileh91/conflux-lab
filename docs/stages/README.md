@@ -23,20 +23,20 @@ Les IDs `INT-XX` restent uniques et stables. Leur regroupement documentaire ne c
 | [03 — MongoDB](sprint-03-mongodb.md) | Modèle/transitions : INT-09 + INT-11 ; insertion/persistance : INT-10 + INT-12 | Deux ensembles réalisés ; complément replica set théorique, clôture pédagogique non confirmée |
 | [04 — Asynchronisme](sprint-04-async.md) | Prise en charge async : INT-13 + INT-14 + INT-16 ; ressources/erreurs : INT-15 | Deux ensembles réalisés jusqu'à `PROCESSING` ; clôture pédagogique non confirmée |
 | [05 — Orchestration](sprint-05-orchestration.md) | Graphe, échecs et soumission : INT-17 à INT-20 | Réalisé en Java, non raccordé au listener ; clôture pédagogique non confirmée |
-| [06 — Parcours partenaire](sprint-06-partenaire.md) | Parcours complet : INT-21 + INT-22 ; pannes : INT-23 + INT-24 | Deux lots à autoriser |
+| [06 — Parcours partenaire](sprint-06-partenaire.md) | Parcours complet : INT-21 + INT-22 ; pannes : INT-23 + INT-24 | Premier lot réalisé : Feign et états finaux raccordés, 22 cas ciblés réussis ; lot pannes à autoriser |
 | [07 — Démonstration et mesures](sprint-07-validation.md) | Montrer, diagnostiquer et mesurer le parcours : INT-25 à INT-28 | Un lot à autoriser ; réutiliser les preuves existantes au bon niveau |
 | [08 — CI exploitable](sprint-08-ci.md) | Vérification et pipeline réellement observé : INT-29 à INT-32 | Un lot à autoriser ; opérations distantes sur accord distinct |
 | [09 — Atelier projet et livraison](sprint-09-cd-theorique.md) | Restitution et livraison conceptuelle : INT-33 à INT-36 | Un atelier à autoriser, sans déploiement |
 
-Les numéros de sprint sont des repères de classement, pas une durée ou un quota. La suite prévue comprend cinq lots, dont deux dans le sprint 06 ; ce découpage découle de leur contenu, pas d'un objectif de nombre.
+Les numéros de sprint sont des repères de classement, pas une durée ou un quota. Quatre lots restent prévus après le parcours nominal, dont la gestion des pannes dans le sprint 06 ; ce découpage découle de leur contenu, pas d'un objectif de nombre.
 
-**Prochain résultat : [INT-21 + INT-22 — Créer une famille de bout en bout](sprint-06-partenaire.md).** WireMock, Feign, raccordement du listener/orchestrateur et suivi final sont réalisés ensemble lorsque ce lot sera autorisé.
+**Prochain résultat : [INT-23 + INT-24 — Terminer proprement malgré une panne partenaire](sprint-06-partenaire.md).** Timeouts, refus et répétitions sûres restent à autoriser. Le [lot INT-21 + INT-22](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md) a raccordé WireMock, Feign, listener/orchestrateur et suivi final sans retry.
 
 ## Lire l'historique
 
 Les tableaux des fiches et des cours regroupés conservent les IDs, statuts et preuves des étapes passées. Ne pas prendre les regroupements actuels pour l'ordre exact de réalisation : INT-05 a notamment été préparée pour débloquer le build d'INT-02 avant l'assemblage INT-03.
 
-Le socle a d'abord exposé des opérations indisponibles, puis le REST a utilisé la mémoire, MongoDB l'a remplacée et l'async a ajouté la prise en charge `PROCESSING`. Le graphe A–F reste indépendant du listener à l'étape INT-20. Un ancien `503`, une perte mémoire ou un résultat de test daté ne décrit donc pas nécessairement le code actuel.
+Le socle a d'abord exposé des opérations indisponibles, puis le REST a utilisé la mémoire, MongoDB l'a remplacée et l'async a ajouté la prise en charge `PROCESSING`. Le graphe A–F restait indépendant du listener à l'étape INT-20 ; INT-21 + INT-22 le raccordent ensuite jusqu'au statut final. Un ancien `503`, une perte mémoire ou un résultat de test daté ne décrit donc pas nécessairement le code actuel.
 
 Le [journal de clôture du sprint 01](sprint-01-socle.md#journal-de-clôture--2026-10-21) est conservé. Aucun autre bilan oral n'est créé par la présente condensation.
 

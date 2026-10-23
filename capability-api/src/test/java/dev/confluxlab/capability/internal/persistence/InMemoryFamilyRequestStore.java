@@ -1,11 +1,12 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.persistence;
 
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-class InMemoryFamilyRequestStore implements FamilyRequestStore {
+
+public class InMemoryFamilyRequestStore implements FamilyRequestStore {
 
     private final ConcurrentMap<UUID, StoredFamilyRequest> requests = new ConcurrentHashMap<>();
 

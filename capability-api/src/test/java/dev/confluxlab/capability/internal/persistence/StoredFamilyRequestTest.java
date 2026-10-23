@@ -1,4 +1,4 @@
-package dev.confluxlab.capability.internal;
+package dev.confluxlab.capability.internal.persistence;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -8,6 +8,7 @@ import java.util.UUID;
 import dev.confluxlab.contracts.CreateFamilyRequest;
 import dev.confluxlab.contracts.PersonPayload;
 import dev.confluxlab.contracts.RequestStatus;
+
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

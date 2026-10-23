@@ -17,7 +17,7 @@ Registre de suivi, pas second cours ni journal des stories : le [plan](../docs/s
 | [TD-B006](#td-b006) — Navigation Zed | **Manuel, non constaté** : interaction GUI à vérifier par l'utilisateur, distincte du diagnostic LSP/build. |
 | [TD-B007](#td-b007) — Wrapper Windows | **Optionnel, non testé** : nécessite Windows, JDK 21 et réseau. |
 | [TD-B008](#td-b008) — `gh` ou SSH | **Seulement si nécessaire, non bloquant** : le push Git HTTPS historique a réussi. |
-| [TD-B018](#td-b018) — Partenaire et finalisation | **À autoriser : lot complet INT-21 + INT-22**, pas deux autorisations successives. |
+| Suite du parcours | [INT-23 + INT-24 — Gestion des pannes](../docs/stages/sprint-06-partenaire.md) reste à autoriser ; [TD-B018](#td-b018) conserve la preuve du raccordement réalisé. |
 
 ## Actions ouvertes — manuelles, optionnelles ou futures
 
@@ -45,16 +45,16 @@ Registre de suivi, pas second cours ni journal des stories : le [plan](../docs/s
 | Action · preuve attendue | Si besoin explicite, authentifier le canal choisi par son mécanisme normal, puis réussir une lecture sans exposer token ou clé privée. Ne pas modifier Git HTTPS pour cette seule raison ; accord requis avant changement de configuration/authentification. |
 | Statut · dépendance | ⏳ **Non prioritaire, non bloquant** : erreurs historiques `gh`/SSH, mais push Git HTTPS réussi. Les canaux sont distincts ; leur état actuel n'a pas été revérifié et aucun blocage Git actuel n'est déduit. |
 
-### TD-B018
-
-| Suivi | **Raccorder le parcours partenaire et la finalisation sans attendre dans le pool** |
-|---|---|
-| Source · IDs · fichiers | [Orchestration][C5], issu d'INT-20 ; [lot INT-21 + INT-22](../docs/stages/sprint-06-partenaire.md). Configuration/listener/orchestrateur/store existants ; adaptateur `FamilyOperations` et tests partenaires **à créer**, noms à fixer dans la story. |
-| Action | Fournir explicitement `familyRequestExecutor` à l'orchestrateur ; lancer le graphe uniquement après un claim gagnant, puis observer sa terminaison pour finaliser, sans `join/get` dans le listener. L'adaptateur bloquant doit garder son I/O dans la tâche soumise, sans pool implicite ailleurs. |
-| Preuve attendue | Parcours réel sur WireMock jusqu'au statut final prévu ; pas de finalisation avant la fin des branches lancées, ni de faux succès après erreur. Vérifier câblage et bornage effectifs, pas seulement le type `Executor`. |
-| Statut · dépendance | ⏸ **Toujours à autoriser pour l'ensemble INT-21 + INT-22** ; orchestration INT-17 à INT-20 disponible, Docker requis pour les tests MongoDB. Partenaire et raccordement forment un seul lot. INT-20 n'a produit ni bean d'orchestrateur, ni appel partenaire, ni état final ; la réorganisation ne lance rien. |
 
 ## Archives résolues — périmètre et preuve historiques
+
+### TD-B018
+
+| Archive | **Raccorder le parcours partenaire et la finalisation sans attendre dans le pool** |
+|---|---|
+| Source · IDs · fichiers | Créée dans INT-20 ; réalisée sur feu vert « ok go » dans [INT-21 + INT-22](sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md). `FamilyPartnerClient`, `FeignFamilyOperations`, configuration Feign, listener et tests du parcours. |
+| Résultat · preuve | Pool existant explicitement injecté ; graphe lancé uniquement après claim gagnant, finalisation conditionnelle après terminaison. Feign/HC5 sans retry, délais configurés. **14 Surefire + 8 Failsafe réussis**, aucun échec/erreur/ignoré : 3 nouveaux scénarios, 19 cas réutilisés ; pas de suite globale. Le JAR conserve `FAILED` après redémarrage sans nouvel appel partenaire. |
+| Statut · limites | ✅ **Réalisée le 2026-10-22.** Une erreur d'écriture finale est journalisée sans données privées, pas transformée en faux acquittement ; `PROCESSING` ou une issue d'écriture inconnue reste possible. Ni reprise, rollback ni idempotence ; lot INT-23 + INT-24 toujours à autoriser. |
 
 Les accords mentionnés ci-dessous ont été reçus pour les réalisations passées, sans autoriser la suite. Les anciennes appellations mémoire désignent leur version historique : depuis INT-10, `InMemoryFamilyRequests` / son test sont devenus `FamilyRequestService` / `FamilyRequestServiceTest` ; `InMemoryFamilyRequestStore` ne subsiste que sous `capability-api/src/test/`, sans repli mémoire de production.
 

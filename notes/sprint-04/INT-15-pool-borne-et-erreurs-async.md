@@ -1,5 +1,7 @@
 # INT-15 — Borner et diagnostiquer l'exécution
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **Statut : résultat technique réalisé**, sur feu vert INT-15, repère `59c881c`. Un pool dédié limite workers et file ; ses rejets et les exceptions du listener deviennent visibles sans exposer de message privé. [Fiche du sprint 04](../../docs/stages/sprint-04-async.md).
 
 **[Simulation ConfluxLab]** Les valeurs sont pédagogiques, ni dimensionnement de production ni paramètres historiques AXA. Les fragments applicatifs sont partiels et issus des sources inspectées ; aucun code de harnais de test n'est reproduit. Cette rédaction ne relance ni build ni test et n'actualise aucun résultat.
@@ -28,7 +30,7 @@ Le rejet de soumission et l'exception dans une tâche acceptée ne se produisent
 
 ## 2. Lire la configuration et ses paramètres
 
-Source : [FamilyRequestConfiguration.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestConfiguration.java).
+Source : [FamilyRequestConfiguration.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/config/FamilyRequestConfiguration.java).
 
 | Élément / bean | Annotation ou contrat | Rôle |
 |---|---|---|
@@ -38,7 +40,7 @@ Source : [FamilyRequestConfiguration.java](../../capability-api/src/main/java/de
 | Configuration | `AsyncConfigurer` | Fournir le handler d'exceptions async `void`, distinct de la politique de rejet |
 | `mongoTemplate`, `familyRequestClock` | Deux beans préexistants | Accès MongoDB avec acquittement retenu et horloge UTC ; pas des ajouts INT-15 |
 
-Le nom est important : [FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/FamilyRequestListener.java) demande précisément `@Async("familyRequestExecutor")`. Le rôle du proxy et de `@EnableAsync` est expliqué dans le premier cours.
+Le nom est important : [FamilyRequestListener.java](../../capability-api/src/main/java/dev/confluxlab/capability/internal/event/FamilyRequestListener.java) demande précisément `@Async("familyRequestExecutor")`. Le rôle du proxy et de `@EnableAsync` est expliqué dans le premier cours.
 
 | Propriété | Défaut | Effet et contrainte |
 |---|---:|---|
@@ -127,7 +129,7 @@ La première ligne permet aux tâches soumises de terminer au lieu de demander i
 
 ## 6. Preuves historiques INT-15
 
-**`verify` ciblé réussi le 2026-10-22 : 1 cas Surefire + 3 cas Failsafe, aucun échec/erreur/ignoré.** Un contrôle de frontière et le cas concurrent d'INT-14 sont réutilisés ; deux cas sont ajoutés dans [FamilyRequestEventsIT.java](../../application/src/test/java/dev/confluxlab/capability/internal/FamilyRequestEventsIT.java).
+**`verify` ciblé réussi le 2026-10-22 : 1 cas Surefire + 3 cas Failsafe, aucun échec/erreur/ignoré.** Un contrôle de frontière et le cas concurrent d'INT-14 sont réutilisés ; deux cas sont ajoutés dans [FamilyRequestEventsIT.java](../../application/src/test/java/dev/confluxlab/capability/internal/event/FamilyRequestEventsIT.java).
 
 | Preuve décisive | Ce qui a été vérifié historiquement |
 |---|---|

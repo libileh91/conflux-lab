@@ -1,5 +1,7 @@
 # Sprint 05 — Orchestrer les six opérations
 
+> **Portée historique :** ce document décrit les étapes indiquées dans son titre, pas une nouvelle validation du parcours actuel. Le raccordement ultérieur via Feign et la finalisation sont réalisés dans [INT-21 + INT-22](../../notes/sprint-06/INT-21-creer-une-famille-de-bout-en-bout.md).
+
 **Statut : INT-17 à INT-20 réalisées dans leur périmètre Java.** Un seul résultat est regroupé ici : un graphe de six opérations, vérifié avec des doublures, dont les invocations passent par un executor explicite. **Ce n'est pas un parcours de bout en bout : le graphe n'est pas raccordé au listener.**
 
 **[Simulation ConfluxLab]** Les opérations et identifiants sont fictifs. INT-17/18/19 sont commitées localement dans `d6f0e86`, `516ea0e` et `eb0dc5a`, sans push ; le code INT-20 est commité localement dans `c989e29`. Cette condensation conserve les IDs et leurs preuves historiques, sans relancer le développement ni les vérifications.
@@ -44,4 +46,4 @@ Les cases décrivent les preuves Java déjà consignées, pas une nouvelle valid
 
 **Pas de clôture pédagogique déclarée :** la compréhension et la restitution orale ne sont pas évaluées par cette réorganisation ; aucun questionnaire ou journal de clôture supplémentaire n'est imposé.
 
-Le prochain résultat, **INT-21 + INT-22 — Créer une famille de bout en bout**, reste à autoriser dans la [fiche partenaire](sprint-06-partenaire.md). Son raccordement est suivi par [TD-B018](../../notes/todos.md#td-b018) ; cette fiche n'ouvre pas ce développement.
+**Suite réalisée depuis ce stade :** INT-21 + INT-22 raccordent le parcours partenaire et l'état final ; [TD-B018](../../notes/todos.md#td-b018) conserve cette preuve. Le prochain lot à autoriser est **INT-23 + INT-24 — Gestion des pannes**, dans la [fiche partenaire](sprint-06-partenaire.md).
